@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screencappy Settings</title>
+  <link rel="icon" href="icons/icon32.png" />
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/icon48.png" alt="" width="36" height="36" />
+      <div>
+        <h1>Screencappy</h1>
+        <p>All settings sync with your browser profile. Captures never leave your device.</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Capture</h2>
+
+      <div class="field">
+        <label for="engine">Engine</label>
+        <div class="control">
+          <select id="engine">
+            <option value="stitch">Scroll &amp; stitch — no extra permissions (default)</option>
+            <option value="turbo">Turbo — one-shot capture via DevTools protocol</option>
+          </select>
+          <p class="hint" id="turboHint">
+            Turbo captures the whole page in a single pass: faster, immune to sticky headers and
+            animation seams. It needs the optional <code>debugger</code> permission and briefly shows
+            Chrome's "started debugging" bar during capture.
+          </p>
+          <button id="grantDebugger" hidden>Grant debugger permission</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="captureDelayMs">Settle delay per step</label>
+        <div class="control">
+          <select id="captureDelayMs">
+            <option value="0">None — fastest</option>
+            <option value="150">150 ms (default)</option>
+            <option value="350">350 ms — slow pages</option>
+            <option value="800">800 ms — heavy animations</option>
+          </select>
+          <p class="hint">How long to wait after each scroll before shooting (stitch engine).</p>
+        </div>
+      </div>
+
+      <div class="field checkbox"><label><input type="checkbox" id="prescroll" /> Pre-scroll page first to trigger lazy-loaded images</label></div>
+      <div class="field checkbox"><label><input type="checkbox" id="hideSticky" /> Pin sticky headers &amp; hide floating bars after the first frame</label></div>
+      <div class="field checkbox"><label><input type="checkbox" id="freezeAnimations" /> Pause CSS animations during capture</label></div>
+
+      <div class="field">
+        <label for="maxCaptureHeight">Max capture height</label>
+        <div class="control">
+          <select id="maxCaptureHeight">
+            <option value="20000">20,000 px</option>
+            <option value="40000">40,000 px (default)</option>
+            <option value="100000">100,000 px — I know what I'm doing</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Output</h2>
+
+      <div class="field">
+        <label for="format">Default format</label>
+        <div class="control">
+          <select id="format">
+            <option value="png">PNG — lossless</option>
+            <option value="jpeg">JPEG — smaller files</option>
+            <option value="webp">WebP — modern &amp; small</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="quality">JPEG / WebP quality</label>
+        <div class="control">
+          <input type="range" id="quality" min="0.5" max="1" step="0.01" />
+          <output id="qualityOut"></output>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="filenameTemplate">Filename template</label>
+        <div class="control">
+          <input type="text" id="filenameTemplate" spellcheck="false" />
+          <p class="hint">Tokens: <code>{title}</code> <code>{domain}</code> <code>{url}</code> <code>{date}</code> <code>{time}</code> <code>{mode}</code></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="afterCapture">After capture</label>
+        <div class="control">
+          <select id="afterCapture">
+            <option value="editor">Open the editor</option>
+            <option value="download">Download immediately</option>
+            <option value="both">Open the editor and download</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="pdfPageMode">PDF layout</label>
+        <div class="control">
+          <select id="pdfPageMode">
+            <option value="single">Single tall page</option>
+            <option value="a4">A4 pages</option>
+            <option value="letter">Letter pages</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field checkbox"><label><input type="checkbox" id="saveAs" /> Always ask where to save (Save As dialog)</label></div>
+    </section>
+
+    <section>
+      <h2>History</h2>
+      <div class="field">
+        <label for="historyLimit">Keep the last</label>
+        <div class="control">
+          <select id="historyLimit">
+            <option value="5">5 captures</option>
+            <option value="30">30 captures (default)</option>
+            <option value="100">100 captures</option>
+          </select>
+          <p class="hint">Stored locally in this browser via IndexedDB. Older captures are pruned automatically.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Shortcuts</h2>
+      <p class="hint">
+        Full page <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> · Visible area <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> ·
+        Region <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> — <a href="#" id="editShortcuts">customize</a>
+      </p>
+    </section>
+
+    <p id="saved" class="saved" hidden>Saved ✓</p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
