@@ -1,5 +1,5 @@
 # With squash-merge, the PR title becomes the commit on main that release-please
-# reads — so the title must be a valid Conventional Commit.
+# reads - so the title must be a valid Conventional Commit.
 name: PR title
 
 on:

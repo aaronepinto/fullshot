@@ -705,7 +705,7 @@ async function doDownload(format: ImageFormat | `pdf-${PdfPageMode}`) {
       const blobs = await exportImages(exportSource(), fmt, state.settings.quality);
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
       await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
-      if (blobs.length > 1) toast(`Image exceeded canvas limits — saved as ${blobs.length} numbered files.`);
+      if (blobs.length > 1) toast(`Image exceeded canvas limits - saved as ${blobs.length} numbered files.`);
     }
     toast('Saved ✓');
   } catch (err) {
@@ -737,9 +737,34 @@ formatMenu.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
 document.addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('.split')) formatMenu.hidden = true;
   if (!(e.target as HTMLElement).closest('#emojiCurrent, #emojiPicker')) emojiPicker.hidden = true;
+  if (!(e.target as HTMLElement).closest('#ctxMenu')) $('#ctxMenu').hidden = true;
 });
 
 $('#btnSettings').addEventListener('click', () => void chrome.runtime.openOptionsPage());
+
+// Custom right-click menu on the canvas. The browser's native "Copy image" would
+// only grab the on-screen viewport canvas (the pixels currently rendered at the
+// current zoom), not the full composed capture, so we route the context menu
+// through the same export pipeline as the Copy button.
+const ctxMenu = $('#ctxMenu');
+canvas.addEventListener('contextmenu', (e) => {
+  if (!state.image) return;
+  e.preventDefault();
+  const rect = viewport.getBoundingClientRect();
+  ctxMenu.hidden = false;
+  const x = Math.min(e.clientX - rect.left, rect.width - ctxMenu.offsetWidth - 8);
+  const y = Math.min(e.clientY - rect.top, rect.height - ctxMenu.offsetHeight - 8);
+  ctxMenu.style.left = `${Math.max(4, x)}px`;
+  ctxMenu.style.top = `${Math.max(4, y)}px`;
+});
+$('#ctxCopy').addEventListener('click', () => {
+  ctxMenu.hidden = true;
+  $('#btnCopy').click();
+});
+$('#ctxDownload').addEventListener('click', () => {
+  ctxMenu.hidden = true;
+  void doDownload(state.settings?.format ?? 'png');
+});
 
 // ---------------------------------------------------------------------------
 // History drawer
@@ -868,6 +893,7 @@ document.addEventListener('keydown', (e) => {
     state.selected = -1;
     state.cropDraft = null;
     hideCropBar();
+    ctxMenu.hidden = true;
     requestRender();
   } else if (!meta && TOOL_KEYS[e.key.toLowerCase()]) {
     setTool(TOOL_KEYS[e.key.toLowerCase()]!);
@@ -886,6 +912,7 @@ new ResizeObserver(() => requestRender()).observe(viewport);
 async function boot() {
   state.settings = await getSettings();
   $('#btnDownload').textContent = `Download ${FORMAT_LABEL[state.settings.format] ?? 'PNG'}`;
+  $('#ctxDownload').textContent = `Download ${FORMAT_LABEL[state.settings.format] ?? 'PNG'}`;
 
   const params = new URLSearchParams(location.search);
   const id = params.get('id');
@@ -898,9 +925,9 @@ async function boot() {
 
   try {
     const record = await getCapture(id);
-    if (!record) throw new Error('Capture not found — it may have been pruned from history.');
+    if (!record) throw new Error('Capture not found - it may have been pruned from history.');
     state.record = record;
-    document.title = `Screencappy — ${record.title || record.url}`;
+    document.title = `Screencappy - ${record.title || record.url}`;
     const stored = record as CaptureRecord & { annos?: Anno[]; cropRect?: Rect | null };
     state.annos = stored.annos ?? [];
     state.crop = stored.cropRect ?? null;

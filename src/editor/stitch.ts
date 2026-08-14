@@ -74,7 +74,7 @@ export async function loadBigImage(record: CaptureRecord): Promise<BigImage> {
 
 async function composeFromTiles(record: CaptureRecord): Promise<BigImage> {
   const tiles = await getTiles(record.id);
-  if (!tiles.length) throw new Error('Capture data not found — it may have been pruned.');
+  if (!tiles.length) throw new Error('Capture data not found - it may have been pruned.');
 
   // Derive the device-pixel scale from the first tile's actual bitmap size. Browser
   // zoom and DPR are both captured by this single factor.
