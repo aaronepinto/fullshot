@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "FullShot — Full Page Screenshot",
+  "version": "0.1.0",
+  "description": "One-click full page screenshots. Capture, annotate, and export as PNG, JPEG, WebP, or PDF — private by design: no account, no cloud, no host permissions.",
+  "minimum_chrome_version": "116",
+  "offline_enabled": true,
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "FullShot — capture full page (Alt+Shift+P)",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads",
+    "contextMenus",
+    "unlimitedStorage"
+  ],
+  "optional_permissions": ["debugger"],
+  "commands": {
+    "capture-full": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Capture full page"
+    },
+    "capture-visible": {
+      "suggested_key": { "default": "Alt+Shift+V" },
+      "description": "Capture visible area"
+    },
+    "capture-selection": {
+      "suggested_key": { "default": "Alt+Shift+S" },
+      "description": "Capture a selected region"
+    }
+  }
+}
