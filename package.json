@@ -1,0 +1,19 @@
+{
+  "name": "screencappy",
+  "version": "0.1.0",
+  "description": "Screencappy — one-click full page screenshots. Capture, annotate, export. Private by design.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/gen-icons.mjs && node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/gen-icons.mjs",
+    "zip": "npm run build && node build.mjs --zip"
+  },
+  "devDependencies": {
+    "@types/chrome": "latest",
+    "esbuild": "latest",
+    "typescript": "latest"
+  }
+}
