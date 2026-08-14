@@ -381,3 +381,8 @@ function badgeFor(tabId: number) {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Test hook: lets the e2e harness drive a capture without a user gesture (the
+// harness grants host permissions in its patched manifest). Inert otherwise —
+// only code running inside the extension's own service worker can reach it.
+(globalThis as { __fullshotStart?: typeof startCapture }).__fullshotStart = startCapture;

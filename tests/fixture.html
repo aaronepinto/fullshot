@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FullShot e2e fixture</title>
+  <style>
+    body { margin: 0; font: 24px/1 system-ui, sans-serif; }
+    .sticky {
+      position: sticky; top: 0; height: 60px; background: #0ea5e9; color: #fff;
+      display: flex; align-items: center; padding: 0 20px; z-index: 10;
+    }
+    .fixed {
+      position: fixed; bottom: 12px; right: 12px; background: #ef4444; color: #fff;
+      padding: 10px 16px; border-radius: 8px; z-index: 10;
+    }
+    section { height: 500px; display: flex; align-items: center; padding: 0 20px; }
+    section:nth-child(odd) { background: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="sticky">Sticky header — should appear exactly once</div>
+  <div class="fixed">Fixed badge</div>
+  <div id="sections"></div>
+  <script>
+    const wrap = document.getElementById('sections');
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement('section');
+      s.textContent = 'Section ' + i + ' — y=' + i * 500;
+      wrap.appendChild(s);
+    }
+  </script>
+</body>
+</html>

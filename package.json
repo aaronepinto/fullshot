@@ -9,11 +9,13 @@
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/gen-icons.mjs",
-    "zip": "npm run build && node build.mjs --zip"
+    "zip": "npm run build && node build.mjs --zip",
+    "e2e": "node tests/e2e.mjs"
   },
   "devDependencies": {
     "@types/chrome": "latest",
     "esbuild": "latest",
+    "puppeteer-core": "^25.7.0",
     "typescript": "latest"
   }
 }
