@@ -18,14 +18,14 @@
   </style>
 </head>
 <body>
-  <div class="sticky">Sticky header — should appear exactly once</div>
+  <div class="sticky">Sticky header - should appear exactly once</div>
   <div class="fixed">Fixed badge</div>
   <div id="sections"></div>
   <script>
     const wrap = document.getElementById('sections');
     for (let i = 0; i < 8; i++) {
       const s = document.createElement('section');
-      s.textContent = 'Section ' + i + ' — y=' + i * 500;
+      s.textContent = 'Section ' + i + ' - y=' + i * 500;
       wrap.appendChild(s);
     }
   </script>

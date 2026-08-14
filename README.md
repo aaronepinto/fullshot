@@ -1,18 +1,18 @@
 # Screencappy 📸
 
-**One-click full page screenshots for Chrome — capture, annotate, export. Free, open source, private by design.**
+**One-click full page screenshots for Chrome - capture, annotate, export. Free, open source, private by design.**
 
-Screencappy is a modern, MIT-licensed alternative to GoFullPage, built for the developer community. Everything that's paid elsewhere — annotation, blur/redaction, emoji, PDF export — is free here, and nothing ever leaves your machine: no account, no cloud, no analytics, no host permissions.
+Screencappy is a modern, MIT-licensed alternative to GoFullPage, built for the developer community. Everything that's paid elsewhere - annotation, blur/redaction, emoji, PDF export - is free here, and nothing ever leaves your machine: no account, no cloud, no analytics, no host permissions.
 
 ## Features
 
 - **One click → full page.** Click the toolbar icon (or `Alt+Shift+P`) and the whole page is captured, including everything below the fold and off to the right.
-- **Three capture modes.** Full page, visible area (`Alt+Shift+V`), or drag-select a region (`Alt+Shift+S`) — you can even scroll mid-selection to grab a region taller than the viewport.
+- **Three capture modes.** Full page, visible area (`Alt+Shift+V`), or drag-select a region (`Alt+Shift+S`) - you can even scroll mid-selection to grab a region taller than the viewport.
 - **Two capture engines.**
-  - **Scroll & stitch** (default): uses only the `activeTab` gesture — the extension requests *zero* host permissions. Handles sticky headers, fixed overlays, lazy-loaded images, scrollbar removal, CSS animations, high-DPI screens, and browser zoom.
+  - **Scroll & stitch** (default): uses only the `activeTab` gesture - the extension requests *zero* host permissions. Handles sticky headers, fixed overlays, lazy-loaded images, scrollbar removal, CSS animations, high-DPI screens, and browser zoom.
   - **Turbo** (opt-in): a one-shot, pixel-perfect capture via the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Requires the optional `debugger` permission, granted only if you enable it in Settings.
-- **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur/pixelate redaction — all vector-based and non-destructive with full undo/redo, zoom, and pan.
-- **Export anywhere.** PNG, JPEG, WebP, PDF (single tall page or A4/Letter pagination — the PDF writer is hand-rolled, zero dependencies), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
+- **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur/pixelate redaction - all vector-based and non-destructive with full undo/redo, zoom, and pan.
+- **Export anywhere.** PNG, JPEG, WebP, PDF (single tall page or A4/Letter pagination - the PDF writer is hand-rolled, zero dependencies), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
 - **Huge pages just work.** The composed image is stored as strips, so pages taller than the browser's canvas limits render fine and exports auto-split into numbered files / extra PDF pages instead of failing.
 - **Local capture history.** Recent captures (with annotations) live in IndexedDB with thumbnails; prune limits are configurable. Nothing syncs anywhere.
 - **Restricted pages degrade gracefully.** `chrome://` pages and the Web Store can't be scripted, so Screencappy falls back to a visible-area capture instead of erroring.
@@ -56,7 +56,7 @@ src/
 
 ## Privacy
 
-Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` — no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine additionally uses `debugger`, and only if you grant it. There is no network code in this extension at all.
+Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` - no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine additionally uses `debugger`, and only if you grant it. There is no network code in this extension at all.
 
 ## License
 

@@ -1,6 +1,6 @@
 /**
  * "Turbo" capture engine: one debugger attach, then CDP Page.captureScreenshot with
- * captureBeyondViewport — no scrolling, no stitching seams, sticky headers render once.
+ * captureBeyondViewport - no scrolling, no stitching seams, sticky headers render once.
  * Requires the optional "debugger" permission (user opts in from Options).
  */
 import { putTile } from './lib/db';

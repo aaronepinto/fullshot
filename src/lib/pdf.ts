@@ -1,6 +1,6 @@
 /**
  * Minimal PDF writer: embeds pre-encoded JPEG pages (DCTDecode), one image per page.
- * Zero dependencies — enough PDF for pixel-perfect screenshot export.
+ * Zero dependencies - enough PDF for pixel-perfect screenshot export.
  */
 export interface PdfPage {
   jpeg: ArrayBuffer;

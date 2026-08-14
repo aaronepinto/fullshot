@@ -149,7 +149,7 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
 }
 
 // ---------------------------------------------------------------------------
-// Engine: scroll & stitch (activeTab only — the privacy-first default)
+// Engine: scroll & stitch (activeTab only - the privacy-first default)
 // ---------------------------------------------------------------------------
 
 interface StitchResult {
@@ -207,7 +207,7 @@ async function stitchCapture(
     const cols = gridPositions(clip.x, clip.w, metrics.vpW, metrics.pageW - metrics.vpW);
     const rows = gridPositions(clip.y, clip.h, metrics.vpH, metrics.pageH - metrics.vpH);
     const total = cols.length * rows.length;
-    if (total > 600) throw new Error(`Page needs ${total} tiles — beyond the safety limit.`);
+    if (total > 600) throw new Error(`Page needs ${total} tiles - beyond the safety limit.`);
 
     let index = 0;
     for (let r = 0; r < rows.length; r++) {
@@ -383,6 +383,6 @@ function badgeFor(tabId: number) {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Test hook: lets the e2e harness drive a capture without a user gesture (the
-// harness grants host permissions in its patched manifest). Inert otherwise —
+// harness grants host permissions in its patched manifest). Inert otherwise -
 // only code running inside the extension's own service worker can reach it.
 (globalThis as { __screencappyStart?: typeof startCapture }).__screencappyStart = startCapture;
