@@ -1,4 +1,4 @@
-/* FullShot editor — dark-first, light via prefers-color-scheme. */
+/* FullShot editor - dark-first, light via prefers-color-scheme. */
 :root {
   color-scheme: dark light;
   --bg: #0b1220;
@@ -133,6 +133,7 @@ button svg[fill="none"] { fill: none; }
 }
 #emojiPicker button { font-size: 20px; padding: 4px; }
 .menu { display: flex; flex-direction: column; min-width: 180px; }
+#ctxMenu { top: 0; right: auto; z-index: 70; min-width: 150px; }
 .menu button { text-align: left; border-radius: 6px; }
 .menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 .actions { display: flex; align-items: center; gap: 4px; position: relative; }
