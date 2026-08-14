@@ -1,7 +1,7 @@
 {
   "name": "fullshot",
   "version": "0.1.0",
-  "description": "FullShot — one-click full page screenshots. Capture, annotate, export. Private by design.",
+  "description": "FullShot - one-click full page screenshots. Capture, annotate, export. Private by design.",
   "private": true,
   "type": "module",
   "scripts": {

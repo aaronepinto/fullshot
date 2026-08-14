@@ -25,7 +25,7 @@ function findChrome() {
     '/usr/bin/chromium',
   ].filter(Boolean);
   const found = candidates.find((p) => existsSync(p));
-  if (!found) throw new Error('Chrome not found — set CHROME=/path/to/chrome');
+  if (!found) throw new Error('Chrome not found - set CHROME=/path/to/chrome');
   return found;
 }
 
@@ -89,11 +89,11 @@ async function main() {
     const [w, h] = [Number(m[1]), Number(m[2])];
     // Fixture: 60px sticky header + 8 × 500px sections = 4060 CSS px, any DPR ≥ 1.
     if (w < 1100) throw new Error(`Composed width ${w} < expected ~1200`);
-    if (h < 4000) throw new Error(`Composed height ${h} < expected ~4060 — stitching incomplete`);
+    if (h < 4000) throw new Error(`Composed height ${h} < expected ~4060 - stitching incomplete`);
 
     await mkdir(`${ROOT}.scratch`, { recursive: true });
     await editor.screenshot({ path: `${ROOT}.scratch/e2e-editor.png` });
-    console.log('✓ e2e passed — full page stitched to', `${w}×${h}`);
+    console.log('✓ e2e passed - full page stitched to', `${w}×${h}`);
   } catch (err) {
     failed = true;
     console.error('✗ e2e failed:', err);
