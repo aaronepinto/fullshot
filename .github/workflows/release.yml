@@ -1,0 +1,74 @@
+# Automated releases via release-please: merges to main with Conventional Commit
+# messages accumulate into a release PR; merging that PR tags a semver release,
+# builds the extension zip, and attaches it to the GitHub Release. Publishing to
+# the Chrome Web Store is opt-in via the PUBLISH_TO_CWS repo variable + secrets.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: rp
+        with:
+          release-type: node
+
+  upload-assets:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Pack
+        run: cd dist && zip -r -X ../fullshot.zip .
+      - name: Attach zip to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ needs.release-please.outputs.tag_name }}" fullshot.zip --clobber
+
+  publish-cws:
+    needs: [release-please, upload-assets]
+    if: needs.release-please.outputs.release_created == 'true' && vars.PUBLISH_TO_CWS == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: Pack
+        run: cd dist && zip -r -X ../fullshot.zip .
+      - name: Upload & publish to Chrome Web Store
+        run: >
+          bunx chrome-webstore-upload-cli@3 upload
+          --source fullshot.zip
+          --extension-id "$EXTENSION_ID"
+          --client-id "$CLIENT_ID"
+          --client-secret "$CLIENT_SECRET"
+          --refresh-token "$REFRESH_TOKEN"
+          --auto-publish
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
