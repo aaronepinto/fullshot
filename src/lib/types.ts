@@ -21,6 +21,13 @@ export interface PageMetrics {
   url: string;
   /** True when the page was taller than the configured capture ceiling and got clipped. */
   truncated: boolean;
+  /**
+   * Visible client area of the scroll container that drives the capture, in viewport
+   * CSS px. Present only when the window barely scrolls and an inner element (Gmail,
+   * Slack, Notion style SPAs) holds the real content. pageW/pageH and scrollX/scrollY
+   * then refer to that container; vpW/vpH stay the window size the screenshots cover.
+   */
+  containerRect?: Rect;
 }
 
 /** One captured viewport-sized (or CDP-clip-sized) piece of the page. */
@@ -31,9 +38,15 @@ export interface Tile {
   /** Position of the tile in CSS pixels, relative to the capture origin. */
   x: number;
   y: number;
-  /** CSS-pixel size of the tile (used to derive the device-pixel scale from the bitmap). */
+  /** CSS-pixel size of the captured bitmap (used to derive the device-pixel scale). */
   cssW: number;
   cssH: number;
+  /**
+   * When set, crop the captured viewport image to this CSS-px rect before placing it
+   * (scroll-container captures: the screenshot is the whole window, the tile is just
+   * the container's visible client area).
+   */
+  crop?: Rect;
   blob: Blob;
 }
 
