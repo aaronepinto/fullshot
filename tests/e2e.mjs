@@ -38,6 +38,83 @@ function findChrome() {
 }
 
 /**
+ * Reads single pixels out of the composed image the editor stored in IndexedDB, one
+ * per fraction of the total height, taken near the right edge so row text never
+ * interferes. Chromium harness only; the Firefox driver checks dimensions alone.
+ * @param {import('puppeteer-core').Page} editor
+ * @param {number[]} fractions
+ * @returns {Promise<{ y: number, rgb: number[] }[]>}
+ */
+function samplePixels(editor, fractions) {
+  return editor.evaluate(async (/** @type {number[]} */ fracs) => {
+    const id = new URLSearchParams(location.search).get('id');
+    const db = await new Promise((resolve, reject) => {
+      const req = indexedDB.open('screencappy');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const strips = await new Promise((resolve, reject) => {
+      const req = /** @type {IDBDatabase} */ (db)
+        .transaction(['strips'], 'readonly')
+        .objectStore('strips')
+        .index('capId')
+        .getAll(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    /** @type {{ index: number, y: number, h: number, blob: Blob }[]} */ (strips).sort(
+      (a, b) => a.index - b.index
+    );
+    const all = /** @type {{ index: number, y: number, h: number, blob: Blob }[]} */ (strips);
+    const height = all.reduce((h, s) => Math.max(h, s.y + s.h), 0);
+    const out = [];
+    for (const fraction of fracs) {
+      const y = Math.min(height - 1, Math.round(height * fraction));
+      const strip = all.find((s) => y >= s.y && y < s.y + s.h);
+      if (!strip) throw new Error(`no strip covers y=${y}`);
+      const bmp = await createImageBitmap(strip.blob);
+      const canvas = new OffscreenCanvas(bmp.width, 1);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('no 2d context');
+      ctx.drawImage(bmp, 0, y - strip.y, bmp.width, 1, 0, 0, bmp.width, 1);
+      const px = ctx.getImageData(Math.round(bmp.width * 0.9), 0, 1, 1).data;
+      bmp.close();
+      out.push({ y, rgb: [px[0], px[1], px[2]] });
+    }
+    return out;
+  }, fractions);
+}
+
+/**
+ * Blank bands mean rows never rendered before the shot; repeated bands mean the
+ * same frame was stitched twice. Both are the exact defects the virtualized
+ * fixture exists to catch.
+ * @param {string} label
+ * @param {import('puppeteer-core').Page} editor
+ * @param {number[]} fractions
+ */
+async function checkSamples(label, editor, fractions) {
+  const samples = await samplePixels(editor, fractions);
+  console.log(
+    `[${label}] pixel samples:`,
+    samples.map((s) => `${s.y}:rgb(${s.rgb})`).join(' ')
+  );
+  for (const s of samples) {
+    if (s.rgb.every((c) => c > 245)) {
+      throw new Error(`[${label}] blank band at y=${s.y}, rows never rendered there`);
+    }
+  }
+  const seen = new Map();
+  for (const s of samples) {
+    const key = s.rgb.join(',');
+    if (seen.has(key)) {
+      throw new Error(`[${label}] y=${s.y} repeats the pixels at y=${seen.get(key)}, duplicated region`);
+    }
+    seen.set(key, s.y);
+  }
+}
+
+/**
  * @param {Browser} browser
  * @param {string} url
  * @param {Scenario} scenario
@@ -77,6 +154,17 @@ async function runScenario(browser, url, scenario) {
 
   console.log(`[${label}] editor reports:`, dims);
   const { w, h } = assertComposed(label, dims, scenario);
+
+  if (scenario.note !== undefined) {
+    const statNote = (await editor.$eval('#statNote', (el) => el.textContent))?.trim() ?? '';
+    if (scenario.note && !statNote.includes(scenario.note)) {
+      throw new Error(`[${label}] Expected a status note containing "${scenario.note}", got "${statNote}"`);
+    }
+    if (!scenario.note && statNote) {
+      throw new Error(`[${label}] Unexpected status note "${statNote}"`);
+    }
+  }
+  if (scenario.samples) await checkSamples(label, editor, scenario.samples);
 
   await mkdir(`${ROOT}.scratch`, { recursive: true });
   await editor.screenshot({ path: `${ROOT}.scratch/e2e-${BROWSER}-${scenario.name}.png` });

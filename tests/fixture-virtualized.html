@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e virtualized fixture</title>
+  <style>
+    /* A LinkedIn/Gemini style virtualized feed: the page is 6000px tall because of the
+       spacer, but only the rows near the viewport exist in the DOM, and they arrive a
+       few hundred ms after the scroll. A capture that shoots on a fixed delay lands on
+       the blank spacer and the tile comes back empty. */
+    html, body { margin: 0; background: #fff; font: 20px/1.4 system-ui, sans-serif; }
+    #feed { position: relative; }
+    .row {
+      position: absolute; left: 0; right: 0; height: 120px; box-sizing: border-box;
+      display: flex; align-items: center; padding: 0 24px; color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+  <div id="feed"></div>
+  <script>
+    const ROWS = 50;
+    const ROW_H = 120;
+    const OVERSCAN = 1;
+    // Longer than the default captureDelayMs (150) on purpose: the scenario only proves
+    // the adaptive settle if a fixed settle would have missed the render.
+    const RENDER_DELAY_MS = 300;
+
+    const feed = document.getElementById('feed');
+    feed.style.height = ROWS * ROW_H + 'px';
+
+    function render() {
+      const first = Math.max(0, Math.floor(window.scrollY / ROW_H) - OVERSCAN);
+      const last = Math.min(
+        ROWS - 1,
+        Math.ceil((window.scrollY + window.innerHeight) / ROW_H) + OVERSCAN
+      );
+      feed.textContent = '';
+      for (let i = first; i <= last; i++) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.top = i * ROW_H + 'px';
+        // Distinct hue per row, so a duplicated or missing region is visible in a pixel
+        // sample: 37 degree steps never repeat across 50 rows.
+        row.style.background = 'hsl(' + ((i * 37) % 360) + ' 70% 60%)';
+        row.textContent = 'Row ' + i + ' at y=' + i * ROW_H;
+        feed.appendChild(row);
+      }
+    }
+
+    let pending = 0;
+    addEventListener('scroll', () => {
+      clearTimeout(pending);
+      pending = setTimeout(render, RENDER_DELAY_MS);
+    });
+    render();
+  </script>
+</body>
+</html>
