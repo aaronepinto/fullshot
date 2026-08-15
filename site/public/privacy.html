@@ -7,8 +7,12 @@
   <meta name="description" content="Screencappy collects nothing. No analytics, no telemetry, no accounts, no cloud storage, and no network code at all. Your screenshots stay on your device." />
   <link rel="canonical" href="https://screencappy.smollet.app/privacy" />
 
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)" />
   <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSerif-Italic.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSans-Variable.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/Newsreader-Regular-Variable.woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 
   <meta property="og:type" content="article" />
@@ -61,6 +65,10 @@
   </script>
 </head>
 <body>
+  <header class="site-header">
+    <a class="wordmark" href="/"><img src="/icon.png" alt="" width="22" height="22" />Screencappy</a>
+    <span class="byline">by <a href="https://smollet.app">Smollet</a></span>
+  </header>
   <main class="prose">
     <nav class="crumbs"><a href="/">Screencappy</a> / Privacy policy</nav>
 
@@ -92,6 +100,7 @@
     <footer>
       <p><a href="/">Screencappy</a> is open source (Apache-2.0). Questions: open an issue on <a href="https://github.com/aaronepinto/smollet-screencappy">GitHub</a>.</p>
       <p><a href="/">Home</a> · <a href="/faq">FAQ</a> · <a href="/gofullpage-alternative">GoFullPage alternative</a> · <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a></p>
+      <p class="colophon">Screencappy, by <a href="https://smollet.app">Smollet</a></p>
     </footer>
   </main>
 </body>
