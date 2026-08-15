@@ -326,7 +326,7 @@ function persistAnnos() {
 
 type Drag =
   | { kind: 'none' }
-  | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number }
+  | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number; moved: boolean }
   | { kind: 'draw'; anno: Anno }
   | { kind: 'crop' }
   | { kind: 'move'; index: number; lastX: number; lastY: number; moved: boolean }
@@ -344,7 +344,7 @@ canvas.addEventListener('pointerdown', (e) => {
     // the very first annotation unselectable.
     (e.button === 0 && (spaceDown || (state.tool === 'select' && topHit(e) < 0 && !handleHit(e))));
   if (wantsPan) {
-    drag = { kind: 'pan', startX: e.clientX, startY: e.clientY, panX: state.pan.x, panY: state.pan.y };
+    drag = { kind: 'pan', startX: e.clientX, startY: e.clientY, panX: state.pan.x, panY: state.pan.y, moved: false };
     canvas.setPointerCapture(e.pointerId);
     return;
   }
@@ -435,6 +435,7 @@ canvas.addEventListener('pointermove', (e) => {
   const p = toImage(e.clientX, e.clientY);
   switch (drag.kind) {
     case 'pan':
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) > 3) drag.moved = true;
       state.pan.x = drag.panX - (e.clientX - drag.startX) / state.zoom;
       state.pan.y = drag.panY - (e.clientY - drag.startY) / state.zoom;
       clampView();
@@ -498,7 +499,11 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 canvas.addEventListener('pointerup', () => {
-  if (drag.kind === 'draw') {
+  if (drag.kind === 'pan' && !drag.moved && state.tool === 'select') {
+    // A click on empty canvas is a deselect, not a zero-length pan.
+    clearSelection();
+    requestRender();
+  } else if (drag.kind === 'draw') {
     const a = drag.anno;
     const b = bounds(a);
     const big = b.w > 3 || b.h > 3 || a.kind === 'pen';
