@@ -54,6 +54,25 @@ interface Snapshot {
   crop: Rect | null;
 }
 
+/**
+ * The open text editor. The draft lives here rather than in the textarea's value,
+ * so nothing that touches the DOM input on its way past can destroy pending text,
+ * and the style is captured at open so what you see is what commits.
+ */
+interface TextEditing {
+  mode: 'create' | 'edit';
+  /** Index of the annotation being re-edited, or -1 while creating. */
+  index: number;
+  /** Anchor in image space. */
+  x: number;
+  y: number;
+  draft: string;
+  color: string;
+  size: number;
+  /** Set only by Escape, so the commit path can tell cancel from close. */
+  cancelled: boolean;
+}
+
 const state = {
   settings: null as Settings | null,
   record: null as CaptureRecord | null,
@@ -61,6 +80,7 @@ const state = {
   annos: [] as Anno[],
   crop: null as Rect | null,
   selection: [] as number[],
+  editing: null as TextEditing | null,
   tool: 'select' as Tool,
   style: { color: '#ef4444', strokeWidth: 6, fontSize: 36, fill: false, emoji: '✅', blurPx: 14 },
   zoom: 1,
@@ -168,6 +188,7 @@ function resizeCanvas() {
 
 function render() {
   resizeCanvas();
+  syncTextOverlay();
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-canvas');
@@ -319,20 +340,23 @@ canvas.addEventListener('pointerdown', (e) => {
     return;
   }
   if (e.button !== 0 || !state.image) return;
-  canvas.setPointerCapture(e.pointerId);
   const p = toImage(e.clientX, e.clientY);
   const st = state.style;
+  // Only gestures that actually drag take the pointer.
+  const capture = () => canvas.setPointerCapture(e.pointerId);
 
   switch (state.tool) {
     case 'select': {
       const h = handleHit(e);
       if (h) {
+        capture();
         pushUndo();
         drag = { kind: 'handle', index: selectedIndex(), id: h.id };
         return;
       }
       const hit = topHit(e);
       if (hit >= 0) {
+        capture();
         selectOnly(hit);
         drag = { kind: 'move', index: hit, lastX: p.x, lastY: p.y, moved: false };
         requestRender();
@@ -340,11 +364,15 @@ canvas.addEventListener('pointerdown', (e) => {
       return;
     }
     case 'crop':
+      capture();
       state.cropDraft = { x: p.x, y: p.y, w: 0, h: 0 };
       drag = { kind: 'crop' };
       hideCropBar();
       return;
     case 'text':
+      // Suppressing the compatibility mousedown means no focus change, so no blur
+      // fires against the editor we are about to open.
+      e.preventDefault();
       openTextEditor(p.x, p.y);
       return;
     case 'emoji': {
@@ -356,11 +384,13 @@ canvas.addEventListener('pointerdown', (e) => {
       return;
     }
     case 'pen':
+      capture();
       drag = { kind: 'draw', anno: { kind: 'pen', points: [p.x, p.y], color: st.color, width: st.strokeWidth } };
       state.draft = drag.anno;
       return;
     case 'arrow':
     case 'line':
+      capture();
       drag = {
         kind: 'draw',
         anno: { kind: state.tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: st.color, width: st.strokeWidth },
@@ -369,6 +399,7 @@ canvas.addEventListener('pointerdown', (e) => {
       return;
     case 'rect':
     case 'ellipse':
+      capture();
       drag = {
         kind: 'draw',
         anno: { kind: state.tool, x: p.x, y: p.y, w: 0, h: 0, color: st.color, width: st.strokeWidth, fill: st.fill },
@@ -376,10 +407,12 @@ canvas.addEventListener('pointerdown', (e) => {
       state.draft = drag.anno;
       return;
     case 'highlight':
+      capture();
       drag = { kind: 'draw', anno: { kind: 'highlight', x: p.x, y: p.y, w: 0, h: 0, color: st.color === '#0f172a' ? '#eab308' : st.color } };
       state.draft = drag.anno;
       return;
     case 'blur':
+      capture();
       drag = { kind: 'draw', anno: { kind: 'blur', x: p.x, y: p.y, w: 0, h: 0, px: st.blurPx } };
       state.draft = drag.anno;
       return;
@@ -538,32 +571,106 @@ viewport.addEventListener(
 
 const textEditor = $('#textEditor');
 const textArea = textEditor.querySelector('textarea')!;
-let textAt = { x: 0, y: 0 };
+/** Screen-space inset from the overlay's corner to the first glyph. */
+const TEXT_INSET = 4;
 
-function openTextEditor(x: number, y: number) {
-  textAt = { x, y };
-  const s = toScreen(x, y);
-  const rect = viewport.getBoundingClientRect();
-  textEditor.hidden = false;
-  textEditor.style.left = `${s.x - rect.left - 4}px`;
-  textEditor.style.top = `${s.y - rect.top - 4}px`;
-  const px = state.style.fontSize * state.zoom;
-  textArea.style.font = TEXT_FONT(px);
-  textArea.style.color = state.style.color;
-  textArea.value = '';
-  autosizeText();
-  setTimeout(() => textArea.focus(), 0);
+type CloseReason = 'enter' | 'blur' | 'escape' | 'tool-change' | 'reopen';
+
+interface OpenTextOptions {
+  /** Index of an existing text annotation to re-edit in place. */
+  index?: number;
+  text?: string;
+  color?: string;
+  size?: number;
 }
 
-function commitText() {
-  const text = textArea.value.trim();
-  textEditor.hidden = true;
-  if (!text) return;
-  pushUndo();
-  state.annos.push({ kind: 'text', x: textAt.x, y: textAt.y, text, color: state.style.color, size: state.style.fontSize });
-  selectOnly(state.annos.length - 1);
-  persistAnnos();
+function openTextEditor(x: number, y: number, opts: OpenTextOptions = {}) {
+  // Whatever was open resolves first. Open and close must never race through the
+  // same hidden flag: that race is what used to swallow every second editor.
+  closeTextEditor('reopen');
+  const editing: TextEditing = {
+    mode: opts.index === undefined ? 'create' : 'edit',
+    index: opts.index ?? -1,
+    x,
+    y,
+    draft: opts.text ?? '',
+    color: opts.color ?? state.style.color,
+    size: opts.size ?? state.style.fontSize,
+    cancelled: false,
+  };
+  state.editing = editing;
+  textEditor.hidden = false;
+  textArea.value = editing.draft;
+  syncTextOverlay();
+  // Synchronous focus: the overlay is already visible, and the pointerdown that
+  // opened it was preventDefault'ed, so nothing takes focus back afterwards.
+  textArea.focus();
+  textArea.setSelectionRange(editing.draft.length, editing.draft.length);
   requestRender();
+}
+
+function closeTextEditor(reason: CloseReason) {
+  const ed = state.editing;
+  if (!ed) return;
+  // Cleared first: hiding the overlay blurs the textarea, and the blur handler has
+  // to find nothing left to do rather than re-enter this function.
+  state.editing = null;
+  textEditor.hidden = true;
+  textArea.value = '';
+  if (reason !== 'escape' && !ed.cancelled) commitText(ed);
+  if (document.activeElement === document.body) canvas.focus();
+  requestRender();
+}
+
+/** Writes an editing session back to the annotation list. */
+function commitText(ed: TextEditing) {
+  const text = ed.draft.trim();
+  if (ed.mode === 'create') {
+    if (!text) {
+      toast('Nothing typed, so no label was added.');
+      return;
+    }
+    pushUndo();
+    state.annos.push({ kind: 'text', x: ed.x, y: ed.y, text, color: ed.color, size: ed.size });
+    selectOnly(state.annos.length - 1);
+    persistAnnos();
+    return;
+  }
+  const a = state.annos[ed.index];
+  if (!a || a.kind !== 'text') return;
+  if (!text) {
+    pushUndo();
+    state.annos.splice(ed.index, 1);
+    clearSelection();
+    persistAnnos();
+    toast('Emptied label removed.');
+    return;
+  }
+  // An unchanged re-edit is not a change: it must not stack an undo entry.
+  if (a.text === text && a.color === ed.color && a.size === ed.size) return;
+  pushUndo();
+  a.text = text;
+  a.color = ed.color;
+  a.size = ed.size;
+  selectOnly(ed.index);
+  persistAnnos();
+}
+
+/**
+ * Repositions and restyles the overlay from the current pan, zoom and captured
+ * style. Called every frame, so zooming, panning, wheeling and resizing all keep
+ * the box on its anchor instead of drifting off the text it is about to become.
+ */
+function syncTextOverlay() {
+  const ed = state.editing;
+  if (!ed) return;
+  const s = toScreen(ed.x, ed.y);
+  const rect = viewport.getBoundingClientRect();
+  textEditor.style.left = `${s.x - rect.left - TEXT_INSET}px`;
+  textEditor.style.top = `${s.y - rect.top - TEXT_INSET}px`;
+  textArea.style.font = TEXT_FONT(ed.size * state.zoom);
+  textArea.style.color = ed.color;
+  autosizeText();
 }
 
 function autosizeText() {
@@ -572,15 +679,33 @@ function autosizeText() {
   textArea.style.width = `${Math.max(60, textArea.scrollWidth + 8)}px`;
   textArea.style.height = `${textArea.scrollHeight}px`;
 }
-textArea.addEventListener('input', autosizeText);
-textArea.addEventListener('blur', commitText);
+
+// Every chrome control is a focus thief. A blur mid-entry used to commit the draft
+// before the control's own handler ran, so the change landed on the wrong annotation,
+// or the deferred focus landed on a hidden element and the editor vanished.
+for (const bar of document.querySelectorAll<HTMLElement>('#tools, #stylebar, .actions, .zoomctl')) {
+  bar.addEventListener('mousedown', (e) => {
+    // Selects are left alone: suppressing their mousedown suppresses the dropdown too.
+    if ((e.target as HTMLElement).closest('select')) return;
+    e.preventDefault();
+  });
+}
+
+textArea.addEventListener('input', () => {
+  if (state.editing) state.editing.draft = textArea.value;
+  autosizeText();
+});
+textArea.addEventListener('blur', () => closeTextEditor('blur'));
 textArea.addEventListener('keydown', (e) => {
-  e.stopPropagation();
+  // Only the keys the editor owns are intercepted. Everything else, Cmd+Z and
+  // Cmd+C included, is left to the textarea and to the browser.
   if (e.key === 'Escape') {
-    textArea.value = '';
-    textEditor.hidden = true;
-  } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-    commitText();
+    e.preventDefault();
+    if (state.editing) state.editing.cancelled = true;
+    closeTextEditor('escape');
+  } else if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    closeTextEditor('enter');
   }
 });
 
@@ -1008,6 +1133,7 @@ interface TestApi {
     pan: { x: number; y: number };
     crop: Rect | null;
     selection: number[];
+    editing: TextEditing | null;
     annos: Anno[];
     undoDepth: number;
     redoDepth: number;
@@ -1025,6 +1151,7 @@ const testApi: TestApi = {
     pan: { ...state.pan },
     crop: state.crop && { ...state.crop },
     selection: [...state.selection],
+    editing: state.editing && { ...state.editing },
     annos: structuredClone(state.annos),
     undoDepth: state.undoStack.length,
     redoDepth: state.redoStack.length,
