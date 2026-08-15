@@ -1002,8 +1002,10 @@ function setTool(tool: Tool) {
  * a lie about what a change is going to affect.
  */
 function syncStyleBar() {
-  const sel = state.annos[selectedIndex()];
-  const subject = sel ? sel.kind : state.tool;
+  // While text is being typed the draft is the subject, whatever is still selected
+  // behind it, because that is what a style change would apply to.
+  const sel = state.editing ? undefined : state.annos[selectedIndex()];
+  const subject = state.editing ? 'text' : sel ? sel.kind : state.tool;
   $('#ctlWidth').hidden = !WIDTH_SUBJECTS.includes(subject);
   $('#ctlFont').hidden = !FONT_SUBJECTS.includes(subject);
   $('#ctlFill').hidden = !FILL_SUBJECTS.includes(subject);
