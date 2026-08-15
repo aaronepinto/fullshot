@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screencappy: full page screenshots for Chrome</title>
+  <meta name="description" content="One-click full page screenshots. Capture, annotate, and export as PNG, JPEG, WebP, or PDF. Free, open source, and private by design." />
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: #0b1220; --raised: #111a2e; --border: #24324d;
+      --text: #e2e8f0; --dim: #94a3b8; --accent: #38bdf8; --accent-strong: #0ea5e9;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --bg: #f1f5f9; --raised: #fff; --border: #cbd5e1; --text: #0f172a; --dim: #64748b; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 16px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif;
+    }
+    main { max-width: 880px; margin: 0 auto; padding: 0 24px 80px; }
+    .hero { text-align: center; padding: 88px 0 40px; }
+    .hero h1 { font-size: 44px; margin: 18px 0 10px; letter-spacing: -0.5px; }
+    .hero .tag { font-size: 20px; color: var(--dim); max-width: 560px; margin: 0 auto; }
+    .cta { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 12px 26px; border-radius: 12px; text-decoration: none;
+      font-weight: 700; border: 1px solid var(--border); color: var(--text);
+    }
+    .btn.primary { background: var(--accent-strong); border-color: transparent; color: #fff; }
+    .btn.primary:hover { background: var(--accent); }
+    .lens { width: 96px; height: 96px; border-radius: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 48px; }
+    .card { background: var(--raised); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+    .card h3 { margin: 0 0 6px; font-size: 16px; }
+    .card p { margin: 0; color: var(--dim); font-size: 14.5px; }
+    .keys { text-align: center; margin-top: 56px; color: var(--dim); }
+    kbd {
+      background: var(--raised); border: 1px solid var(--border); border-bottom-width: 2px;
+      border-radius: 6px; padding: 2px 7px; font-size: 13px; color: var(--text);
+    }
+    footer { text-align: center; margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--dim); font-size: 14px; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <img class="lens" src="icon.png" alt="Screencappy logo" width="96" height="96" />
+      <h1>Screencappy</h1>
+      <p class="tag">One-click full page screenshots for Chrome. Capture, annotate, and export. Free, open source, and private by design.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/OWNER/screencappy/releases/latest">Download for Chrome</a>
+        <a class="btn" href="https://github.com/OWNER/screencappy">View source on GitHub</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h3>Whole page, one click</h3><p>Everything below the fold and off to the right, stitched pixel-perfectly. Sticky headers appear exactly once.</p></div>
+      <div class="card"><h3>Private by design</h3><p>No account, no cloud, no analytics, no host permissions, and zero network code. Captures never leave your device.</p></div>
+      <div class="card"><h3>A real editor, free</h3><p>Crop, arrows, shapes, pen, highlighter, text, emoji, and blur redaction with full undo and redo.</p></div>
+      <div class="card"><h3>Export anywhere</h3><p>PNG, JPEG, WebP, PDF (single page or paginated), or straight to your clipboard. Custom filename templates.</p></div>
+      <div class="card"><h3>Turbo engine</h3><p>Optional one-shot capture through the DevTools protocol: faster, seamless, immune to tricky layouts.</p></div>
+      <div class="card"><h3>Huge pages just work</h3><p>Strip-based compositing sidesteps canvas limits; giant captures split automatically instead of failing.</p></div>
+    </section>
+
+    <p class="keys">
+      Full page <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> &nbsp;·&nbsp;
+      Visible area <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> &nbsp;·&nbsp;
+      Select a region <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
+    </p>
+
+    <footer>
+      <p>MIT licensed. Built for the developer community.</p>
+      <p><a href="/privacy.html">Privacy policy</a> · <a href="https://github.com/OWNER/screencappy">GitHub</a></p>
+    </footer>
+  </main>
+</body>
+</html>
