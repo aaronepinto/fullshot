@@ -20,6 +20,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
+      - name: Unit tests
+        run: bun run test
       - name: Build
         run: bun run build
       - name: Pack
@@ -28,3 +30,21 @@ jobs:
         with:
           name: fullshot-${{ github.sha }}
           path: fullshot.zip
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: End-to-end capture test (real Chrome)
+        run: bun run e2e
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}

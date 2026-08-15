@@ -5,7 +5,7 @@
  */
 import { getSettings } from './lib/settings';
 import { putCapture, putTile, pruneHistory } from './lib/db';
-import { dataUrlToBlob, makeRecord, newCaptureId } from './lib/capture-common';
+import { dataUrlToBlob, gridPositions, makeRecord, newCaptureId } from './lib/capture-common';
 import { hasDebuggerPermission, turboCapture } from './cdp';
 import type {
   CaptureContentMsg,
@@ -244,18 +244,6 @@ async function stitchCapture(
   } finally {
     await sendToTab(tabId, { type: 'fs:restore' }).catch(() => undefined);
   }
-}
-
-/** Scroll stops covering [start, start+span) in viewport-size steps, clamped to what the page can scroll to. */
-function gridPositions(start: number, span: number, step: number, maxScroll: number): number[] {
-  const positions: number[] = [];
-  const limit = Math.max(0, maxScroll);
-  for (let v = start; v < start + span; v += step) {
-    const clamped = Math.max(0, Math.min(v, limit));
-    if (positions[positions.length - 1] !== clamped) positions.push(clamped);
-    if (clamped >= limit && v > start) break;
-  }
-  return positions.length ? positions : [0];
 }
 
 async function captureVisibleSingle(
