@@ -5,6 +5,7 @@ const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)
 const FIELDS: (keyof Settings)[] = [
   'engine',
   'captureDelayMs',
+  'captureStartDelaySeconds',
   'prescroll',
   'hideSticky',
   'freezeAnimations',
