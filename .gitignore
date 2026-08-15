@@ -1,6 +1,8 @@
 node_modules/
 dist/
+dist-firefox/
 fullshot.zip
+fullshot-firefox.zip
 *.log
 .DS_Store
 .scratch/

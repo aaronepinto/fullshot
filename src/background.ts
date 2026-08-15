@@ -20,6 +20,7 @@ import {
   turboCapture,
   turboMobileCapture,
 } from './cdp';
+import { requestDebuggerPermission } from './lib/debugger-permission';
 import { pdfFilename } from './lib/filename';
 import type {
   CaptureContentMsg,
@@ -156,7 +157,7 @@ async function startCapture(
     // Mobile emulation needs CDP; requesting before any other await keeps the
     // context menu click's user gesture valid (a no-op prompt when already granted).
     if (mobile) {
-      const granted = await chrome.permissions.request({ permissions: ['debugger'] });
+      const granted = await requestDebuggerPermission();
       if (!granted) throw new Error('Mobile capture needs the debugger permission.');
     }
     const settings = await getSettings();
@@ -291,7 +292,7 @@ async function savePdf(tab: chrome.tabs.Tab): Promise<void> {
   const badge = badgeFor(tabId);
   try {
     if (isRestrictedUrl(tab.url ?? '')) throw new Error('This page cannot be printed to PDF.');
-    const granted = await chrome.permissions.request({ permissions: ['debugger'] });
+    const granted = await requestDebuggerPermission();
     if (!granted) throw new Error('Searchable PDF needs the debugger permission.');
     await badge.set('…');
     const base64 = await printToPdf(tabId);
