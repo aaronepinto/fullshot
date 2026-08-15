@@ -8,7 +8,7 @@
     "build": "node scripts/gen-icons.mjs && node build.mjs",
     "build:firefox": "node scripts/gen-icons.mjs && node build.mjs --target=firefox",
     "watch": "node build.mjs --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
     "icons": "node scripts/gen-icons.mjs",
     "zip": "npm run build && node build.mjs --zip",
     "zip:firefox": "npm run build:firefox && node build.mjs --target=firefox --zip",
