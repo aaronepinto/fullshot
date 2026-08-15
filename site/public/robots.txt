@@ -1,0 +1,91 @@
+# Screencappy: https://screencappy.smollet.app
+#
+# This site wants to be crawled, indexed, cited, and trained on. It is a small
+# static site for a free MIT licensed browser extension, there is nothing
+# private on it, and nothing here is disallowed for anyone.
+#
+# Note for whoever maintains the Cloudflare zone: a managed robots.txt that
+# blocks AI crawlers can be prepended to whatever this origin serves, in which
+# case shipping this file alone does not take effect. Check the live response
+# after deploying, and if AI crawler blocks appear, turn off the managed
+# robots.txt setting in the Cloudflare dashboard under Security Settings.
+
+# --- OpenAI ---
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# --- Anthropic ---
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# --- Google ---
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# --- Microsoft ---
+User-agent: bingbot
+Allow: /
+
+# --- Perplexity ---
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# --- Apple ---
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+# --- Meta ---
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# --- Other AI and dataset crawlers ---
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+# --- Everyone else ---
+User-agent: *
+Allow: /
+
+Sitemap: https://screencappy.smollet.app/sitemap.xml

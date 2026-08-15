@@ -1,0 +1,120 @@
+/* Screencappy site. One stylesheet, dark first, no external requests. */
+
+:root {
+  color-scheme: dark light;
+  --bg: #0b1220;
+  --raised: #111a2e;
+  --border: #24324d;
+  --text: #e2e8f0;
+  --dim: #94a3b8;
+  --accent: #38bdf8;
+  --accent-strong: #0ea5e9;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f1f5f9;
+    --raised: #fff;
+    --border: #cbd5e1;
+    --text: #0f172a;
+    --dim: #64748b;
+    /* The dark mode accent is too pale for link text on a light background. */
+    --accent: #0369a1;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.6 -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+
+main { max-width: 880px; margin: 0 auto; padding: 0 24px 80px; }
+main.prose { max-width: 760px; padding-top: 32px; line-height: 1.7; }
+
+a { color: var(--accent); }
+
+/* Hero */
+.hero { text-align: center; padding: 88px 0 40px; }
+.hero h1 { font-size: 44px; margin: 18px 0 10px; letter-spacing: -0.5px; }
+.hero .tag { font-size: 20px; color: var(--dim); max-width: 560px; margin: 0 auto; }
+.lens { width: 96px; height: 96px; border-radius: 24px; }
+
+.cta { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-block; padding: 12px 26px; border-radius: 12px; text-decoration: none;
+  font-weight: 700; border: 1px solid var(--border); color: var(--text);
+}
+.btn.primary { background: var(--accent-strong); border-color: transparent; color: #fff; }
+.btn.primary:hover { background: var(--accent); }
+
+/* Quick answer block under the hero */
+.answer { margin-top: 48px; }
+.answer h2 { font-size: 22px; margin: 0 0 12px; }
+.answer p { margin: 0 0 14px; max-width: 68ch; }
+
+/* Feature cards */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px; margin-top: 48px;
+}
+.card { background: var(--raised); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+.card h3 { margin: 0 0 6px; font-size: 16px; }
+.card p { margin: 0; color: var(--dim); font-size: 14.5px; }
+
+/* Keyboard shortcut line */
+.keys { text-align: center; margin-top: 56px; color: var(--dim); }
+kbd {
+  background: var(--raised); border: 1px solid var(--border); border-bottom-width: 2px;
+  border-radius: 6px; padding: 2px 7px; font-size: 13px; color: var(--text);
+}
+
+/* Site navigation */
+.subnav { text-align: center; margin-top: 56px; color: var(--dim); font-size: 15px; }
+.subnav a { margin: 0 4px; }
+
+.crumbs { font-size: 14px; color: var(--dim); margin-bottom: 24px; }
+
+/* Long form content */
+.prose h1 { font-size: 34px; letter-spacing: -0.5px; margin: 0 0 8px; }
+.prose h2 { font-size: 22px; margin: 40px 0 10px; }
+.prose h3 { font-size: 17px; margin: 28px 0 6px; }
+.prose p, .prose li { max-width: 68ch; }
+.prose ul, .prose ol { padding-left: 22px; }
+.prose li { margin-bottom: 6px; }
+
+.verified { color: var(--dim); font-size: 14px; margin: 0 0 28px; }
+.lede { font-size: 18px; }
+
+code {
+  background: var(--raised); border: 1px solid var(--border); border-radius: 5px;
+  padding: 1px 6px; font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+pre {
+  background: var(--raised); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; font-size: 13.5px; }
+
+/* Tables scroll inside their own box rather than the page */
+.table-wrap { overflow-x: auto; margin: 18px 0; }
+table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 15px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--dim); font-weight: 700; }
+tbody th { color: var(--text); }
+
+.note {
+  background: var(--raised); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; margin: 24px 0; color: var(--dim); font-size: 15px;
+}
+.note p { margin: 0 0 10px; }
+.note p:last-child { margin: 0; }
+
+footer {
+  text-align: center; margin-top: 72px; padding-top: 24px;
+  border-top: 1px solid var(--border); color: var(--dim); font-size: 14px;
+}
+.prose footer { text-align: left; margin-top: 56px; }

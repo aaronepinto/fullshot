@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to Take a Full Page Screenshot in Chrome (2 Ways)</title>
+  <meta name="description" content="Capture an entire web page in Chrome, including everything below the fold. Step by step with Chrome's built-in DevTools command, where it falls short, and how to do it in one click with a free extension." />
+  <link rel="canonical" href="https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome" />
+
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Screencappy" />
+  <meta property="og:url" content="https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome" />
+  <meta property="og:title" content="How to take a full page screenshot in Chrome" />
+  <meta property="og:description" content="Two ways to capture an entire web page in Chrome: the built-in DevTools command, and a one-click free extension. With the limits of each stated plainly." />
+  <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome#webpage",
+        "url": "https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome",
+        "name": "How to take a full page screenshot in Chrome",
+        "description": "Step by step instructions for capturing an entire web page in Chrome using the built-in DevTools command, where that method falls short, and how to capture in one click with a free open source extension.",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "about": { "@id": "https://screencappy.smollet.app/#software" },
+        "breadcrumb": { "@id": "https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Screencappy",
+            "item": "https://screencappy.smollet.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "How to take a full page screenshot in Chrome"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main class="prose">
+    <nav class="crumbs"><a href="/">Screencappy</a> / How to take a full page screenshot in Chrome</nav>
+
+    <h1>How to take a full page screenshot in Chrome</h1>
+
+    <p class="lede">There are two reliable ways to capture an entire web page in Chrome, including
+    everything below the fold. Chrome has a built-in command hidden in DevTools that needs no
+    extension, and it works well for a quick, plain PNG. If you need annotation, PDF output, or a
+    page that does anything unusual, an extension does the job in one click.</p>
+
+    <p>Both methods are covered below, in that order, with the limits of each stated plainly.</p>
+
+    <h2>Method 1: Chrome's built-in DevTools command</h2>
+
+    <p>Chrome can capture a full page on its own, with nothing installed. The command lives in the
+    DevTools command menu, which is why most people never find it.</p>
+
+    <ol>
+      <li>Open the page you want to capture.</li>
+      <li>Open DevTools with <kbd>F12</kbd>, or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>I</kbd> on
+      Windows and Linux, or <kbd>Cmd</kbd>+<kbd>Option</kbd>+<kbd>I</kbd> on macOS.</li>
+      <li>Open the command menu with <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, or
+      <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> on macOS.</li>
+      <li>Type <code>screenshot</code>.</li>
+      <li>Choose <strong>Capture full size screenshot</strong>.</li>
+    </ol>
+
+    <p>Chrome downloads a PNG of the whole page. The same menu also offers
+    <strong>Capture node screenshot</strong>, which captures whichever element is selected in the
+    Elements panel, and <strong>Capture area screenshot</strong> for a drag-selected region.</p>
+
+    <h3>Where the built-in method falls down</h3>
+
+    <p>It is genuinely useful and it is free, so try it first. These are the cases where it stops
+    being enough:</p>
+
+    <ul>
+      <li><strong>No annotation.</strong> You get a raw PNG. Arrows, highlights, text and redaction
+      all have to happen somewhere else.</li>
+      <li><strong>No PDF.</strong> PNG only. Printing to PDF is a separate flow with different
+      pagination and different results.</li>
+      <li><strong>Sticky and fixed elements.</strong> A sticky header or a floating cookie banner
+      can end up repeated down the image, or stamped across the middle of it.</li>
+      <li><strong>Very tall pages.</strong> Beyond a certain height the capture can come back
+      truncated or blank, because the rendering has hard size limits.</li>
+      <li><strong>Web apps that scroll inside a panel.</strong> If the page body barely scrolls and
+      the real content lives in an inner container, as in many mail and chat apps, the capture is
+      effectively just the viewport.</li>
+      <li><strong>Repetition.</strong> Four keystrokes and a menu search, every single time.</li>
+    </ul>
+
+    <h2>Method 2: capture in one click with Screencappy</h2>
+
+    <p><a href="/">Screencappy</a> is a free, open source, MIT licensed Chrome extension that
+    captures the full page in one click and hands it straight to an editor. It runs entirely on your
+    own device: no account, no cloud upload, no analytics, and no host permissions, so it cannot read
+    a page until you invoke it.</p>
+
+    <ol>
+      <li>Install it. Store listings are not live yet, so download the zip from the
+      <a href="https://github.com/aaronepinto/smollet-screencappy/releases/latest">latest release</a>,
+      unzip it, open <code>chrome://extensions</code>, turn on Developer mode, click
+      <strong>Load unpacked</strong>, and select the unzipped folder.</li>
+      <li>Open the page you want to capture.</li>
+      <li>Click the toolbar icon, or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>.</li>
+      <li>The capture opens in an editor tab. Annotate it if you want to.</li>
+      <li>Export as PNG, JPEG, WebP or PDF, or copy it straight to the clipboard.</li>
+    </ol>
+
+    <p>The same build runs unchanged in Edge, Opera and Brave. A Firefox build is in the repository
+    and runs the scroll and stitch engine.</p>
+
+    <h2>How to screenshot only part of a page</h2>
+
+    <p>Three of Screencappy's four capture modes take less than the whole page:</p>
+
+    <ul>
+      <li><strong>Visible area</strong> (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>): exactly what
+      is on screen right now.</li>
+      <li><strong>Select a region</strong> (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>): drag a
+      box. You can scroll mid-selection, so the region can be taller than the viewport.</li>
+      <li><strong>Pick an element</strong>: hover to highlight the node under the cursor, the way
+      the DevTools inspector does, then click to capture exactly that element. A scrollable
+      container comes back with all of its content, and an iframe comes back in full rather than
+      just the part visible inside its box.</li>
+    </ul>
+
+    <h2>How to save a full page screenshot as a PDF</h2>
+
+    <p>In the editor, choose PDF as the export format. You can produce one tall page that matches
+    the capture, or paginate it to A4 or Letter.</p>
+
+    <p>If what you actually need is a PDF whose text can be selected and searched, rather than a
+    picture of the page, right-click and choose <strong>Save as searchable PDF</strong>. That prints
+    the live page through the Chrome DevTools Protocol into a real text PDF. It uses the optional
+    <code>debugger</code> permission, which is requested the first time you use it and never
+    otherwise.</p>
+
+    <h2>How to capture a page that is extremely long</h2>
+
+    <p>Very tall pages are where most screenshot tools break, because browsers cap how large a single
+    canvas can be. Screencappy holds the composed image as strips rather than one canvas, so pages
+    past that ceiling still render. If the result is too large for one file, the export splits into
+    numbered files or additional PDF pages instead of failing.</p>
+
+    <p>For pages that load more content as you scroll, turn on auto-load in Settings. Screencappy
+    keeps scrolling until the page stops growing, within a height and time budget, and captures what
+    has loaded.</p>
+
+    <h2>How to capture a page at mobile width</h2>
+
+    <p>Right-click and choose the mobile capture option. Screencappy reflows the page to a
+    phone-width layout using device emulation, captures the full mobile page, and leaves your actual
+    window at its normal size. The emulated width is configurable in Settings.</p>
+
+    <h2>Which method should you use?</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">If you want to</th><th scope="col">Use</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Grab one plain PNG and never think about it again</td><td>Chrome DevTools</td></tr>
+          <tr><td>Capture regularly, from a keyboard shortcut</td><td>Screencappy</td></tr>
+          <tr><td>Annotate, highlight, or blur something sensitive</td><td>Screencappy</td></tr>
+          <tr><td>Export a PDF, paginated or searchable</td><td>Screencappy</td></tr>
+          <tr><td>Capture a very tall page, or one with a sticky header</td><td>Screencappy</td></tr>
+          <tr><td>Capture a single element, an iframe, or an inner scroll panel</td><td>Screencappy</td></tr>
+          <tr><td>Install nothing at all</td><td>Chrome DevTools</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>More detail on permissions, storage and export formats is on the <a href="/faq">FAQ</a>. If
+    you arrived here looking for a replacement for a paid tool, the
+    <a href="/gofullpage-alternative">GoFullPage alternative</a> page has the comparison.</p>
+
+    <footer>
+      <p><a href="/">Screencappy home</a> · <a href="/faq">FAQ</a> ·
+      <a href="/gofullpage-alternative">GoFullPage alternative</a> ·
+      <a href="/privacy">Privacy policy</a> ·
+      <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
+    </footer>
+  </main>
+</body>
+</html>

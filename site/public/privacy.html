@@ -3,32 +3,69 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Screencappy privacy policy</title>
-  <style>
-    :root {
-      color-scheme: dark light;
-      --bg: #0b1220; --text: #e2e8f0; --dim: #94a3b8; --accent: #38bdf8; --border: #24324d;
-    }
-    @media (prefers-color-scheme: light) {
-      :root { --bg: #f8fafc; --text: #0f172a; --dim: #64748b; --border: #cbd5e1; }
-    }
-    body {
-      margin: 0; background: var(--bg); color: var(--text);
-      font: 16px/1.7 -apple-system, "Segoe UI", system-ui, sans-serif;
-    }
-    main { max-width: 720px; margin: 0 auto; padding: 56px 24px 80px; }
-    h1 { letter-spacing: -0.5px; }
-    h2 { margin-top: 36px; font-size: 20px; }
-    a { color: var(--accent); }
-    .updated { color: var(--dim); font-size: 14px; }
-    ul { padding-left: 22px; }
-    footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--dim); font-size: 14px; }
-  </style>
+  <title>Privacy Policy | Screencappy Screenshot Extension</title>
+  <meta name="description" content="Screencappy collects nothing. No analytics, no telemetry, no accounts, no cloud storage, and no network code at all. Your screenshots stay on your device." />
+  <link rel="canonical" href="https://screencappy.smollet.app/privacy" />
+
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Screencappy" />
+  <meta property="og:url" content="https://screencappy.smollet.app/privacy" />
+  <meta property="og:title" content="Screencappy privacy policy" />
+  <meta property="og:description" content="Screencappy collects nothing. No analytics, no accounts, no cloud, and no network code. Captures are stored locally and never transmitted." />
+  <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://screencappy.smollet.app/privacy#webpage",
+        "url": "https://screencappy.smollet.app/privacy",
+        "name": "Screencappy privacy policy",
+        "description": "Screencappy collects nothing. No analytics, no telemetry, no accounts, no cloud storage, and no network code. Captures are stored locally in your browser and never transmitted.",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "about": { "@id": "https://screencappy.smollet.app/#software" },
+        "breadcrumb": { "@id": "https://screencappy.smollet.app/privacy#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://screencappy.smollet.app/privacy#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Screencappy",
+            "item": "https://screencappy.smollet.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Privacy policy"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
-  <main>
+  <main class="prose">
+    <nav class="crumbs"><a href="/">Screencappy</a> / Privacy policy</nav>
+
     <h1>Screencappy privacy policy</h1>
-    <p class="updated">Last updated: August 15, 2026</p>
+    <p class="verified">Last updated: August 15, 2026</p>
 
     <h2>The short version</h2>
     <p>Screencappy collects nothing. There is no network code in the extension at all: no analytics, no telemetry, no accounts, no cloud storage, and no third-party services.</p>
@@ -45,7 +82,7 @@
       <li><strong>downloads</strong>: saves exported images and PDFs to your computer.</li>
       <li><strong>storage, unlimitedStorage</strong>: stores settings and local capture history.</li>
       <li><strong>contextMenus</strong>: adds the right-click capture options.</li>
-      <li><strong>debugger (optional)</strong>: powers the opt-in Turbo capture engine. It is requested only if you enable Turbo in settings, and it is used solely to take the screenshot.</li>
+      <li><strong>debugger (optional)</strong>: powers the opt-in Turbo capture engine, mobile-width capture, and searchable PDF export. It is requested only if you enable those features, and it is used solely to take the screenshot.</li>
     </ul>
     <p>Screencappy requests no host permissions and cannot read any page until you invoke it.</p>
 
@@ -54,6 +91,7 @@
 
     <footer>
       <p><a href="/">Screencappy</a> is open source (MIT). Questions: open an issue on <a href="https://github.com/aaronepinto/smollet-screencappy">GitHub</a>.</p>
+      <p><a href="/">Home</a> · <a href="/faq">FAQ</a> · <a href="/gofullpage-alternative">GoFullPage alternative</a> · <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a></p>
     </footer>
   </main>
 </body>

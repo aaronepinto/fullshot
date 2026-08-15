@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  URLs are extensionless on purpose. The Workers assets server redirects
+  /faq.html to /faq with a 307, so the extensionless form is the one that
+  returns 200 and the one every canonical tag on this site points at.
+
+  priority and changefreq are omitted deliberately: Google ignores both.
+
+  lastmod is used, so it has to be true. Update the date for a page when that
+  page's content actually changes, and do not bump every date at once.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://screencappy.smollet.app/</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+  <url>
+    <loc>https://screencappy.smollet.app/gofullpage-alternative</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+  <url>
+    <loc>https://screencappy.smollet.app/faq</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+  <url>
+    <loc>https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+  <url>
+    <loc>https://screencappy.smollet.app/privacy</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+</urlset>

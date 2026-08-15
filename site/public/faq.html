@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screencappy FAQ: Install, Permissions, Privacy, Exports</title>
+  <meta name="description" content="Answers about Screencappy, the free open source full page screenshot extension for Chrome: what it costs, what permissions it needs, where captures are stored, which formats it exports, and which browsers it supports." />
+  <link rel="canonical" href="https://screencappy.smollet.app/faq" />
+
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Screencappy" />
+  <meta property="og:url" content="https://screencappy.smollet.app/faq" />
+  <meta property="og:title" content="Screencappy FAQ" />
+  <meta property="og:description" content="Install, permissions, privacy, capture engines, export formats and browser support for the free open source full page screenshot extension." />
+  <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": "https://screencappy.smollet.app/faq#faqpage",
+    "url": "https://screencappy.smollet.app/faq",
+    "name": "Screencappy frequently asked questions",
+    "dateModified": "2026-08-15",
+    "inLanguage": "en",
+    "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+    "about": { "@id": "https://screencappy.smollet.app/#software" },
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Screencappy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screencappy is a free, open source Chrome extension that captures full page screenshots in one click, lets you annotate them, and exports them as PNG, JPEG, WebP or PDF. It is MIT licensed, runs entirely on your own device, and requires no account."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much does Screencappy cost?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screencappy is free, and there is no paid tier. Features that are commonly paid upgrades in other screenshot extensions, including the annotation editor, blur and pixelate redaction, emoji stamps and PDF export, are all included at no cost."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Screencappy open source?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Screencappy is released under the MIT licence and the complete source is public at github.com/aaronepinto/smollet-screencappy."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do my screenshots get uploaded anywhere?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Screencappy contains no network code whatsoever, so captures cannot leave your device. Images are composed, annotated and exported entirely in your browser, and recent captures are stored locally in IndexedDB on your own machine. There is no account, no cloud service, no analytics and no telemetry."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What permissions does Screencappy need?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screencappy requests activeTab, scripting, storage, downloads, contextMenus and unlimitedStorage, and no host permissions. Because there are no host permissions, the extension has no standing ability to read any page: access is granted by your click, for that one tab, at that moment, and it ends there."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does Screencappy ask for the debugger permission?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It does not, unless you turn on the optional Turbo capture engine or use one of the two features built on it. Turbo uses the Chrome DevTools Protocol to capture the whole page in a single shot, and the debugger permission is what the protocol requires. If you never enable Turbo, the permission is never requested, and the default capture engine works without it."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is the difference between the two capture engines?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The default engine scrolls the page and stitches the tiles together, and the optional Turbo engine captures everything in one shot through the DevTools Protocol. Scroll and stitch needs no extra permissions and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What formats can Screencappy export?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PNG, JPEG, WebP, PDF, and directly to the clipboard. PDFs can be exported as a single tall page or paginated to A4 or Letter, and filenames can be generated from templates such as domain, date and time."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Screencappy make a PDF with searchable text?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, with the optional Turbo permission enabled. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Screencappy work on very long pages?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The composed image is held as strips rather than one large canvas, which sidesteps the browser's canvas size limits, so pages taller than those limits render correctly. Captures too large for a single file split automatically into numbered files, or into additional PDF pages, rather than failing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I edit or annotate a screenshot in Screencappy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, and the editor is included free. It offers crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or pixelate redaction. Every annotation is vector based and non-destructive, with full undo and redo, zoom and pan, so you can reopen a capture later and move or delete something you drew."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I capture just part of a page?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Screencappy has four capture modes: full page (Alt+Shift+P), the visible area (Alt+Shift+V), drag select a region (Alt+Shift+S), and pick a single element. During a region selection you can scroll, which lets you select an area taller than the viewport."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Screencappy capture a single element or an iframe?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The element picker works like the one in DevTools: hover to highlight the node under the cursor, then click to capture exactly that element. A scrollable container is captured with all of its scrollable content, and an iframe is captured in full rather than only the part visible inside its box."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Screencappy work in web apps that scroll inside a panel, like Gmail?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. When the window itself barely scrolls, Screencappy detects the inner container that holds the real content and captures all of it, instead of returning a single viewport."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Screencappy capture infinite scroll pages?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, if you turn on auto-load in Settings. Screencappy then keeps scrolling to the bottom until the page stops growing, bounded by a maximum capture height and a time budget, and captures the fully loaded page."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can Screencappy capture a page at mobile width?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same optional debugger permission as Turbo."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I delay a capture?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Set a start delay in Settings, or right-click and choose a delayed capture, and the toolbar badge counts down before the shot is taken. This is what you want when the thing you are capturing only exists while a menu is open or an element is hovered."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where are my past captures stored?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Locally, in your browser's IndexedDB, with thumbnails, and nothing syncs anywhere. Recent captures keep their annotations so you can reopen and re-export them, and you can configure how many are kept before older ones are pruned."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which browsers does Screencappy support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Chrome, Edge, Opera and Brave run the same build with every feature available, and a Firefox build is in the repository. The Firefox build runs the scroll and stitch engine only, because Firefox has no debugger API, so Turbo, mobile-width capture and searchable PDF export are unavailable there."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I install Screencappy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Download the zip from the latest release on GitHub, unzip it, open chrome://extensions, turn on Developer mode, click Load unpacked, and select the unzipped folder. Store listings are not live yet, so this is the install path today, and you can also build from source with bun install and bun run build."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does Screencappy work on chrome:// pages and the Chrome Web Store?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Not fully, and no extension can. Chrome blocks all extensions from running scripts on chrome:// pages and on the Web Store itself, so on those pages Screencappy falls back to capturing the visible area rather than showing an error."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Screencappy a good alternative to GoFullPage?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screencappy covers the same core job, full page capture in one click, and adds annotation, redaction and PDF export at no cost, with no account and no host permissions. Whether it is the right replacement depends on which specific features you rely on, so there is a detailed comparison on the GoFullPage alternative page."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Who makes Screencappy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Screencappy is built and maintained by Aaron Pinto and is developed in the open on GitHub. Issues and pull requests are welcome at github.com/aaronepinto/smollet-screencappy."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <main class="prose">
+    <nav class="crumbs"><a href="/">Screencappy</a> / FAQ</nav>
+
+    <h1>Frequently asked questions</h1>
+    <p class="verified">Last verified: August 15, 2026</p>
+
+    <h2>What is Screencappy?</h2>
+    <p>Screencappy is a free, open source Chrome extension that captures full page screenshots in one click, lets you annotate them, and exports them as PNG, JPEG, WebP or PDF. It is MIT licensed, runs entirely on your own device, and requires no account.</p>
+
+    <h2>How much does Screencappy cost?</h2>
+    <p>Screencappy is free, and there is no paid tier. Features that are commonly paid upgrades in other screenshot extensions, including the annotation editor, blur and pixelate redaction, emoji stamps and PDF export, are all included at no cost. There is no upgrade prompt in the product because there is nothing to upgrade to.</p>
+
+    <h2>Is Screencappy open source?</h2>
+    <p>Yes. Screencappy is released under the MIT licence and the complete source is public at <a href="https://github.com/aaronepinto/smollet-screencappy">github.com/aaronepinto/smollet-screencappy</a>. You can read it, build it yourself, fork it, or use the code in your own project under the terms of the licence.</p>
+
+    <h2>Do my screenshots get uploaded anywhere?</h2>
+    <p>No. Screencappy contains no network code whatsoever, so captures cannot leave your device. Images are composed, annotated and exported entirely in your browser, and recent captures are stored locally in IndexedDB on your own machine. There is no account, no cloud service, no analytics and no telemetry.</p>
+
+    <h2>What permissions does Screencappy need?</h2>
+    <p>Screencappy requests <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>downloads</code>, <code>contextMenus</code> and <code>unlimitedStorage</code>, and no host permissions. Because there are no host permissions, the extension has no standing ability to read any page: access is granted by your click, for that one tab, at that moment, and it ends there.</p>
+
+    <h2>Why does Screencappy ask for the debugger permission?</h2>
+    <p>It does not, unless you turn on the optional Turbo capture engine or use one of the two features built on it. Turbo uses the Chrome DevTools Protocol to capture the whole page in a single shot, and the <code>debugger</code> permission is what the protocol requires. If you never enable Turbo, the permission is never requested, and the default capture engine works without it.</p>
+
+    <h2>What is the difference between the two capture engines?</h2>
+    <p>The default engine scrolls the page and stitches the tiles together, and the optional Turbo engine captures everything in one shot through the DevTools Protocol. Scroll and stitch needs no extra permissions and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom. Turbo has no stitching seams and is immune to awkward fixed layouts, at the cost of the optional <code>debugger</code> permission.</p>
+
+    <h2>What formats can Screencappy export?</h2>
+    <p>PNG, JPEG, WebP, PDF, and directly to the clipboard. PDFs can be exported as a single tall page or paginated to A4 or Letter, and filenames can be generated from templates such as domain, date and time.</p>
+
+    <h2>Can Screencappy make a PDF with searchable text?</h2>
+    <p>Yes, with the optional Turbo permission enabled. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page.</p>
+
+    <h2>Does Screencappy work on very long pages?</h2>
+    <p>Yes. The composed image is held as strips rather than one large canvas, which sidesteps the browser's canvas size limits, so pages taller than those limits render correctly. Captures too large for a single file split automatically into numbered files, or into additional PDF pages, rather than failing.</p>
+
+    <h2>Can I edit or annotate a screenshot in Screencappy?</h2>
+    <p>Yes, and the editor is included free. It offers crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or pixelate redaction. Every annotation is vector based and non-destructive, with full undo and redo, zoom and pan, so you can reopen a capture later and move or delete something you drew.</p>
+
+    <h2>Can I capture just part of a page?</h2>
+    <p>Yes. Screencappy has four capture modes: full page (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>), the visible area (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>), drag select a region (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>), and pick a single element. During a region selection you can scroll, which lets you select an area taller than the viewport.</p>
+
+    <h2>Can Screencappy capture a single element or an iframe?</h2>
+    <p>Yes. The element picker works like the one in DevTools: hover to highlight the node under the cursor, then click to capture exactly that element. A scrollable container is captured with all of its scrollable content, and an iframe is captured in full rather than only the part visible inside its box.</p>
+
+    <h2>Does Screencappy work in web apps that scroll inside a panel, like Gmail?</h2>
+    <p>Yes. When the window itself barely scrolls, Screencappy detects the inner container that holds the real content and captures all of it, instead of returning a single viewport.</p>
+
+    <h2>Can Screencappy capture infinite scroll pages?</h2>
+    <p>Yes, if you turn on auto-load in Settings. Screencappy then keeps scrolling to the bottom until the page stops growing, bounded by a maximum capture height and a time budget, and captures the fully loaded page.</p>
+
+    <h2>Can Screencappy capture a page at mobile width?</h2>
+    <p>Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same optional <code>debugger</code> permission as Turbo.</p>
+
+    <h2>Can I delay a capture?</h2>
+    <p>Yes. Set a start delay in Settings, or right-click and choose a delayed capture, and the toolbar badge counts down before the shot is taken. This is what you want when the thing you are capturing only exists while a menu is open or an element is hovered.</p>
+
+    <h2>Where are my past captures stored?</h2>
+    <p>Locally, in your browser's IndexedDB, with thumbnails, and nothing syncs anywhere. Recent captures keep their annotations so you can reopen and re-export them, and you can configure how many are kept before older ones are pruned.</p>
+
+    <h2>Which browsers does Screencappy support?</h2>
+    <p>Chrome, Edge, Opera and Brave run the same build with every feature available, and a Firefox build is in the repository. The Firefox build runs the scroll and stitch engine only, because Firefox has no debugger API, so Turbo, mobile-width capture and searchable PDF export are unavailable there. Store listings are not live yet.</p>
+
+    <h2>How do I install Screencappy?</h2>
+    <p>Download the zip from the <a href="https://github.com/aaronepinto/smollet-screencappy/releases/latest">latest release</a> on GitHub, unzip it, open <code>chrome://extensions</code>, turn on Developer mode, click Load unpacked, and select the unzipped folder. Store listings are not live yet, so this is the install path today, and you can also build from source with <code>bun install</code> and <code>bun run build</code>.</p>
+
+    <h2>Does Screencappy work on chrome:// pages and the Chrome Web Store?</h2>
+    <p>Not fully, and no extension can. Chrome blocks all extensions from running scripts on <code>chrome://</code> pages and on the Web Store itself, so on those pages Screencappy falls back to capturing the visible area rather than showing an error.</p>
+
+    <h2>Is Screencappy a good alternative to GoFullPage?</h2>
+    <p>Screencappy covers the same core job, full page capture in one click, and adds annotation, redaction and PDF export at no cost, with no account and no host permissions. Whether it is the right replacement depends on which specific features you rely on, so there is a detailed comparison on the <a href="/gofullpage-alternative">GoFullPage alternative page</a>.</p>
+
+    <h2>Who makes Screencappy?</h2>
+    <p>Screencappy is built and maintained by Aaron Pinto and is developed in the open on GitHub. Issues and pull requests are welcome at <a href="https://github.com/aaronepinto/smollet-screencappy">github.com/aaronepinto/smollet-screencappy</a>.</p>
+
+    <footer>
+      <p><a href="/">Screencappy home</a> · <a href="/gofullpage-alternative">GoFullPage alternative</a> ·
+      <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a> ·
+      <a href="/privacy">Privacy policy</a> ·
+      <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
+    </footer>
+  </main>
+</body>
+</html>
