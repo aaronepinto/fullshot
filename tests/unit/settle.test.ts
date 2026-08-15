@@ -1,32 +1,51 @@
 import { describe, expect, test } from 'bun:test';
-import { SETTLE, intersectsViewport, shouldKeepSettling } from '../../src/lib/capture-common';
+import {
+  SETTLE,
+  intersectsViewport,
+  settleWatchMs,
+  shouldKeepSettling,
+} from '../../src/lib/capture-common';
 
 const quiet = SETTLE.quietFrames;
+const window0 = SETTLE.minWatchMs;
 
 describe('shouldKeepSettling', () => {
-  test('keeps watching until the minimum window, even on a quiet page', () => {
-    expect(shouldKeepSettling(quiet, 0, 0)).toBe(true);
-    expect(shouldKeepSettling(quiet, SETTLE.minWatchMs - 1, SETTLE.minWatchMs - 1)).toBe(true);
+  test('keeps watching until the window is up, even on a quiet page', () => {
+    expect(shouldKeepSettling(quiet, 0, 0, window0)).toBe(true);
+    expect(shouldKeepSettling(quiet, window0 - 1, window0 - 1, window0)).toBe(true);
   });
 
-  test('stops once the page has been quiet past the minimum window', () => {
-    expect(shouldKeepSettling(quiet, SETTLE.minWatchMs, SETTLE.minWatchMs)).toBe(false);
+  test('stops once the page has been quiet past the window', () => {
+    expect(shouldKeepSettling(quiet, window0, window0, window0)).toBe(false);
   });
 
   test('keeps waiting while rows are still streaming in', () => {
     // Every row resets the frame count; the gap between two of them does not.
-    expect(shouldKeepSettling(0, 0, SETTLE.minWatchMs + 100)).toBe(true);
-    expect(shouldKeepSettling(quiet, SETTLE.quietMs - 1, SETTLE.minWatchMs + 100)).toBe(true);
-    expect(shouldKeepSettling(quiet, SETTLE.quietMs, SETTLE.minWatchMs + 100)).toBe(false);
+    expect(shouldKeepSettling(0, 0, window0 + 100, window0)).toBe(true);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs - 1, window0 + 100, window0)).toBe(true);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs, window0 + 100, window0)).toBe(false);
   });
 
   test('gives up at the hard cap so a ticker cannot stall the capture', () => {
-    expect(shouldKeepSettling(0, 0, SETTLE.maxWaitMs)).toBe(false);
-    expect(shouldKeepSettling(quiet, SETTLE.quietMs, SETTLE.maxWaitMs)).toBe(false);
+    expect(shouldKeepSettling(0, 0, SETTLE.maxWaitMs, SETTLE.maxWaitMs)).toBe(false);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs, SETTLE.maxWaitMs, SETTLE.maxWaitMs)).toBe(false);
+  });
+});
+
+describe('settleWatchMs', () => {
+  test('a page that has never reacted late pays the minimum', () => {
+    expect(settleWatchMs(0)).toBe(SETTLE.minWatchMs);
+    expect(settleWatchMs(SETTLE.minWatchMs - SETTLE.latencyMargin - 1)).toBe(SETTLE.minWatchMs);
   });
 
-  test('the minimum window stays under the captureVisibleTab throttle gap', () => {
-    expect(SETTLE.minWatchMs).toBeLessThan(550);
+  test('a slow page pulls the window out past its own latency', () => {
+    const latency = 500;
+    expect(settleWatchMs(latency)).toBe(latency + SETTLE.latencyMargin);
+    expect(settleWatchMs(latency)).toBeGreaterThan(latency);
+  });
+
+  test('never past the hard cap', () => {
+    expect(settleWatchMs(5000)).toBe(SETTLE.maxWaitMs);
   });
 });
 
