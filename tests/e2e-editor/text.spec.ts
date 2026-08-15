@@ -158,3 +158,85 @@ test.describe('Item 1: text editor state machine', () => {
     expect(Math.abs((annos[0]?.y ?? 0) - 200)).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('Item 2: style capture and toolbar focus safety', () => {
+  test('changing the size mid-entry commits at the new size', async ({ editor, page }) => {
+    await editor.tool('text');
+    await editor.click(200, 200);
+    await page.keyboard.type('sized');
+    await page.selectOption('#fontSize', '56');
+    await page.keyboard.press('Enter');
+
+    const annos = await editor.annos();
+    expect(annos).toHaveLength(1);
+    expect(annos[0]?.size).toBe(56);
+  });
+
+  test('changing the colour mid-entry commits once, in the new colour', async ({ editor, page }) => {
+    await editor.tool('text');
+    await editor.click(200, 200);
+    await page.keyboard.type('coloured');
+    await page.click('.swatch[title="#22c55e"]');
+    await page.keyboard.press('Enter');
+
+    const state = await editor.state();
+    expect(state.annos).toHaveLength(1);
+    expect(state.annos[0]?.color).toBe('#22c55e');
+    expect(state.undoDepth).toBe(1);
+  });
+
+  test('style controls never take focus from the open editor', async ({ editor, page }) => {
+    await editor.tool('text');
+    await editor.click(200, 200);
+    await page.keyboard.type('focus');
+
+    await page.click('.swatch[title="#3b82f6"]');
+    expect(await editor.activeTestId()).toBe('text-input');
+    await page.selectOption('#fontSize', '24');
+    expect(await editor.activeTestId()).toBe('text-input');
+    await page.click('#zoomIn');
+    expect(await editor.activeTestId()).toBe('text-input');
+    expect((await editor.state()).editing?.draft).toBe('focus');
+  });
+
+  test('switching tools commits the open editor', async ({ editor, page }) => {
+    await editor.tool('text');
+    await editor.click(200, 200);
+    await page.keyboard.type('committed');
+    await editor.tool('rect');
+
+    const state = await editor.state();
+    expect(state.annos).toHaveLength(1);
+    expect(state.annos[0]?.text).toBe('committed');
+    expect(state.tool).toBe('rect');
+    expect(state.editing).toBeNull();
+  });
+
+  test('the style bar reflects the selected annotation', async ({ editor, page }) => {
+    await editor.tool('rect');
+    await editor.drag([100, 100], [300, 250]);
+    await page.keyboard.press('Escape');
+    await page.selectOption('#strokeWidth', '16');
+    await editor.drag([400, 100], [600, 250]);
+
+    await editor.tool('select');
+    await editor.click(100, 100);
+    await expect(page.locator('#strokeWidth')).toHaveValue('6');
+    await editor.click(400, 100);
+    await expect(page.locator('#strokeWidth')).toHaveValue('16');
+  });
+
+  test('a style control applies to the selection in one undo entry', async ({ editor, page }) => {
+    await editor.tool('rect');
+    await editor.drag([100, 100], [300, 250]);
+    await editor.tool('select');
+    await editor.click(100, 100);
+
+    const before = (await editor.state()).undoDepth;
+    await page.selectOption('#strokeWidth', '10');
+
+    const state = await editor.state();
+    expect(state.annos[0]?.width).toBe(10);
+    expect(state.undoDepth).toBe(before + 1);
+  });
+});
