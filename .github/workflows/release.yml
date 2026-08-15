@@ -40,10 +40,21 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
+      # Every build target renders the icons in a real browser first.
+      - uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        id: chrome
+        with:
+          chrome-version: stable
       - run: bun install --frozen-lockfile
       - run: bun run build
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
       - run: bun run build:firefox
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
       - run: bun run build:store-fallback
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
       - name: Pack
         run: |
           (cd dist && zip -r -X ../screencappy.zip .)
@@ -69,8 +80,14 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
+      - uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        id: chrome
+        with:
+          chrome-version: stable
       - run: bun install --frozen-lockfile
       - run: bun run build:store-fallback
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
       - name: Pack
         run: cd dist-store-fallback && zip -r -X ../screencappy-store.zip .
       - name: Upload & publish to Chrome Web Store
