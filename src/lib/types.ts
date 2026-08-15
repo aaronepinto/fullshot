@@ -76,6 +76,11 @@ export interface CaptureRecord {
   truncated: boolean;
   /** Region of the page this capture covers, in CSS pixels relative to the document. */
   clip: Rect;
+  /**
+   * Set when the capture is complete but not what the user asked for, with the reason
+   * to show in the editor: a page whose custom scrolling blocked the full-page pass.
+   */
+  notice?: string;
   thumb?: Blob;
 }
 
@@ -86,12 +91,22 @@ export type CaptureContentMsg =
   | { type: 'fs:prepare'; hideSticky: boolean; freezeAnimations: boolean }
   /** autoLoadMaxHeight, when set, runs the infinite-scroll auto-load loop first (CSS px ceiling). */
   | { type: 'fs:prescroll'; stepY: number; maxY: number; autoLoadMaxHeight?: number }
+  /** maxY is the bottom of the region to capture: how far the page has to be able to scroll. */
+  | { type: 'fs:probeScroll'; maxY: number }
   | { type: 'fs:scrollTo'; x: number; y: number; settleMs: number; hideFixed: boolean }
   | { type: 'fs:restore' };
 
 export interface ScrollResult {
   x: number;
   y: number;
+}
+
+/** Verdict of the pre-capture scroll probe on pages that drive their own scrolling. */
+export interface ScrollProbe {
+  /** The page will not scroll at all: only the visible viewport can be captured. */
+  blocked: boolean;
+  /** Scrolling was restored (an inner scroller was adopted, or the root was unlocked). */
+  recovered: boolean;
 }
 
 /** Messages content scripts send to the background. */

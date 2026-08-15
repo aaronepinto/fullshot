@@ -6,13 +6,24 @@
  */
 import {
   AUTO_LOAD,
+  HIJACK,
   MAX_SCAN_NODES,
+  SETTLE,
   hasFixedBackground,
+  intersectsViewport,
+  movedEnough,
   pickDominantScroller,
   shouldContinueAutoLoad,
+  shouldKeepSettling,
   walkShadowTree,
 } from '../lib/capture-common';
-import type { CaptureContentMsg, PageMetrics, Rect, ScrollResult } from '../lib/types';
+import type {
+  CaptureContentMsg,
+  PageMetrics,
+  Rect,
+  ScrollProbe,
+  ScrollResult,
+} from '../lib/types';
 
 interface SavedInline {
   el: HTMLElement;
@@ -38,6 +49,8 @@ interface SavedInline {
   let containerEl: HTMLElement | null = null;
   /** Set when the picked element is a same-origin iframe: scrolling happens in here. */
   let frameDoc: Document | null = null;
+  /** Scroller the hijack probe recovered; measure() keeps using it for the whole run. */
+  let adoptedScroller: HTMLElement | null = null;
 
   const scroller = () =>
     frameDoc
@@ -60,9 +73,8 @@ interface SavedInline {
     frameDoc = null;
     containerEl = usePicked
       ? w.__screencappyPickedEl!
-      : rawH - window.innerHeight < 200
-        ? findScrollContainer()
-        : null;
+      : (adoptedScroller ??
+        (rawH - window.innerHeight < 200 ? findScrollContainer() : null));
     // A picked same-origin iframe scrolls inside its own document: the frame's
     // scrollingElement is the scroller and its full content size is the page.
     if (containerEl instanceof HTMLIFrameElement) {
@@ -119,7 +131,7 @@ interface SavedInline {
     };
   }
 
-  function findScrollContainer(): HTMLElement | null {
+  function findScrollContainer(ignoreOverflow = false): HTMLElement | null {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
     const minArea = vpW * vpH * 0.4;
@@ -139,7 +151,7 @@ interface SavedInline {
         clientHeight: ch,
       });
     }
-    return pickDominantScroller(candidates, vpW, vpH)?.el ?? null;
+    return pickDominantScroller(candidates, vpW, vpH, ignoreOverflow)?.el ?? null;
   }
 
   // contentDocument is null for cross-origin frames; sandboxed ones can also throw.
@@ -257,6 +269,12 @@ interface SavedInline {
     else s.el.style.removeProperty(s.prop);
   }
 
+  /** Rolls every inline override made since `mark` back, newest first. */
+  function unwindInline(mark: number) {
+    for (let i = savedInline.length - 1; i >= mark; i--) applySaved(savedInline[i]!);
+    savedInline.length = mark;
+  }
+
   async function prescroll(stepY: number, maxY: number) {
     // Quick pass down the page to trigger lazy loading, bounded to ~50 stops.
     const step = Math.max(stepY, Math.ceil(maxY / 50));
@@ -291,14 +309,175 @@ interface SavedInline {
     }
   }
 
+  /** Sets an offset, gives the page two frames, and reports where it actually landed. */
+  async function tryScroll(el: Element, y: number): Promise<number> {
+    el.scrollTop = y;
+    await nextFrame();
+    await nextFrame();
+    return el.scrollTop;
+  }
+
+  /** True when el or one of its ancestors is glued to the viewport. */
+  function viewportGlued(el: Element): boolean {
+    for (let n: Element | null = el; n; n = n.parentElement) {
+      const pos = getComputedStyle(n).position;
+      if (pos === 'fixed' || pos === 'sticky') return true;
+    }
+    return false;
+  }
+
+  /**
+   * Elements hit-tested across the viewport that have to move when the given scroller
+   * scrolls. html and body always move with the document, so they say nothing about
+   * what is painted and are left out. For the window, viewport-glued elements are left
+   * out too; for a candidate container, only its own descendants count. An empty list
+   * therefore means nothing on screen can move, however far the offset travels.
+   */
+  function anchors(container: Element | null): { el: Element; top: number }[] {
+    const out: { el: Element; top: number }[] = [];
+    for (const fx of HIJACK.anchorXs) {
+      for (const fy of HIJACK.anchorYs) {
+        const el = document.elementFromPoint(window.innerWidth * fx, window.innerHeight * fy);
+        if (!el || el === document.body || el === document.documentElement) continue;
+        if (container ? !container.contains(el) : viewportGlued(el)) continue;
+        if (out.some((a) => a.el === el)) continue;
+        out.push({ el, top: el.getBoundingClientRect().top });
+      }
+    }
+    return out;
+  }
+
+  /** True when at least one anchor moved: what the user sees really did change. */
+  function contentMoved(before: { el: Element; top: number }[], commanded: number): boolean {
+    return before.some(
+      (a) => a.el.isConnected && movedEnough(commanded, a.top - a.el.getBoundingClientRect().top)
+    );
+  }
+
+  /** Drops the root-level styles that stop a document from scrolling. */
+  function unlockRoots() {
+    for (const el of [document.documentElement, document.body]) {
+      if (!el) continue;
+      setInline(el, 'position', 'static');
+      setInline(el, 'overflow', 'visible');
+      setInline(el, 'height', 'auto');
+    }
+  }
+
+  /**
+   * Checks the page really scrolls before the tile loop commits to a grid. Pages driven
+   * by custom scroll libraries keep a tall scrollHeight while the content is moved with
+   * transforms, so every tile would come back holding the same frame. Recovery is tried
+   * first (an inner element that scrolls programmatically, then lifting the root scroll
+   * locks) and only counts when the picture on screen actually changes.
+   */
+  async function probeScroll(maxY: number): Promise<ScrollProbe> {
+    const se = scroller();
+    const target = Math.min(window.innerHeight, maxY - window.innerHeight);
+    if (target < HIJACK.minOverflow) return { blocked: false, recovered: false };
+
+    if (await scrollWorks(se, null, target)) return { blocked: false, recovered: false };
+
+    // Custom scroll libraries lock their container with overflow hidden, which still
+    // scrolls when scrollTop is set, so an inner scroller is worth a try even though
+    // the dominant-scroller pass (which needs the overflow opt-in) found nothing.
+    const inner = findScrollContainer(true);
+    if (inner && inner !== se) {
+      const from = { x: inner.scrollLeft, y: inner.scrollTop };
+      if (await scrollWorks(inner, inner, target)) {
+        adoptedScroller = inner;
+        originalScroll = from;
+        return { blocked: false, recovered: true };
+      }
+    }
+
+    // Last resort: lift the root scroll locks. Unwound right away when it does not
+    // help, so a blocked page is still shot with its own layout intact.
+    const mark = savedInline.length;
+    unlockRoots();
+    if (await scrollWorks(se, null, target)) return { blocked: false, recovered: true };
+    unwindInline(mark);
+    return { blocked: true, recovered: false };
+  }
+
+  /**
+   * Scrolls `el` by `target` and puts it back, reporting whether both the offset and
+   * the content on screen actually moved. Requiring the content to move is what catches
+   * the pages that keep a tall scrollHeight for a spacer while pinning what is painted.
+   */
+  async function scrollWorks(el: Element, container: Element | null, target: number): Promise<boolean> {
+    const from = el.scrollTop;
+    const before = anchors(container);
+    const reached = await tryScroll(el, from + target);
+    const ok = movedEnough(target, reached - from) && contentMoved(before, target);
+    await tryScroll(el, from);
+    return ok;
+  }
+
+  /**
+   * Counts DOM mutations landing inside the viewport. Off-screen churn (a ticker, an
+   * analytics beacon rewriting a hidden node) must not hold the capture up, and only
+   * the first few records of a batch are inspected so a huge batch stays cheap.
+   */
+  function watchMutations(): { readonly count: number; stop: () => void } {
+    let count = 0;
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const inViewport = (node: Node): boolean => {
+      const el = node instanceof Element ? node : node.parentElement;
+      return !!el && intersectsViewport(el.getBoundingClientRect(), vpW, vpH);
+    };
+    const obs = new MutationObserver((records) => {
+      const limit = Math.min(records.length, SETTLE.maxRecordsPerBatch);
+      for (let i = 0; i < limit; i++) {
+        const rec = records[i]!;
+        // Rows arriving in a virtualized list are added nodes; for anything else the
+        // mutated element itself is the thing that has to be on screen.
+        if (rec.addedNodes.length > 0) {
+          for (let j = 0; j < rec.addedNodes.length; j++) {
+            if (inViewport(rec.addedNodes[j]!)) {
+              count++;
+              return;
+            }
+          }
+        } else if (inViewport(rec.target)) {
+          count++;
+          return;
+        }
+      }
+    });
+    const opts = { subtree: true, childList: true, attributes: true, characterData: true };
+    obs.observe(document.documentElement, opts);
+    if (frameDoc) obs.observe(frameDoc.documentElement, opts);
+    return {
+      get count() {
+        return count;
+      },
+      stop: () => obs.disconnect(),
+    };
+  }
+
   async function scrollTo(x: number, y: number, settleMs: number, hideFixed: boolean): Promise<ScrollResult> {
     setFixedHidden(hideFixed);
     const s = scroller();
+    // Watching starts before the scroll so renders landing during settleMs count too.
+    const watch = watchMutations();
+    const startedAt = Date.now();
     s.scrollLeft = x;
     s.scrollTop = y;
     await nextFrame();
     await nextFrame();
     if (settleMs > 0) await sleep(settleMs);
+    // settleMs is the floor; virtualized feeds render on a timer well after it, so the
+    // shot waits for the viewport to hold still for two frames (or for the hard cap).
+    let seen = watch.count;
+    let quiet = 0;
+    while (shouldKeepSettling(quiet, Date.now() - startedAt)) {
+      await nextFrame();
+      quiet = watch.count === seen ? quiet + 1 : 0;
+      seen = watch.count;
+    }
+    watch.stop();
     return { x: s.scrollLeft, y: s.scrollTop };
   }
 
@@ -314,6 +493,7 @@ interface SavedInline {
     s.scrollTop = originalScroll.y;
     containerEl = null;
     frameDoc = null;
+    adoptedScroller = null;
     delete w.__screencappyPickedEl;
   }
 
@@ -336,6 +516,8 @@ interface SavedInline {
         await prescroll(msg.stepY, maxY);
         return { ok: true };
       }
+      case 'fs:probeScroll':
+        return probeScroll(msg.maxY);
       case 'fs:scrollTo':
         return scrollTo(msg.x, msg.y, msg.settleMs, msg.hideFixed);
       case 'fs:restore':
