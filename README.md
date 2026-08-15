@@ -64,7 +64,7 @@ Requires Chrome 116 or newer, or any Chromium browser of the same vintage.
 | Engine | How it works | Permissions | Best for |
 | :-- | :-- | :-- | :-- |
 | **Scroll and stitch** (default) | Scrolls the page tile by tile and stitches the frames. Handles sticky headers and fixed overlays (including inside open shadow DOM), parallax `background-attachment: fixed` backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens, and browser zoom. | `activeTab` only, **zero host permissions** | Everyday use, and anyone who wants the extension to hold no standing access |
-| **Turbo** (opt in) | One shot through the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Also powers mobile width capture and searchable PDF export. | Adds the optional `debugger` permission, granted only when you enable it in Settings | Very long pages, and pages that fight the scroll loop |
+| **Turbo** (opt in) | One shot through the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Also powers mobile width capture and searchable PDF export. | Uses the `debugger` permission; Chrome shows a banner whenever it is attached | Very long pages, and pages that fight the scroll loop |
 
 ## 🌐 Browser support
 
@@ -124,7 +124,7 @@ Zero runtime dependencies. TypeScript, bundled by esbuild, Manifest V3.
 src/
   manifest.json          MV3 manifest (version stamped from package.json at build time)
   background.ts          Service worker: gestures, capture orchestration, editor tab
-  cdp.ts                 Turbo engine (chrome.debugger and CDP, optional permission)
+  cdp.ts                 Turbo engine (chrome.debugger and CDP)
   content/capture.ts     Injected on demand: measures, neutralizes sticky, fixed and
                          animated elements, drives the scroll loop, restores the page
   content/select.ts      Region selection overlay (shadow DOM, scroll through)

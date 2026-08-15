@@ -9,8 +9,7 @@ const chromeManifest = {
   minimum_chrome_version: '116',
   offline_enabled: true,
   background: { service_worker: 'background.js' },
-  permissions: ['activeTab', 'scripting'],
-  optional_permissions: ['debugger'],
+  permissions: ['activeTab', 'scripting', 'debugger'],
 };
 
 describe('toFirefoxManifest', () => {
@@ -24,6 +23,7 @@ describe('toFirefoxManifest', () => {
     expect(out.minimum_chrome_version).toBeUndefined();
     expect(out.offline_enabled).toBeUndefined();
     expect(out.optional_permissions).toBeUndefined();
+    expect(out.permissions).toEqual(['activeTab', 'scripting']);
   });
 
   test('keeps non-debugger optional permissions', () => {

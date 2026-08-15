@@ -8,6 +8,9 @@ export function toFirefoxManifest(manifest) {
   out.background = { scripts: ['background.js'] };
   delete out.minimum_chrome_version;
   delete out.offline_enabled;
+  if (Array.isArray(out.permissions)) {
+    out.permissions = out.permissions.filter((p) => p !== 'debugger');
+  }
   if (Array.isArray(out.optional_permissions)) {
     out.optional_permissions = out.optional_permissions.filter((p) => p !== 'debugger');
     if (out.optional_permissions.length === 0) delete out.optional_permissions;

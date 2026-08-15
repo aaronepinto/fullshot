@@ -29,20 +29,26 @@
     "storage",
     "downloads",
     "contextMenus",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "debugger"
   ],
-  "optional_permissions": ["debugger"],
   "commands": {
     "capture-full": {
-      "suggested_key": { "default": "Alt+Shift+P" },
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
       "description": "Capture full page"
     },
     "capture-visible": {
-      "suggested_key": { "default": "Alt+Shift+V" },
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
       "description": "Capture visible area"
     },
     "capture-selection": {
-      "suggested_key": { "default": "Alt+Shift+S" },
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
       "description": "Capture a selected region"
     },
     "capture-element": {
