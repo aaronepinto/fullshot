@@ -17,9 +17,7 @@ const PROTOCOL = '1.3';
 /** CSS-px height per CDP shot; keeps each PNG well under renderer texture limits. */
 const SEGMENT_H = 4000;
 
-export async function hasDebuggerPermission(): Promise<boolean> {
-  return chrome.permissions.contains({ permissions: ['debugger'] });
-}
+export { hasDebuggerPermission } from './lib/debugger-permission';
 
 /**
  * Prints the page to a real PDF with selectable, searchable text via Page.printToPDF.

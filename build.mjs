@@ -1,10 +1,18 @@
 import * as esbuild from 'esbuild';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { toFirefoxManifest } from './scripts/firefox-manifest.mjs';
 
 const watch = process.argv.includes('--watch');
 const zip = process.argv.includes('--zip');
-const outdir = 'dist';
+const targetArg = process.argv.find((a) => a.startsWith('--target='));
+const buildTarget = targetArg ? targetArg.slice('--target='.length) : 'chrome';
+if (buildTarget !== 'chrome' && buildTarget !== 'firefox') {
+  console.error(`Unknown --target=${buildTarget}, expected chrome or firefox`);
+  process.exit(1);
+}
+const outdir = buildTarget === 'firefox' ? 'dist-firefox' : 'dist';
+const zipName = buildTarget === 'firefox' ? 'screencappy-firefox.zip' : 'screencappy.zip';
 
 const entries = {
   background: 'src/background.ts',
@@ -34,8 +42,9 @@ const ctx = await esbuild.context({
 async function copyStatic() {
   // The manifest version is stamped from package.json so release-please owns versioning.
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-  const manifest = JSON.parse(await readFile('src/manifest.json', 'utf8'));
+  let manifest = JSON.parse(await readFile('src/manifest.json', 'utf8'));
   manifest.version = pkg.version;
+  if (buildTarget === 'firefox') manifest = toFirefoxManifest(manifest);
   await writeFile(`${outdir}/manifest.json`, JSON.stringify(manifest, null, 2));
   await cp('src/editor/editor.html', `${outdir}/editor.html`);
   await cp('src/editor/editor.css', `${outdir}/editor.css`);
@@ -47,12 +56,12 @@ async function copyStatic() {
 if (watch) {
   await copyStatic();
   await ctx.watch();
-  console.log('watching… load the dist/ folder as an unpacked extension');
+  console.log(`watching… load the ${outdir}/ folder as an unpacked extension`);
 } else {
   await ctx.rebuild();
   await copyStatic();
   await ctx.dispose();
   if (zip) {
-    execFileSync('zip', ['-r', '-X', '../screencappy.zip', '.'], { cwd: outdir, stdio: 'inherit' });
+    execFileSync('zip', ['-r', '-X', `../${zipName}`, '.'], { cwd: outdir, stdio: 'inherit' });
   }
 }

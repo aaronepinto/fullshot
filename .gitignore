@@ -1,6 +1,8 @@
 node_modules/
 dist/
+dist-firefox/
 screencappy.zip
+screencappy-firefox.zip
 *.log
 .DS_Store
 .scratch/

@@ -6,10 +6,12 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/gen-icons.mjs && node build.mjs",
+    "build:firefox": "node scripts/gen-icons.mjs && node build.mjs --target=firefox",
     "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/gen-icons.mjs",
     "zip": "npm run build && node build.mjs --zip",
+    "zip:firefox": "npm run build:firefox && node build.mjs --target=firefox --zip",
     "e2e": "node tests/e2e.mjs",
     "test": "bun test tests/unit --coverage"
   },
