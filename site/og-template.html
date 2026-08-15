@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy Open Graph card</title>
+  <!--
+    Source for site/public/og.png. Rendered at exactly 1200x630 by
+    scripts/gen-og.mjs, which swaps the icon placeholder below for
+    src/icons/icon128.png inlined as a data URI, so the card needs no network at
+    render time. Keep the placeholder token out of this comment: the script
+    substitutes it textually.
+
+    Regenerate with: node scripts/gen-og.mjs
+  -->
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { width: 1200px; height: 630px; }
+
+    body {
+      background: #0b1220;
+      color: #e2e8f0;
+      font: 16px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Accent wash behind the mark, and a hard accent rule along the bottom. */
+    .glow {
+      position: absolute;
+      top: -260px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 700px;
+      background: radial-gradient(closest-side, rgba(14, 165, 233, 0.28), rgba(14, 165, 233, 0));
+    }
+
+    .rule {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 10px;
+      background: #0ea5e9;
+    }
+
+    .card {
+      position: relative;
+      text-align: center;
+      padding: 0 80px;
+    }
+
+    /* Rendered at the source icon's native 128px so it stays crisp. */
+    .icon {
+      width: 128px;
+      height: 128px;
+      display: block;
+      margin: 0 auto 40px;
+    }
+
+    .wordmark {
+      font-size: 92px;
+      font-weight: 800;
+      letter-spacing: -2.5px;
+      line-height: 1;
+      margin-bottom: 26px;
+    }
+
+    .tagline {
+      font-size: 34px;
+      line-height: 1.3;
+      color: #94a3b8;
+    }
+
+    .tagline strong { color: #38bdf8; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+
+  <div class="card">
+    <img class="icon" src="__ICON_DATA_URI__" alt="" width="128" height="128" />
+    <div class="wordmark">Screencappy</div>
+    <p class="tagline"><strong>Free open source</strong> full page screenshots for Chrome</p>
+  </div>
+
+  <div class="rule"></div>
+</body>
+</html>
