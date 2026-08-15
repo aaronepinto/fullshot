@@ -221,7 +221,7 @@
 
     <p>Export covers PNG, JPEG, WebP, PDF and the clipboard. PDFs can be a single tall page or
     paginated to A4 or Letter, and the PDF writer is hand-rolled with zero dependencies. With the
-    optional Turbo engine enabled, Screencappy can also save a PDF with real, selectable, searchable
+    Turbo engine switched on, Screencappy can also save a PDF with real, selectable, searchable
     text rather than an image of the page.</p>
 
     <p>There is no upgrade prompt anywhere in Screencappy, because there is nothing to upgrade to.</p>
@@ -235,14 +235,15 @@
 
     <h2>What permissions does Screencappy request?</h2>
 
-    <p>By default: <code>activeTab</code>, <code>scripting</code>, <code>storage</code>,
-    <code>downloads</code>, <code>contextMenus</code> and <code>unlimitedStorage</code>. It requests
-    no host permissions, which means it has no standing ability to read any page. Access is granted
-    by your click, for that tab, at that moment.</p>
+    <p><code>activeTab</code>, <code>scripting</code>, <code>storage</code>,
+    <code>downloads</code>, <code>contextMenus</code>, <code>unlimitedStorage</code> and
+    <code>debugger</code>. It requests no host permissions, which means it has no standing ability
+    to read any page. Access is granted by your click, for that tab, at that moment.</p>
 
-    <p>The optional Turbo capture engine additionally uses the <code>debugger</code> permission, and
-    only if you turn it on in Settings. If you never enable Turbo, that permission is never
-    requested.</p>
+    <p>The <code>debugger</code> permission is declared at install, because Chrome does not allow
+    that one to be requested later. It powers the Turbo capture engine, searchable PDF export and
+    mobile width capture. It is only active while one of those captures is running, and Chrome shows
+    a visible banner the whole time it is in use.</p>
 
     <h2>Which pages does Screencappy handle that a simple stitcher does not?</h2>
 

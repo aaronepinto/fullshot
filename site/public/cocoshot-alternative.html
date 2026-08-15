@@ -112,7 +112,7 @@
             "name": "Which one should you use?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "If you want one extension that does screenshots and screen recording and exports to Markdown or a self contained HTML file, CocoShot covers more ground and does it well. If it matters to you that the code is public, that the permission list stays minimal, and that the free features cannot be moved behind a tier later without you being able to see it happen, that is the case for Screencappy. Both are free today. Only one of them can be checked."
+              "text": "If you want one extension that does screenshots and screen recording and exports to Markdown or a self contained HTML file, CocoShot covers more ground and does it well. If it matters to you that the code is public, that no extension holds standing access to your pages, and that the free features cannot be moved behind a tier later without you being able to see it happen, that is the case for Screencappy. Both are free today. Only one of them can be checked. To state Screencappy's own side plainly, since this page turns on permissions: it requests no host permissions, and it does declare Chrome's debugger permission at install, because Chrome does not allow that one to be requested later. That permission powers the Turbo capture engine, searchable PDF export and mobile width capture. It is only active while one of those captures is running, and Chrome shows a visible banner the whole time it is in use. The row above compares host permissions, which is the separate question of whether an extension can read your pages without being asked."
             }
           }
         ]
@@ -270,10 +270,18 @@
     <p>If you want one extension that does screenshots and screen recording and exports to Markdown
     or a self contained HTML file, CocoShot covers more ground and does it well.</p>
 
-    <p>If it matters to you that the code is public, that the permission list stays minimal, and
-    that the free features cannot be moved behind a tier later without you being able to see it
-    happen, that is the case for Screencappy. Both are free today. Only one of them can be
-    checked.</p>
+    <p>If it matters to you that the code is public, that no extension holds standing access to
+    your pages, and that the free features cannot be moved behind a tier later without you being
+    able to see it happen, that is the case for Screencappy. Both are free today. Only one of them
+    can be checked.</p>
+
+    <p>To state Screencappy's own side plainly, since this page turns on permissions: it requests no
+    host permissions, and it does declare Chrome's debugger permission at install, because Chrome
+    does not allow that one to be requested later. That permission powers the Turbo capture engine,
+    searchable PDF export and mobile width capture. It is only active while one of those captures is
+    running, and Chrome shows a visible banner the whole time it is in use. The row above compares
+    host permissions, which is the separate question of whether an extension can read your pages
+    without being asked.</p>
 
     <p class="trademark">CocoShot is a trademark of its respective owner. Screencappy is not affiliated with,
     endorsed by, or connected to CocoShot in any way.</p>

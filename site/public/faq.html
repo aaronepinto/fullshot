@@ -76,7 +76,7 @@
         "name": "What permissions does Screencappy need?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screencappy requests activeTab, scripting, storage, downloads, contextMenus and unlimitedStorage, and no host permissions. Because there are no host permissions, the extension has no standing ability to read any page: access is granted by your click, for that one tab, at that moment, and it ends there."
+          "text": "Screencappy requests activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage and debugger, and no host permissions. No host permissions is the one that matters most: it means the extension has no standing ability to read any page, so access is granted by your click, for that one tab, at that moment, and it ends there. The debugger permission is declared when you install, because Chrome does not allow that one to be asked for later. It powers three advanced captures, it is only active while one of them is running, and Chrome shows a banner across the top of the page the whole time it is in use."
         }
       },
       {
@@ -84,7 +84,7 @@
         "name": "Why does Screencappy ask for the debugger permission?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "It does not, unless you turn on the optional Turbo capture engine or use one of the two features built on it. Turbo uses the Chrome DevTools Protocol to capture the whole page in a single shot, and the debugger permission is what the protocol requires. If you never enable Turbo, the permission is never requested, and the default capture engine works without it."
+          "text": "Because Chrome does not allow that permission to be asked for later, so it has to be declared when you install. It powers three advanced captures: the faster one-shot capture called Turbo, saving a PDF whose text you can search, and capturing a page at phone width. Screencappy only uses it while one of those captures is running, and Chrome shows a banner across the top of the page the whole time it is in use. The everyday capture does not use it at all, and Turbo stays off until you switch it on in Settings. Screencappy still requests no host permissions, which is the permission that would let an extension read your pages."
         }
       },
       {
@@ -92,7 +92,7 @@
         "name": "What is the difference between the two capture engines?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The default engine scrolls the page and stitches the tiles together, and the optional Turbo engine captures everything in one shot through the DevTools Protocol. Scroll and stitch needs no extra permissions and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom."
+          "text": "The default engine scrolls the page and stitches the tiles together, and the Turbo engine, which you switch on in Settings, captures everything in one shot through the DevTools Protocol. Scroll and stitch uses no debugger access at all and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom."
         }
       },
       {
@@ -108,7 +108,7 @@
         "name": "Can Screencappy make a PDF with searchable text?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, with the optional Turbo permission enabled. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page."
+          "text": "Yes. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page. This is one of the captures that uses the debugger permission, so Chrome shows its banner while it runs."
         }
       },
       {
@@ -164,7 +164,7 @@
         "name": "Can Screencappy capture a page at mobile width?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same optional debugger permission as Turbo."
+          "text": "Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same debugger permission as Turbo, so Chrome shows its banner while the capture runs."
         }
       },
       {
@@ -188,7 +188,7 @@
         "name": "Which browsers does Screencappy support?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Screencappy works with Chrome, Edge, Opera and Brave, which all run the same version with every feature. It is also available for Firefox. The Firefox version captures by scrolling and joining the page, so the optional extras, meaning the faster one-shot capture, phone-width capture and searchable PDF, are not available there. Store listings are not live yet."
+          "text": "Screencappy works with Chrome, Edge, Opera and Brave, which all run the same version with every feature. It is also available for Firefox. The Firefox version captures by scrolling and joining the page, so the advanced captures, meaning the faster one-shot capture, phone-width capture and searchable PDF, are not available there, and that version does not include the debugger permission at all. Store listings are not live yet."
         }
       },
       {
@@ -263,19 +263,19 @@
     <p>No. Screencappy contains no network code whatsoever, so captures cannot leave your device. Images are composed, annotated and exported entirely in your browser, and recent captures are stored locally in IndexedDB on your own machine. There is no account, no cloud service, no analytics and no telemetry.</p>
 
     <h2>What permissions does Screencappy need?</h2>
-    <p>Screencappy requests <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>downloads</code>, <code>contextMenus</code> and <code>unlimitedStorage</code>, and no host permissions. Because there are no host permissions, the extension has no standing ability to read any page: access is granted by your click, for that one tab, at that moment, and it ends there.</p>
+    <p>Screencappy requests <code>activeTab</code>, <code>scripting</code>, <code>storage</code>, <code>downloads</code>, <code>contextMenus</code>, <code>unlimitedStorage</code> and <code>debugger</code>, and no host permissions. No host permissions is the one that matters most: it means the extension has no standing ability to read any page, so access is granted by your click, for that one tab, at that moment, and it ends there. The <code>debugger</code> permission is declared when you install, because Chrome does not allow that one to be asked for later. It powers three advanced captures, it is only active while one of them is running, and Chrome shows a banner across the top of the page the whole time it is in use.</p>
 
     <h2>Why does Screencappy ask for the debugger permission?</h2>
-    <p>It does not, unless you turn on the optional Turbo capture engine or use one of the two features built on it. Turbo uses the Chrome DevTools Protocol to capture the whole page in a single shot, and the <code>debugger</code> permission is what the protocol requires. If you never enable Turbo, the permission is never requested, and the default capture engine works without it.</p>
+    <p>Because Chrome does not allow that permission to be asked for later, so it has to be declared when you install. It powers three advanced captures: the faster one-shot capture called Turbo, saving a PDF whose text you can search, and capturing a page at phone width. Screencappy only uses it while one of those captures is running, and Chrome shows a banner across the top of the page the whole time it is in use. The everyday capture does not use it at all, and Turbo stays off until you switch it on in Settings. Screencappy still requests no host permissions, which is the permission that would let an extension read your pages.</p>
 
     <h2>What is the difference between the two capture engines?</h2>
-    <p>The default engine scrolls the page and stitches the tiles together, and the optional Turbo engine captures everything in one shot through the DevTools Protocol. Scroll and stitch needs no extra permissions and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom. Turbo has no stitching seams and is immune to awkward fixed layouts, at the cost of the optional <code>debugger</code> permission.</p>
+    <p>The default engine scrolls the page and stitches the tiles together, and the Turbo engine, which you switch on in Settings, captures everything in one shot through the DevTools Protocol. Scroll and stitch uses no debugger access at all and already handles sticky headers, fixed overlays, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom. Turbo has no stitching seams and is immune to awkward fixed layouts, and it uses the <code>debugger</code> permission, so Chrome shows its banner while the capture runs.</p>
 
     <h2>What formats can Screencappy export?</h2>
     <p>PNG, JPEG, WebP, PDF, and directly to the clipboard. PDFs can be exported as a single tall page or paginated to A4 or Letter, and filenames can be generated from templates such as domain, date and time.</p>
 
     <h2>Can Screencappy make a PDF with searchable text?</h2>
-    <p>Yes, with the optional Turbo permission enabled. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page.</p>
+    <p>Yes. Right-click and choose Save as searchable PDF, and Screencappy prints the live page through the DevTools Protocol into a real PDF whose text you can select, search and copy, rather than a picture of the page. This is one of the captures that uses the <code>debugger</code> permission, so Chrome shows its banner while it runs.</p>
 
     <h2>Does Screencappy work on very long pages?</h2>
     <p>Yes. The composed image is held as strips rather than one large canvas, which sidesteps the browser's canvas size limits, so pages taller than those limits render correctly. Captures too large for a single file split automatically into numbered files, or into additional PDF pages, rather than failing.</p>
@@ -296,7 +296,7 @@
     <p>Yes, if you turn on auto-load in Settings. Screencappy then keeps scrolling to the bottom until the page stops growing, bounded by a maximum capture height and a time budget, and captures the fully loaded page.</p>
 
     <h2>Can Screencappy capture a page at mobile width?</h2>
-    <p>Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same optional <code>debugger</code> permission as Turbo.</p>
+    <p>Yes. Right-click and choose the mobile capture option, and Screencappy reflows the page to a phone-width layout using device emulation, captures the full mobile page, and leaves your real window untouched. The emulated width is configurable in Settings, and this feature uses the same <code>debugger</code> permission as Turbo, so Chrome shows its banner while the capture runs.</p>
 
     <h2>Can I delay a capture?</h2>
     <p>Yes. Set a start delay in Settings, or right-click and choose a delayed capture, and the toolbar badge counts down before the shot is taken. This is what you want when the thing you are capturing only exists while a menu is open or an element is hovered.</p>
@@ -305,7 +305,7 @@
     <p>Locally, in your browser's IndexedDB, with thumbnails, and nothing syncs anywhere. Recent captures keep their annotations so you can reopen and re-export them, and you can configure how many are kept before older ones are pruned.</p>
 
     <h2>Which browsers does Screencappy support?</h2>
-    <p>Screencappy works with Chrome, Edge, Opera and Brave, which all run the same version with every feature. It is also available for Firefox. The Firefox version captures by scrolling and joining the page, so the optional extras, meaning the faster one-shot capture, phone-width capture and searchable PDF, are not available there. Store listings are not live yet.</p>
+    <p>Screencappy works with Chrome, Edge, Opera and Brave, which all run the same version with every feature. It is also available for Firefox. The Firefox version captures by scrolling and joining the page, so the advanced captures, meaning the faster one-shot capture, phone-width capture and searchable PDF, are not available there, and that version does not include the <code>debugger</code> permission at all. Store listings are not live yet.</p>
 
     <h2>How do I install Screencappy?</h2>
     <p>Screencappy is on its way to the Chrome Web Store. It is not there yet, so for now you add it yourself, which takes about a minute. Download <a href="https://github.com/aaronepinto/smollet-screencappy/releases/latest/download/screencappy.zip">screencappy.zip</a> from the latest release and unzip it, open <code>chrome://extensions</code>, switch on Developer mode, click Load unpacked, and choose the folder you unzipped. The home page shows <a href="/#install">pictures of these three steps</a>.</p>

@@ -49,7 +49,7 @@
         "privacyPolicy": "https://screencappy.smollet.app/privacy",
         "codeRepository": "https://github.com/aaronepinto/smollet-screencappy",
         "programmingLanguage": "TypeScript",
-        "permissions": "activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage. No host permissions. The optional Turbo capture engine additionally uses the debugger permission, only if you enable it.",
+        "permissions": "activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage and debugger. No host permissions. The debugger permission is declared at install because Chrome does not allow it to be requested later. It powers the Turbo capture engine, searchable PDF export and mobile width capture, is only active while one of those captures is running, and Chrome shows a visible banner the whole time it is in use.",
         "featureList": [
           "Saves a picture of the whole page in one click, including everything below and to the side of what is on screen",
           "Headers that stay put as you scroll appear only once in the finished picture",
@@ -63,7 +63,7 @@
           "Set how your files get named",
           "Handles pages that keep loading as you scroll",
           "Hold a capture back so a menu can be opened first",
-          "Optional extras you switch on: capture a page in its phone layout, and save PDFs whose text you can search",
+          "Advanced captures: a page in its phone layout, and PDFs whose text you can search, with Chrome showing a banner while they run",
           "Keeps your recent captures on your own computer so you can reopen them",
           "Very long pages split neatly across files instead of failing",
           "No account, no cloud, no tracking, and no way to send anything anywhere"
@@ -159,7 +159,9 @@
 
       <p>Everything happens on your own computer. There is no account to make and no cloud service
       behind it. Screencappy does not track you and has no way to send your pictures anywhere. It
-      cannot see the page you are on until you ask it to.</p>
+      asks for no access to any website, so it cannot see the page you are on until you ask it to.
+      It does use Chrome's debugging tool for a few advanced captures, and Chrome shows a banner on
+      screen the whole time that is running.</p>
 
       <p>Screencappy is completely free. There is no paid version and nothing is held back: drawing,
       blurring, emoji stamps and saving as PDF are all included. It works with Chrome, Edge, Opera
@@ -232,7 +234,7 @@
       <div class="card"><h3>Save it your way</h3><p>PNG, JPEG, WebP or PDF, one long page or split into pages, or copied straight to your clipboard ready to paste. You can set how files get named.</p></div>
       <div class="card"><h3>Capture just one part</h3><p>Point at what you want and click, or drag a box around it. Boxes with their own scrollbars get captured in full, not just the bit showing.</p></div>
       <div class="card"><h3>Tricky pages handled</h3><p>Pages that keep loading as you scroll, pages that scroll inside a panel, and shots that need a menu held open. Screencappy waits for the page to settle.</p></div>
-      <div class="card"><h3>See it as a phone would</h3><p>An optional extra you can switch on: capture a page in its phone layout without resizing your window, and save PDFs whose text you can still search.</p></div>
+      <div class="card"><h3>See it as a phone would</h3><p>Capture a page in its phone layout without resizing your window, and save PDFs whose text you can still search. Chrome shows a banner on screen while these run.</p></div>
       <div class="card"><h3>Very long pages work</h3><p>Enormous pages defeat most screenshot tools. Screencappy builds these in pieces, so a huge capture splits neatly across files instead of failing.</p></div>
     </section>
 
