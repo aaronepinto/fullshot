@@ -4,9 +4,9 @@
  * the editor tab. All capture state lives in IndexedDB so the editor is fully decoupled.
  */
 import { getSettings } from './lib/settings';
-import { putCapture, putTile, pruneHistory } from './lib/db';
+import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
 import { dataUrlToBlob, gridPositions, makeRecord, newCaptureId } from './lib/capture-common';
-import { hasDebuggerPermission, turboCapture } from './cdp';
+import { captureCrossOriginFrame, hasDebuggerPermission, turboCapture } from './cdp';
 import type {
   CaptureContentMsg,
   CaptureMode,
@@ -98,6 +98,7 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     // Region/element selection happens first, in-page, regardless of engine.
     let selection: Rect | null = null;
     let pickedScroller = false;
+    let frameUrl: string | null = null;
     if (mode === 'selection') {
       if (!injectable) throw new Error('This page does not allow region selection.');
       selection = await pickRegion(tabId);
@@ -106,10 +107,12 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
       if (!injectable) throw new Error('This page does not allow element picking.');
       const pick = await pickElement(tabId);
       if (!pick) return; // user cancelled
-      // Scrollable containers get their full content via the inner-scroll machinery;
-      // everything else is just a clip over the page.
+      // Scrollable containers (including same-origin iframes) get their full content
+      // via the inner-scroll machinery; everything else is just a clip over the page.
+      // A cross-origin iframe additionally carries its URL for a CDP deep capture.
       if (pick.scrollable) pickedScroller = true;
       else selection = pick.rect;
+      frameUrl = pick.frameUrl ?? null;
     }
 
     await badge.set('…');
@@ -121,7 +124,17 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     let title = tab.title ?? '';
     let url = tab.url ?? '';
 
-    if (mode === 'visible' || !injectable) {
+    // Cross-origin iframe pick: try a CDP deep capture of the frame's full content
+    // first; null means unavailable or failed, and the chain below then clips the
+    // iframe's visible box via `selection` so the user always gets something.
+    const frameResult = frameUrl
+      ? await frameDeepCapture(tabId, capId, frameUrl, settings.maxCaptureHeight, badge)
+      : null;
+
+    if (frameResult) {
+      engine = 'turbo';
+      ({ clip, tileCount, truncated } = frameResult);
+    } else if (mode === 'visible' || !injectable) {
       // Single shot; also the graceful fallback on chrome:// pages and the Web Store.
       ({ clip, tileCount } = await captureVisibleSingle(tab, capId));
       engine = 'stitch';
@@ -163,6 +176,39 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     setTimeout(() => void badge.clear(), 4000);
   } finally {
     busyTabs.delete(tabId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Iframe deep capture (cross-origin, CDP)
+// ---------------------------------------------------------------------------
+
+/**
+ * Best-effort full-content capture of a cross-origin iframe. Only runs when the
+ * debugger permission is already granted; any failure (frame target not found,
+ * attach refused, CDP error) returns null after clearing partial tiles so the
+ * caller falls back to clipping the iframe's visible box.
+ */
+async function frameDeepCapture(
+  tabId: number,
+  capId: string,
+  frameUrl: string,
+  maxHeight: number,
+  badge: ReturnType<typeof badgeFor>
+): Promise<{ clip: Rect; tileCount: number; truncated: boolean } | null> {
+  if (!(await hasDebuggerPermission())) return null;
+  try {
+    return await captureCrossOriginFrame(
+      tabId,
+      capId,
+      frameUrl,
+      maxHeight,
+      (done, total) => void badge.set(`${Math.round((done / total) * 100)}%`)
+    );
+  } catch (err) {
+    console.warn('[fullshot] iframe deep capture failed, falling back to visible box', err);
+    await deleteTiles(capId).catch(() => undefined);
+    return null;
   }
 }
 
@@ -364,6 +410,8 @@ function pickRegion(tabId: number): Promise<Rect | null> {
 interface ElementPick {
   rect: Rect;
   scrollable: boolean;
+  /** Resolved src of a picked cross-origin iframe. */
+  frameUrl?: string;
 }
 
 function pickElement(tabId: number): Promise<ElementPick | null> {
@@ -376,7 +424,7 @@ function pickElement(tabId: number): Promise<ElementPick | null> {
       if (sender.tab?.id !== tabId) return;
       if (msg.type === 'fs:element') {
         cleanup();
-        resolve({ rect: msg.rect, scrollable: msg.scrollable });
+        resolve({ rect: msg.rect, scrollable: msg.scrollable, frameUrl: msg.frameUrl });
       } else if (msg.type === 'fs:element-cancel') {
         cleanup();
         resolve(null);

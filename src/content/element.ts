@@ -84,6 +84,15 @@ import type { RuntimeMsg } from '../lib/types';
       below + chH > window.innerHeight ? `${Math.max(4, r.top - chH - 6)}px` : `${below}px`;
   };
 
+  // contentDocument is null for cross-origin frames; sandboxed ones can also throw.
+  const accessibleFrameDoc = (el: HTMLIFrameElement): Document | null => {
+    try {
+      return el.contentDocument;
+    } catch {
+      return null;
+    }
+  };
+
   const finish = (msg: RuntimeMsg) => {
     cleanup();
     void chrome.runtime.sendMessage(msg);
@@ -105,17 +114,30 @@ import type { RuntimeMsg } from '../lib/types';
     const el = document.elementFromPoint(e.clientX, e.clientY) ?? target;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const scrollable =
+    let scrollable =
       el instanceof HTMLElement &&
       isScrollableTarget({
         overflowY: getComputedStyle(el).overflowY,
         scrollHeight: el.scrollHeight,
         clientHeight: el.clientHeight,
       });
+    let frameUrl: string | undefined;
+    if (el instanceof HTMLIFrameElement) {
+      // Same-origin frames with overflowing content deep-capture through the container
+      // machinery; cross-origin ones report their URL so the background can try CDP.
+      const doc = accessibleFrameDoc(el);
+      const se = doc?.scrollingElement ?? doc?.documentElement;
+      if (se) {
+        scrollable = se.scrollHeight > el.clientHeight + 1 || se.scrollWidth > el.clientWidth + 1;
+      } else if (el.src && !el.src.startsWith('about:')) {
+        frameUrl = el.src;
+      }
+    }
     if (scrollable) w.__fullshotPickedEl = el as HTMLElement;
     finish({
       type: 'fs:element',
       scrollable,
+      ...(frameUrl ? { frameUrl } : {}),
       rect: {
         x: Math.round(r.left + window.scrollX),
         y: Math.round(r.top + window.scrollY),
