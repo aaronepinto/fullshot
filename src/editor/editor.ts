@@ -936,7 +936,10 @@ async function boot() {
     $('#loading').hidden = true;
     fitWidth();
     updateStatus();
-    if (record.truncated) {
+    if (record.notice) {
+      $('#statNote').textContent = record.notice;
+      toast(record.notice, false);
+    } else if (record.truncated) {
       $('#statNote').textContent = 'Truncated at the capture height limit';
       toast('Heads up: the page exceeded the capture height limit and was truncated.', false);
     }
