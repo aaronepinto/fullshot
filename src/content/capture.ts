@@ -4,7 +4,13 @@
  * scrollbars, sticky/fixed elements, animations), drives the scroll loop, and
  * restores everything afterwards.
  */
-import { AUTO_LOAD, pickDominantScroller, shouldContinueAutoLoad } from '../lib/capture-common';
+import {
+  AUTO_LOAD,
+  MAX_SCAN_NODES,
+  pickDominantScroller,
+  shouldContinueAutoLoad,
+  walkShadowTree,
+} from '../lib/capture-common';
 import type { CaptureContentMsg, PageMetrics, Rect, ScrollResult } from '../lib/types';
 
 interface SavedInline {
@@ -187,6 +193,7 @@ interface SavedInline {
     // When capturing inside a same-origin iframe, its document needs the same treatment.
     const docs = frameDoc ? [document, frameDoc] : [document];
     fixedEls = [];
+    let budget = MAX_SCAN_NODES;
     for (const doc of docs) {
       const styleEl = doc.createElement('style');
       styleEl.textContent = css;
@@ -195,19 +202,22 @@ interface SavedInline {
 
       // One pass over the DOM: sticky elements are pinned back into normal flow for the
       // whole capture (they render once, at their natural position); fixed elements are
-      // remembered so they can be hidden for every tile after the first.
+      // remembered so they can be hidden for every tile after the first. querySelectorAll
+      // cannot pierce shadow roots, so the walk descends into open shadow trees too.
       const view = doc.defaultView ?? window;
-      const all = doc.querySelectorAll<HTMLElement>('body *');
-      const limit = Math.min(all.length, 60_000);
-      for (let i = 0; i < limit; i++) {
-        const el = all[i]!;
-        const position = view.getComputedStyle(el).position;
-        if (position === 'fixed') {
-          fixedEls.push(el);
-        } else if (hideSticky && position === 'sticky') {
-          setInline(el, 'position', 'static');
-        }
-      }
+      if (!doc.body) continue;
+      budget -= walkShadowTree<Element>(
+        doc.body.children,
+        (el) => {
+          const position = view.getComputedStyle(el).position;
+          if (position === 'fixed') {
+            fixedEls.push(el as HTMLElement);
+          } else if (hideSticky && position === 'sticky') {
+            setInline(el as HTMLElement, 'position', 'static');
+          }
+        },
+        budget
+      );
     }
   }
 
