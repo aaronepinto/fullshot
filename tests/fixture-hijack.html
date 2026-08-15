@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e hijacked scrolling fixture</title>
+  <style>
+    /* Scroll-jacked marketing page (fullPage.js, locomotive-scroll and friends): a
+       spacer gives the document its 6000px height, but what the user sees is a pinned
+       viewport-sized stack of panels swapped by wheel events. Nothing painted has any
+       layout overflow, so no offset the capture can set moves the picture, and a naive
+       stitch repeats the same frame in every tile.
+       Add ?spacer=0 for the variant with no spacer: the document is then exactly one
+       viewport tall and an ordinary visible capture is already the right answer. */
+    html, body { margin: 0; overflow: hidden; font: 24px/1.4 system-ui, sans-serif; }
+    #spacer { height: 6000px; }
+    #pinned { position: fixed; inset: 0; overflow: hidden; background: #fff; }
+    .panel {
+      position: absolute; inset: 0; box-sizing: border-box; padding: 40px;
+      color: #0f172a; opacity: 0;
+    }
+    .panel.active { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="spacer"></div>
+  <div id="pinned"></div>
+  <script>
+    const PANELS = 6;
+    const pinned = document.getElementById('pinned');
+    if (new URLSearchParams(location.search).get('spacer') === '0') {
+      document.getElementById('spacer').remove();
+    }
+    const panels = [];
+    for (let i = 0; i < PANELS; i++) {
+      const panel = document.createElement('div');
+      panel.className = i === 0 ? 'panel active' : 'panel';
+      panel.style.background = 'hsl(' + ((i * 53) % 360) + ' 70% 88%)';
+      panel.textContent = 'Panel ' + i + ' - only wheel events can reach this';
+      pinned.appendChild(panel);
+      panels.push(panel);
+    }
+
+    let index = 0;
+    addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const next = Math.max(0, Math.min(index + Math.sign(e.deltaY), PANELS - 1));
+        if (next === index) return;
+        panels[index].classList.remove('active');
+        panels[next].classList.add('active');
+        index = next;
+      },
+      { passive: false }
+    );
+  </script>
+</body>
+</html>

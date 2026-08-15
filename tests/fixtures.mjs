@@ -15,6 +15,9 @@ const ROOT = new URL('..', import.meta.url).pathname;
  * @property {number} minW Narrowest composed width that still counts as a pass.
  * @property {number} minH Shortest composed height that still counts as a pass.
  * @property {number} [maxH] Tallest composed height, where overshooting is itself a bug.
+ * @property {number} [maxW] Widest composed width, for pane-shaped captures.
+ * @property {number[]} [samples] Height fractions to pixel-sample (Chromium harness only).
+ * @property {string} [note] Substring the editor's status note must show; '' asserts none.
  */
 
 /** @type {Scenario[]} */
@@ -25,6 +28,18 @@ export const SCENARIOS = [
   // sections, so the composed height must match the container content (3000px)
   // rather than the viewport.
   { name: 'container', path: '/container', minW: 1000, minH: 2950, maxH: 3100 },
+  // Virtualized feed: 50 rows of 120px behind a spacer, each rendered 300ms after the
+  // scroll that reveals it. The samples prove rows are actually in the image all the
+  // way down, not blank or duplicated bands.
+  { name: 'virtualized', path: '/virtualized', minW: 1100, minH: 5950, maxH: 6100, samples: [0.12, 0.37, 0.62, 0.87] },
+  // Mail layout: the reading pane (75% wide, 2600px of content) must win over the
+  // folder list beside it, so the capture is pane-shaped rather than window-shaped.
+  { name: 'mail', path: '/mail', minW: 850, maxW: 950, minH: 2550, maxH: 2700 },
+  // Scroll-jacked page: 6000px of reported height that nothing can scroll. The capture
+  // must stay viewport-sized and say why, instead of stitching one repeated frame.
+  { name: 'hijack', path: '/hijack', minW: 1100, maxW: 1300, minH: 700, maxH: 900, note: 'custom scrolling' },
+  // The same page without the spacer is an ordinary one-viewport capture, no note.
+  { name: 'hijack-nospacer', path: '/hijack?spacer=0', minW: 1100, maxW: 1300, minH: 700, maxH: 900, note: '' },
 ];
 
 export async function startFixtureServer() {
@@ -32,10 +47,15 @@ export async function startFixtureServer() {
   const pages = {
     '/': await readFile(`${ROOT}tests/fixture.html`),
     '/container': await readFile(`${ROOT}tests/fixture-container.html`),
+    '/virtualized': await readFile(`${ROOT}tests/fixture-virtualized.html`),
+    '/mail': await readFile(`${ROOT}tests/fixture-mail.html`),
+    '/hijack': await readFile(`${ROOT}tests/fixture-hijack.html`),
   };
   const server = createServer((req, res) => {
     res.setHeader('content-type', 'text/html');
-    res.end(pages[req.url ?? '/'] ?? pages['/']);
+    // Fixtures take query parameters of their own, so route on the path alone.
+    const path = (req.url ?? '/').split('?', 1)[0];
+    res.end(pages[path] ?? pages['/']);
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
 
@@ -55,11 +75,12 @@ export async function startFixtureServer() {
  * @param {string | null} text The editor's #statDims text.
  * @param {Scenario} scenario
  */
-export function assertComposed(label, text, { minW, minH, maxH }) {
+export function assertComposed(label, text, { minW, maxW, minH, maxH }) {
   const m = /(\d+)\s*×\s*(\d+)/.exec(text ?? '');
   if (!m) throw new Error(`[${label}] Could not parse dimensions from "${text}"`);
   const [w, h] = [Number(m[1]), Number(m[2])];
   if (w < minW) throw new Error(`[${label}] Composed width ${w} < expected ${minW}`);
+  if (maxW && w > maxW) throw new Error(`[${label}] Composed width ${w} > expected max ${maxW}`);
   if (h < minH) {
     throw new Error(`[${label}] Composed height ${h} < expected ${minH} - stitching incomplete`);
   }

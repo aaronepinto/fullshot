@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e mail fixture</title>
+  <style>
+    /* Yahoo Mail / Gmail layout: the window never scrolls and there are two scroll panes
+       side by side. The capture has to follow the wide reading pane, not the narrow
+       folder list beside it and not the viewport. */
+    html, body { margin: 0; height: 100%; overflow: hidden; font: 20px/1.4 system-ui, sans-serif; }
+    #app { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: none; height: 48px; background: #4f46e5; color: #fff;
+      display: flex; align-items: center; padding: 0 20px;
+    }
+    #panes { flex: 1; display: flex; min-height: 0; }
+    #folders {
+      width: 25%; overflow-y: auto; background: #eef2ff; border-right: 1px solid #c7d2fe;
+    }
+    #folders div { height: 60px; display: flex; align-items: center; padding: 0 16px; }
+    #message { width: 75%; overflow-y: auto; }
+    #message p { height: 200px; margin: 0; padding: 20px; box-sizing: border-box; }
+    #message p:nth-child(odd) { background: #f8fafc; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>Mail - the window itself never scrolls</header>
+    <div id="panes">
+      <div id="folders"></div>
+      <div id="message"></div>
+    </div>
+  </div>
+  <script>
+    const folders = document.getElementById('folders');
+    for (let i = 0; i < 40; i++) {
+      const item = document.createElement('div');
+      item.textContent = 'Folder ' + i;
+      folders.appendChild(item);
+    }
+    const message = document.getElementById('message');
+    // 13 blocks of 200px = 2600px of message content.
+    for (let i = 0; i < 13; i++) {
+      const para = document.createElement('p');
+      para.textContent = 'Message block ' + i + ' - y=' + i * 200;
+      message.appendChild(para);
+    }
+  </script>
+</body>
+</html>
