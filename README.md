@@ -68,8 +68,19 @@ Requires Chrome 116 or newer, or any Chromium browser of the same vintage.
 
 ## 🌐 Browser support
 
-- **Chrome, Edge, Opera, Brave** and other Chromium browsers: the regular build in `dist/` loads unchanged and every feature works.
-- **Firefox** (128+): build the Firefox variant with `bun run build:firefox`, which outputs `dist-firefox/` from the same code with a Firefox flavoured manifest (background scripts instead of a service worker, and a gecko add-on id). Load it through `about:debugging`, then **This Firefox**, then **Load Temporary Add-on**. Scroll and stitch works fully. Turbo, mobile width capture, and searchable PDF export are unavailable, because Firefox has no `chrome.debugger` API, and the options page marks Turbo accordingly.
+Every push and pull request runs a real capture in four real browsers:
+
+| Browser | Build | Status |
+| :-- | :-- | :-- |
+| **Chrome** (116+) | `dist/` | Continuously tested in CI |
+| **Edge** | `dist/` | Continuously tested in CI |
+| **Brave** | `dist/` | Continuously tested in CI |
+| **Firefox** (128+) | `dist-firefox/` | Continuously tested in CI |
+| **Opera, Vivaldi** and other Chromium browsers | `dist/` | Engine compatible, not tested in CI |
+
+- **Chromium browsers** load the regular build in `dist/` unchanged and every feature works. Chrome, Edge and Brave each run the full capture suite on every commit; the rest of the family shares the same engine and the same build, so they are expected to work but nothing watches them for us. Opera is the one we checked by hand: it captures correctly, but it composes at 95% scale, so it needs its own expectations rather than the shared ones.
+- **Firefox** (128+): build the Firefox variant with `bun run build:firefox`, which outputs `dist-firefox/` from the same code with a Firefox flavoured manifest (background scripts instead of a service worker, and a gecko add-on id). Load it through `about:debugging`, then **This Firefox**, then **Load Temporary Add-on**. Scroll and stitch works fully, and CI proves it by stitching the same fixtures Chromium does. Turbo, mobile width capture, and searchable PDF export are unavailable, because Firefox has no `chrome.debugger` API, and the options page marks Turbo accordingly. CI also runs `web-ext lint`, the validator addons.mozilla.org uses at submission.
+- **Safari** is not supported: it needs a native app wrapper and a different extension format.
 - Store listings for the Chrome Web Store and Firefox Add-ons are not live yet. `bun run zip` packs `screencappy.zip` and `bun run zip:firefox` packs `screencappy-firefox.zip` for submission.
 
 ## ⌨️ Keyboard shortcuts
@@ -142,12 +153,16 @@ Full policy: [screencappy.smollet.app/privacy](https://screencappy.smollet.app/p
 bun install
 bun run typecheck   # tsc --noEmit
 bun run test        # unit tests
-bun run e2e         # end to end capture test against a real Chrome
+bun run e2e         # end to end capture test against a real Chromium browser
+bun run e2e:firefox # the same capture test against a real Firefox
+bun run lint:firefox # Mozilla's add-on linter over dist-firefox/
 bun run build       # unpacked extension into dist/
 bun run zip         # build, then pack dist/ into screencappy.zip
 ```
 
-Every push and pull request runs typecheck, unit tests, a build, and a real Chrome end to end capture. Releases are cut by [release-please](https://github.com/googleapis/release-please): merging the release PR tags a semver version, generates the changelog from Conventional Commits, and attaches the packed extension zip. Conventional Commits are enforced on PR titles in CI, and locally via `git config core.hooksPath .githooks`.
+`bun run e2e` picks up whatever Chrome it can find; point it at another Chromium browser with `CHROME=/path/to/binary`, and label the run with `BROWSER=brave` so the output says which one it was. `bun run e2e:firefox` needs `bun run build:firefox` first and takes `FIREFOX=/path/to/binary`.
+
+Every push and pull request runs typecheck, unit tests, a build, and the end to end capture in Chrome, Edge, Brave and Firefox. Releases are cut by [release-please](https://github.com/googleapis/release-please): merging the release PR tags a semver version, generates the changelog from Conventional Commits, and attaches the packed extension zip. Conventional Commits are enforced on PR titles in CI, and locally via `git config core.hooksPath .githooks`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full loop, commit conventions, and how to add a capture regression test.
 

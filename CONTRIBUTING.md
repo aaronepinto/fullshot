@@ -35,7 +35,8 @@ git config core.hooksPath .githooks
 bun run watch       # rebuild dist/ on save
 bun run typecheck   # tsc --noEmit
 bun run test        # unit tests
-bun run e2e         # end-to-end capture against a real Chrome
+bun run e2e         # end-to-end capture against a real Chromium browser
+bun run e2e:firefox # the same capture against a real Firefox
 ```
 
 `bun run watch` rebuilds, but Chrome does not reload the extension for you. After a rebuild, hit the reload icon on the Screencappy card in `chrome://extensions`. Changes to the service worker (`background.ts`) always need that reload. Changes inside the editor tab only need a page refresh.
@@ -56,7 +57,11 @@ bun test tests/unit/pdf.test.ts # one file
 bun test --coverage             # with a coverage summary
 ```
 
-**End-to-end** (`tests/e2e.mjs`) drives a real Chrome through puppeteer-core against `tests/fixture.html`, loads the built extension, and asserts on an actual capture. It needs a built `dist/`, so run `bun run build` first. CI runs it on every push and pull request.
+**End-to-end** (`tests/e2e.mjs`) drives a real Chromium browser through puppeteer-core, loads the built extension, and asserts on an actual capture. It needs a built `dist/`, so run `bun run build` first. It defaults to whatever Chrome it can find; set `CHROME=/path/to/binary` to point it at Edge or Brave, and `BROWSER=edge` to label the output. CI runs it against Chrome, Edge and Brave on every push and pull request.
+
+**End-to-end, Firefox** (`tests/e2e-firefox.mjs`) runs the same scenarios against a real Firefox through selenium-webdriver and geckodriver. It needs `bun run build:firefox` first, and takes `FIREFOX=/path/to/binary`. Reaching an extension page under WebDriver takes some setup that the file explains at the top; read that before changing it. CI runs it alongside `bun run lint:firefox`, Mozilla's own add-on validator.
+
+Both e2e suites share their fixture pages and their expected dimensions through `tests/fixtures.mjs`, so a new scenario shows up in every browser at once.
 
 ### Adding a capture regression test
 
