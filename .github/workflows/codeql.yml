@@ -1,0 +1,58 @@
+# Committed rather than using CodeQL "default setup" for one specific reason: default
+# setup silently disables its weekly schedule after 6 months without a push or PR. On a
+# stable extension that is exactly when you still want the scan running.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, Monday 07:13 UTC. Odd minute to dodge runner contention on the hour.
+    - cron: "13 7 * * 1"
+
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # `javascript-typescript` is the current canonical id and covers both.
+          # `build-mode: none` is correct for JS/TS: CodeQL reads the source directly
+          # and never needs the esbuild bundle.
+          - language: javascript-typescript
+            build-mode: none
+
+    steps:
+      - name: Checkout
+        # TODO: re-pin these SHAs when you apply this file. `pinact run` does it in one
+        # pass, or let Dependabot bump them after the first commit. Never pin a short SHA.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Without this, credentials are left in .git/config for every later step to read.
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # Drop this line for security alerts only. `security-extended` is the middle
+          # setting if you want more findings and more noise.
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        with:
+          category: "/language:${{ matrix.language }}"

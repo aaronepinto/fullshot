@@ -1,0 +1,12 @@
+# Blank issues are disabled so every report lands in a form. The contact links below
+# give people somewhere to go for the cases the forms deliberately do not cover.
+blank_issues_enabled: false
+
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/aaronepinto/screencappy/security/advisories/new
+    about: Please report vulnerabilities privately, never in a public issue.
+
+  - name: 📖 Documentation and privacy policy
+    url: https://screencappy.smollet.app
+    about: How Screencappy works, and what it collects (nothing).
