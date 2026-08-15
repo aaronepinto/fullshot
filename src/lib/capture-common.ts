@@ -142,6 +142,34 @@ export function elementLabel(tagName: string, w: number, h: number): string {
   return `${tagName.toLowerCase()} · ${Math.round(w)} × ${Math.round(h)}`;
 }
 
+/**
+ * CDP Emulation.setDeviceMetricsOverride params for a phone-width capture.
+ * Width is clamped to a sane device range; invalid values fall back to 390.
+ */
+export function mobileMetrics(width: number): {
+  width: number;
+  height: number;
+  deviceScaleFactor: number;
+  mobile: boolean;
+} {
+  const w = Number.isFinite(width) ? Math.round(width) : 390;
+  return {
+    width: Math.min(1200, Math.max(240, w)),
+    height: 844,
+    deviceScaleFactor: 2,
+    mobile: true,
+  };
+}
+
+/** Splits a clip into full-width horizontal segments of at most segH CSS px. */
+export function segmentRects(clip: Rect, segH: number): Rect[] {
+  const segments: Rect[] = [];
+  for (let y = clip.y; y < clip.y + clip.h; y += segH) {
+    segments.push({ x: clip.x, y, w: clip.w, h: Math.min(segH, clip.y + clip.h - y) });
+  }
+  return segments;
+}
+
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);

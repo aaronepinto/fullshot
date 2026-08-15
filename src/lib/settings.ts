@@ -14,6 +14,7 @@ export interface Settings {
   pdfPageMode: 'single' | 'a4' | 'letter';
   saveAs: boolean;
   maxCaptureHeight: number; // CSS px ceiling for full-page captures
+  mobileCaptureWidth: number; // emulated viewport width for mobile captures
   historyLimit: number;
 }
 
@@ -31,6 +32,7 @@ export const DEFAULTS: Settings = {
   pdfPageMode: 'single',
   saveAs: false,
   maxCaptureHeight: 40000,
+  mobileCaptureWidth: 390,
   historyLimit: 30,
 };
 

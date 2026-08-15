@@ -30,8 +30,8 @@
           <p class="hint" id="turboHint">
             Turbo captures the whole page in a single pass: faster, immune to sticky headers and
             animation seams. It needs the optional <code>debugger</code> permission and briefly shows
-            Chrome's "started debugging" bar during capture. The "Save as searchable PDF" context
-            menu item uses the same permission.
+            Chrome's "started debugging" bar during capture. The "Save as searchable PDF" and
+            "Capture as mobile" context menu items use the same permission.
           </p>
           <button id="grantDebugger" hidden>Grant debugger permission</button>
         </div>
@@ -78,6 +78,23 @@
             <option value="40000">40,000 px (default)</option>
             <option value="100000">100,000 px - I know what I'm doing</option>
           </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="mobileCaptureWidth">Mobile capture width</label>
+        <div class="control">
+          <select id="mobileCaptureWidth">
+            <option value="320">320 px - small phones</option>
+            <option value="375">375 px - iPhone SE</option>
+            <option value="390">390 px (default)</option>
+            <option value="414">414 px - large phones</option>
+            <option value="430">430 px - iPhone Pro Max</option>
+          </select>
+          <p class="hint">
+            Viewport width for the "Capture as mobile" context menu item, which reflows the page to a
+            phone layout via DevTools device emulation without resizing your window.
+          </p>
         </div>
       </div>
     </section>
