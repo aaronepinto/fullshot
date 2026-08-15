@@ -84,7 +84,8 @@ export type CaptureContentMsg =
   | { type: 'fs:ping' }
   | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean }
   | { type: 'fs:prepare'; hideSticky: boolean; freezeAnimations: boolean }
-  | { type: 'fs:prescroll'; stepY: number; maxY: number }
+  /** autoLoadMaxHeight, when set, runs the infinite-scroll auto-load loop first (CSS px ceiling). */
+  | { type: 'fs:prescroll'; stepY: number; maxY: number; autoLoadMaxHeight?: number }
   | { type: 'fs:scrollTo'; x: number; y: number; settleMs: number; hideFixed: boolean }
   | { type: 'fs:restore' };
 
