@@ -5,7 +5,9 @@
   "name": "screencappy-site",
   "compatibility_date": "2026-08-15",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    // Serve public/404.html for any path that does not match an asset.
+    "not_found_handling": "404-page"
   },
   "routes": [
     {
