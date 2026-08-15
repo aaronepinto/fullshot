@@ -1,22 +1,23 @@
 /**
- * End-to-end test: loads the built extension into real Chrome (new headless) and
- * runs two capture scenarios:
- *  1. a 4000px-tall window-scrolled fixture with a sticky header and a fixed badge,
- *  2. a Gmail-style fixture where the window never scrolls and an inner container
- *     holds 3000px of content.
- * Each asserts the editor composes the expected image dimensions.
+ * End-to-end test: loads the built extension into a real Chromium browser (new
+ * headless) and runs the shared capture scenarios from tests/fixtures.mjs, each
+ * asserting that the editor composes the expected image dimensions.
+ *
+ * One script covers every Chromium browser we test: Chrome, Edge and Brave all
+ * speak the same CDP, so only the binary changes.
  *
  * Usage: bun run e2e   (requires `bun run build` output in dist/ and Chrome installed;
- * override the binary with CHROME=/path/to/chrome)
+ * override the binary with CHROME=/path/to/chrome, and label the run with BROWSER=edge)
  */
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
+import { SCENARIOS, assertComposed, startFixtureServer } from './fixtures.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = `${ROOT}dist`;
 const DIST_E2E = `${ROOT}dist-e2e`;
+const BROWSER = process.env.BROWSER ?? 'chromium';
 
 function findChrome() {
   const candidates = [
@@ -32,7 +33,8 @@ function findChrome() {
   return found;
 }
 
-async function runScenario(browser, url, { name, minW, minH, maxH }) {
+async function runScenario(browser, url, scenario) {
+  const label = `${BROWSER}/${scenario.name}`;
   const page = await browser.newPage();
   await page.setViewport({ width: 1200, height: 800 });
   await page.goto(url, { waitUntil: 'load' });
@@ -56,17 +58,12 @@ async function runScenario(browser, url, { name, minW, minH, maxH }) {
   await editor.waitForSelector('#loading[hidden]', { timeout: 60000 });
 
   const dims = await editor.$eval('#statDims', (el) => el.textContent);
-  console.log(`[${name}] editor reports:`, dims);
-  const m = /(\d+)\s*×\s*(\d+)/.exec(dims ?? '');
-  if (!m) throw new Error(`[${name}] Could not parse dimensions from "${dims}"`);
-  const [w, h] = [Number(m[1]), Number(m[2])];
-  if (w < minW) throw new Error(`[${name}] Composed width ${w} < expected ${minW}`);
-  if (h < minH) throw new Error(`[${name}] Composed height ${h} < expected ${minH} - stitching incomplete`);
-  if (maxH && h > maxH) throw new Error(`[${name}] Composed height ${h} > expected max ${maxH}`);
+  console.log(`[${label}] editor reports:`, dims);
+  const { w, h } = assertComposed(label, dims, scenario);
 
   await mkdir(`${ROOT}.scratch`, { recursive: true });
-  await editor.screenshot({ path: `${ROOT}.scratch/e2e-${name}.png` });
-  console.log(`✓ [${name}] stitched to ${w}×${h}`);
+  await editor.screenshot({ path: `${ROOT}.scratch/e2e-${BROWSER}-${scenario.name}.png` });
+  console.log(`✓ [${label}] stitched to ${w}×${h}`);
 
   // Close both tabs so the next scenario's editor is the only editor.html target.
   await editor.close();
@@ -84,16 +81,7 @@ async function main() {
   manifest.host_permissions = ['<all_urls>'];
   await writeFile(`${DIST_E2E}/manifest.json`, JSON.stringify(manifest));
 
-  const fixtures = {
-    '/': await readFile(`${ROOT}tests/fixture.html`),
-    '/container': await readFile(`${ROOT}tests/fixture-container.html`),
-  };
-  const server = createServer((req, res) => {
-    res.setHeader('content-type', 'text/html');
-    res.end(fixtures[req.url] ?? fixtures['/']);
-  });
-  await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const base = `http://127.0.0.1:${server.address().port}`;
+  const fixtures = await startFixtureServer();
 
   // Chrome 137+ dropped --load-extension in branded builds; the supported path is
   // the CDP Extensions domain via Puppeteer's enableExtensions/installExtension.
@@ -112,23 +100,16 @@ async function main() {
 
   let failed = false;
   try {
-    // Fixture: 60px sticky header + 8 × 500px sections = 4060 CSS px, any DPR ≥ 1.
-    await runScenario(browser, `${base}/`, { name: 'full-page', minW: 1100, minH: 4000 });
-    // Container fixture: window scroll is disabled, inner div holds 6 × 500px sections.
-    // The composed height must match the container content (3000px), not the viewport.
-    await runScenario(browser, `${base}/container`, {
-      name: 'container',
-      minW: 1000,
-      minH: 2950,
-      maxH: 3100,
-    });
-    console.log('✓ e2e passed');
+    for (const scenario of SCENARIOS) {
+      await runScenario(browser, `${fixtures.base}${scenario.path}`, scenario);
+    }
+    console.log(`✓ e2e passed (${BROWSER})`);
   } catch (err) {
     failed = true;
-    console.error('✗ e2e failed:', err);
+    console.error(`✗ e2e failed (${BROWSER}):`, err);
   } finally {
     await browser.close();
-    server.close();
+    fixtures.close();
     await rm(DIST_E2E, { recursive: true, force: true });
   }
   process.exit(failed ? 1 : 0);

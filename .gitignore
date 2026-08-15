@@ -1,6 +1,8 @@
 node_modules/
 dist/
 dist-firefox/
+dist-e2e/
+dist-firefox-e2e/
 screencappy.zip
 screencappy-firefox.zip
 *.log
