@@ -302,6 +302,20 @@ export interface Handle {
   y: number;
 }
 
+/** Corners first, so they win over edge handles on a shape too small to separate them. */
+function boxHandles(r: Rect): Handle[] {
+  return [
+    { id: 'nw', x: r.x, y: r.y },
+    { id: 'ne', x: r.x + r.w, y: r.y },
+    { id: 'se', x: r.x + r.w, y: r.y + r.h },
+    { id: 'sw', x: r.x, y: r.y + r.h },
+    { id: 'n', x: r.x + r.w / 2, y: r.y },
+    { id: 'e', x: r.x + r.w, y: r.y + r.h / 2 },
+    { id: 's', x: r.x + r.w / 2, y: r.y + r.h },
+    { id: 'w', x: r.x, y: r.y + r.h / 2 },
+  ];
+}
+
 /** Resize/endpoint handles for the selected annotation. */
 export function handles(a: Anno): Handle[] {
   switch (a.kind) {
@@ -314,40 +328,152 @@ export function handles(a: Anno): Handle[] {
     case 'rect':
     case 'ellipse':
     case 'highlight':
-    case 'blur': {
-      const r = norm(a);
-      return [
-        { id: 'nw', x: r.x, y: r.y },
-        { id: 'ne', x: r.x + r.w, y: r.y },
-        { id: 'sw', x: r.x, y: r.y + r.h },
-        { id: 'se', x: r.x + r.w, y: r.y + r.h },
-      ];
-    }
-    default:
+    case 'blur':
+      return boxHandles(norm(a));
+    case 'text':
+    case 'emoji':
+      // Text and emoji resize by scaling their size, so they get the same eight.
+      return boxHandles(bounds(a));
+    case 'pen':
+      // A freehand stroke has no meaningful box to pull on.
       return [];
   }
 }
 
-export function applyHandle(a: Anno, id: string, x: number, y: number): void {
-  if (a.kind === 'line' || a.kind === 'arrow') {
+export const isBoxKind = (a: Anno): a is Extract<Anno, { kind: 'rect' | 'ellipse' | 'highlight' | 'blur' }> =>
+  a.kind === 'rect' || a.kind === 'ellipse' || a.kind === 'highlight' || a.kind === 'blur';
+
+export interface HandleMods {
+  /** Lock to the aspect ratio the gesture started with. */
+  shift?: boolean;
+  /** Resize about the centre instead of the opposite corner. */
+  alt?: boolean;
+}
+
+/**
+ * Resizes from a handle. Every result is computed from `start`, the geometry the
+ * gesture began with, rather than from the running state: that is what keeps a
+ * handle naming the same edge after the pointer crosses to the far side, and what
+ * lets Shift and Alt be pressed or released mid-drag.
+ */
+export function applyHandle(a: Anno, start: Anno, id: string, x: number, y: number, mods: HandleMods = {}): void {
+  if ((a.kind === 'line' || a.kind === 'arrow') && (start.kind === 'line' || start.kind === 'arrow')) {
     if (id === 'p1') {
       a.x1 = x;
       a.y1 = y;
+      a.x2 = start.x2;
+      a.y2 = start.y2;
     } else {
+      a.x1 = start.x1;
+      a.y1 = start.y1;
       a.x2 = x;
       a.y2 = y;
     }
+    if (mods.shift) snapToOctant(a, id === 'p1');
     return;
   }
-  if (a.kind === 'rect' || a.kind === 'ellipse' || a.kind === 'highlight' || a.kind === 'blur') {
-    const r = norm(a);
-    const right = r.x + r.w;
-    const bottom = r.y + r.h;
-    if (id === 'nw') Object.assign(a, { x, y, w: right - x, h: bottom - y });
-    if (id === 'ne') Object.assign(a, { x: r.x, y, w: x - r.x, h: bottom - y });
-    if (id === 'sw') Object.assign(a, { x, y: r.y, w: right - x, h: y - r.y });
-    if (id === 'se') Object.assign(a, { x: r.x, y: r.y, w: x - r.x, h: y - r.y });
+  if (isBoxKind(a) && isBoxKind(start)) {
+    Object.assign(a, resizeBox(norm(start), id, x, y, mods));
+    return;
   }
+  if (a.kind === 'text' || a.kind === 'emoji') scaleGlyph(a, start, id, x, y);
+}
+
+/** New edges for a box, given the handle being dragged and where the pointer is. */
+function resizeBox(r: Rect, id: string, x: number, y: number, mods: HandleMods): Rect {
+  let left = r.x;
+  let top = r.y;
+  let right = r.x + r.w;
+  let bottom = r.y + r.h;
+  const west = id.includes('w');
+  const east = id.includes('e');
+  const north = id.includes('n');
+  const south = id.includes('s');
+  if (west) left = x;
+  if (east) right = x;
+  if (north) top = y;
+  if (south) bottom = y;
+
+  if (mods.shift && r.w > 0 && r.h > 0 && (west || east) && (north || south)) {
+    const aspect = r.w / r.h;
+    let w = right - left;
+    let h = bottom - top;
+    if (Math.abs(w) / aspect > Math.abs(h)) h = (Math.sign(h) || 1) * (Math.abs(w) / aspect);
+    else w = (Math.sign(w) || 1) * Math.abs(h) * aspect;
+    if (west) left = right - w;
+    else right = left + w;
+    if (north) top = bottom - h;
+    else bottom = top + h;
+  }
+
+  if (mods.alt) {
+    const cx = r.x + r.w / 2;
+    const cy = r.y + r.h / 2;
+    if (west) right = 2 * cx - left;
+    else if (east) left = 2 * cx - right;
+    if (north) bottom = 2 * cy - top;
+    else if (south) top = 2 * cy - bottom;
+  }
+  return { x: left, y: top, w: right - left, h: bottom - top };
+}
+
+const GLYPH_MIN = 8;
+const GLYPH_MAX = 400;
+
+/** Text and emoji resize by scaling their font size, opposite corner pinned. */
+function scaleGlyph(
+  a: Extract<Anno, { kind: 'text' | 'emoji' }>,
+  start: Anno,
+  id: string,
+  x: number,
+  y: number
+): void {
+  if (start.kind !== 'text' && start.kind !== 'emoji') return;
+  const b = bounds(start);
+  const west = id.includes('w');
+  const north = id.includes('n');
+  const anchorX = west ? b.x + b.w : b.x;
+  const anchorY = north ? b.y + b.h : b.y;
+  const horizontal = west || id.includes('e');
+  const vertical = north || id.includes('s');
+  const sx = horizontal ? Math.abs(x - anchorX) / Math.max(b.w, 1) : 0;
+  const sy = vertical ? Math.abs(y - anchorY) / Math.max(b.h, 1) : 0;
+  const scale = Math.max(sx, sy);
+  a.size = Math.min(GLYPH_MAX, Math.max(GLYPH_MIN, start.size * scale));
+
+  const now = bounds(a);
+  const left = west ? anchorX - now.w : anchorX;
+  const top = north ? anchorY - now.h : anchorY;
+  if (a.kind === 'text') {
+    a.x = left;
+    a.y = top;
+  } else {
+    a.x = left + now.w / 2;
+    a.y = top + now.h / 2;
+  }
+}
+
+function snapToOctant(a: Extract<Anno, { kind: 'line' | 'arrow' }>, fromStart: boolean): void {
+  const ox = fromStart ? a.x2 : a.x1;
+  const oy = fromStart ? a.y2 : a.y1;
+  const px = fromStart ? a.x1 : a.x2;
+  const py = fromStart ? a.y1 : a.y2;
+  const angle = Math.round(Math.atan2(py - oy, px - ox) / (Math.PI / 4)) * (Math.PI / 4);
+  const len = Math.hypot(px - ox, py - oy);
+  const nx = ox + Math.cos(angle) * len;
+  const ny = oy + Math.sin(angle) * len;
+  if (fromStart) {
+    a.x1 = nx;
+    a.y1 = ny;
+  } else {
+    a.x2 = nx;
+    a.y2 = ny;
+  }
+}
+
+/** Undoes any inversion a resize left behind, so w and h are never negative. */
+export function normalizeAnno(a: Anno): void {
+  if (isBoxKind(a)) Object.assign(a, norm(a));
 }
 
 function norm(r: { x: number; y: number; w: number; h: number }): Rect {

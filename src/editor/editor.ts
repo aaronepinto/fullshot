@@ -12,6 +12,8 @@ import {
   drawAnno,
   handles,
   hitTest,
+  isBoxKind,
+  normalizeAnno,
   translateAnno,
   TEXT_FONT,
   type Anno,
@@ -253,12 +255,12 @@ function render() {
     ctx.strokeRect(b.x, b.y, b.w, b.h);
     ctx.setLineDash([]);
     for (const h of handles(sel)) {
-      ctx.fillStyle = '#fff';
+      const hot = h.id === hoverHandle && drag.kind !== 'handle';
+      ctx.fillStyle = hot ? '#38bdf8' : '#fff';
       ctx.strokeStyle = '#0ea5e9';
-      ctx.lineWidth = 1.5 / s;
-      const r = 5 / s;
+      ctx.lineWidth = 2 / s;
       ctx.beginPath();
-      ctx.arc(h.x, h.y, r, 0, Math.PI * 2);
+      ctx.arc(h.x, h.y, HANDLE_RADIUS / s, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
@@ -274,6 +276,12 @@ function pushUndo() {
   state.undoStack.push({ annos: structuredClone(state.annos), crop: state.crop && { ...state.crop } });
   if (state.undoStack.length > 100) state.undoStack.shift();
   state.redoStack.length = 0;
+  updateUndoButtons();
+}
+
+/** Drops the newest entry, for a gesture that turned out to change nothing. */
+function popUndo() {
+  state.undoStack.pop();
   updateUndoButtons();
 }
 
@@ -327,10 +335,10 @@ function persistAnnos() {
 type Drag =
   | { kind: 'none' }
   | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number; moved: boolean }
-  | { kind: 'draw'; anno: Anno }
+  | { kind: 'draw'; anno: Anno; ox: number; oy: number }
   | { kind: 'crop' }
   | { kind: 'move'; index: number; lastX: number; lastY: number; moved: boolean }
-  | { kind: 'handle'; index: number; id: string };
+  | { kind: 'handle'; index: number; id: string; start: Anno; pressX: number; pressY: number; moved: boolean };
 
 let drag: Drag = { kind: 'none' };
 let spaceDown = false;
@@ -359,8 +367,18 @@ canvas.addEventListener('pointerdown', (e) => {
       const h = handleHit(e);
       if (h) {
         capture();
-        pushUndo();
-        drag = { kind: 'handle', index: selectedIndex(), id: h.id };
+        const index = selectedIndex();
+        // Undo is deferred to the first actual movement: pressing a handle and
+        // letting go must not leave a no-op entry behind.
+        drag = {
+          kind: 'handle',
+          index,
+          id: h.id,
+          start: structuredClone(state.annos[index]!),
+          pressX: p.x,
+          pressY: p.y,
+          moved: false,
+        };
         return;
       }
       const hit = topHit(e);
@@ -397,7 +415,7 @@ canvas.addEventListener('pointerdown', (e) => {
     }
     case 'pen':
       capture();
-      drag = { kind: 'draw', anno: { kind: 'pen', points: [p.x, p.y], color: st.color, width: st.strokeWidth } };
+      drag = { kind: 'draw', anno: { kind: 'pen', points: [p.x, p.y], color: st.color, width: st.strokeWidth }, ox: p.x, oy: p.y };
       state.draft = drag.anno;
       return;
     case 'arrow':
@@ -406,6 +424,8 @@ canvas.addEventListener('pointerdown', (e) => {
       drag = {
         kind: 'draw',
         anno: { kind: state.tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, color: st.color, width: st.strokeWidth },
+        ox: p.x,
+        oy: p.y,
       };
       state.draft = drag.anno;
       return;
@@ -415,17 +435,19 @@ canvas.addEventListener('pointerdown', (e) => {
       drag = {
         kind: 'draw',
         anno: { kind: state.tool, x: p.x, y: p.y, w: 0, h: 0, color: st.color, width: st.strokeWidth, fill: st.fill },
+        ox: p.x,
+        oy: p.y,
       };
       state.draft = drag.anno;
       return;
     case 'highlight':
       capture();
-      drag = { kind: 'draw', anno: { kind: 'highlight', x: p.x, y: p.y, w: 0, h: 0, color: st.color === '#0f172a' ? '#eab308' : st.color } };
+      drag = { kind: 'draw', anno: { kind: 'highlight', x: p.x, y: p.y, w: 0, h: 0, color: st.color === '#0f172a' ? '#eab308' : st.color }, ox: p.x, oy: p.y };
       state.draft = drag.anno;
       return;
     case 'blur':
       capture();
-      drag = { kind: 'draw', anno: { kind: 'blur', x: p.x, y: p.y, w: 0, h: 0, px: st.blurPx } };
+      drag = { kind: 'draw', anno: { kind: 'blur', x: p.x, y: p.y, w: 0, h: 0, px: st.blurPx }, ox: p.x, oy: p.y };
       state.draft = drag.anno;
       return;
   }
@@ -452,14 +474,19 @@ canvas.addEventListener('pointermove', (e) => {
         a.x2 = p.x;
         a.y2 = p.y;
         if (e.shiftKey) snapAngle(a);
-      } else if (a.kind === 'rect' || a.kind === 'ellipse' || a.kind === 'highlight' || a.kind === 'blur') {
-        a.w = p.x - a.x;
-        a.h = p.y - a.y;
+      } else if (isBoxKind(a)) {
+        let w = p.x - drag.ox;
+        let h = p.y - drag.oy;
         if (e.shiftKey) {
-          const m = Math.max(Math.abs(a.w), Math.abs(a.h));
-          a.w = Math.sign(a.w || 1) * m;
-          a.h = Math.sign(a.h || 1) * m;
+          const m = Math.max(Math.abs(w), Math.abs(h));
+          w = (Math.sign(w) || 1) * m;
+          h = (Math.sign(h) || 1) * m;
         }
+        // Alt draws outwards from where the drag began rather than towards it.
+        a.x = e.altKey ? drag.ox - w : drag.ox;
+        a.y = e.altKey ? drag.oy - h : drag.oy;
+        a.w = e.altKey ? w * 2 : w;
+        a.h = e.altKey ? h * 2 : h;
       }
       requestRender();
       return;
@@ -488,7 +515,13 @@ canvas.addEventListener('pointermove', (e) => {
     case 'handle': {
       const a = state.annos[drag.index];
       if (!a) return;
-      applyHandle(a, drag.id, p.x, p.y);
+      if (!drag.moved) {
+        // A pointermove that has not travelled is not a resize.
+        if (Math.hypot(p.x - drag.pressX, p.y - drag.pressY) * state.zoom < 1) return;
+        pushUndo();
+        drag.moved = true;
+      }
+      applyHandle(a, drag.start, drag.id, p.x, p.y, { shift: e.shiftKey, alt: e.altKey });
       persistAnnos();
       requestRender();
       return;
@@ -515,6 +548,21 @@ canvas.addEventListener('pointerup', () => {
       persistAnnos();
     }
     requestRender();
+  } else if (drag.kind === 'handle' && drag.moved) {
+    const a = state.annos[drag.index];
+    if (a) {
+      normalizeAnno(a);
+      const b = bounds(a);
+      if (b.w < MIN_SIZE || b.h < MIN_SIZE) {
+        // Nothing usable came of the gesture, so leave neither the shape nor the
+        // history changed by it.
+        state.annos[drag.index] = drag.start;
+        popUndo();
+        toast('That would be too small to see, so the size was kept.');
+      }
+      persistAnnos();
+    }
+    requestRender();
   } else if (drag.kind === 'crop' && state.cropDraft) {
     const r = normRect(state.cropDraft);
     if (r.w > 8 && r.h > 8) {
@@ -537,19 +585,50 @@ function topHit(e: MouseEvent): number {
   return -1;
 }
 
+/** Generous enough to be easy to grab, still tight enough to pick one of eight. */
+const HANDLE_HIT = 10;
+const HANDLE_RADIUS = 6;
+/** Smallest annotation a resize may leave behind, in image px. */
+const MIN_SIZE = 2;
+
+const HANDLE_CURSORS: Record<string, string> = {
+  nw: 'nwse-resize',
+  se: 'nwse-resize',
+  ne: 'nesw-resize',
+  sw: 'nesw-resize',
+  n: 'ns-resize',
+  s: 'ns-resize',
+  e: 'ew-resize',
+  w: 'ew-resize',
+  p1: 'crosshair',
+  p2: 'crosshair',
+};
+
+/** Handle currently under the pointer, drawn highlighted so the target is visible. */
+let hoverHandle: string | null = null;
+
 function handleHit(e: MouseEvent): { id: string } | null {
   const sel = state.annos[selectedIndex()];
   if (!sel) return null;
   for (const h of handles(sel)) {
     const s = toScreen(h.x, h.y);
-    if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < 8) return { id: h.id };
+    if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < HANDLE_HIT) return { id: h.id };
   }
   return null;
 }
 
 function updateCursor(e: MouseEvent) {
+  const hovered = state.tool === 'select' ? (handleHit(e)?.id ?? null) : null;
+  if (hovered !== hoverHandle) {
+    hoverHandle = hovered;
+    requestRender();
+  }
   if (state.tool === 'select') {
-    canvas.style.cursor = handleHit(e) ? 'nwse-resize' : topHit(e) >= 0 ? 'move' : 'grab';
+    canvas.style.cursor = hovered
+      ? (HANDLE_CURSORS[hovered] ?? 'nwse-resize')
+      : topHit(e) >= 0
+        ? 'move'
+        : 'grab';
   } else if (state.tool === 'text' || state.tool === 'emoji') {
     canvas.style.cursor = 'text';
   } else {
