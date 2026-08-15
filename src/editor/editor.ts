@@ -217,7 +217,11 @@ function render() {
     img.drawRegion(ctx, vx, vy, vw, vh, vx, vy, vw, vh);
   }
 
-  for (const a of state.annos) drawAnno(ctx, a, img);
+  const editingIndex = state.editing?.mode === 'edit' ? state.editing.index : -1;
+  state.annos.forEach((a, i) => {
+    // The open editor already shows this one; painting it too would double it.
+    if (i !== editingIndex) drawAnno(ctx, a, img);
+  });
   if (state.draft) drawAnno(ctx, state.draft, img);
 
   // Crop dimming (committed crop, or in-progress draft).
@@ -374,12 +378,15 @@ canvas.addEventListener('pointerdown', (e) => {
       drag = { kind: 'crop' };
       hideCropBar();
       return;
-    case 'text':
+    case 'text': {
       // Suppressing the compatibility mousedown means no focus change, so no blur
       // fires against the editor we are about to open.
       e.preventDefault();
-      openTextEditor(p.x, p.y);
+      const hit = topHit(e);
+      if (state.annos[hit]?.kind === 'text') editTextAnno(hit);
+      else openTextEditor(p.x, p.y);
       return;
+    }
     case 'emoji': {
       pushUndo();
       state.annos.push({ kind: 'emoji', x: p.x, y: p.y, char: st.emoji, size: st.fontSize * 2 });
@@ -554,6 +561,13 @@ function snapAngle(a: Extract<Anno, { kind: 'line' | 'arrow' }>) {
   a.y2 = a.y1 + Math.sin(angle) * len;
 }
 
+canvas.addEventListener('dblclick', (e) => {
+  const hit = topHit(e);
+  if (state.annos[hit]?.kind !== 'text') return;
+  e.preventDefault();
+  editTextAnno(hit);
+});
+
 viewport.addEventListener(
   'wheel',
   (e) => {
@@ -628,6 +642,13 @@ function closeTextEditor(reason: CloseReason) {
 }
 
 /** Writes an editing session back to the annotation list. */
+/** Reopens an existing label in place, seeded with its own text and style. */
+function editTextAnno(index: number) {
+  const a = state.annos[index];
+  if (a?.kind !== 'text') return;
+  openTextEditor(a.x, a.y, { index, text: a.text, color: a.color, size: a.size });
+}
+
 function commitText(ed: TextEditing) {
   const text = ed.draft.trim();
   if (ed.mode === 'create') {
@@ -1118,6 +1139,9 @@ document.addEventListener('keydown', (e) => {
     deleteSelection();
     persistAnnos();
     requestRender();
+  } else if (e.key === 'Enter' && state.annos[selectedIndex()]?.kind === 'text') {
+    e.preventDefault();
+    editTextAnno(selectedIndex());
   } else if (e.key === 'Escape') {
     clearSelection();
     state.cropDraft = null;
