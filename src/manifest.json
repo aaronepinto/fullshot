@@ -44,6 +44,9 @@
     "capture-selection": {
       "suggested_key": { "default": "Alt+Shift+S" },
       "description": "Capture a selected region"
+    },
+    "capture-element": {
+      "description": "Capture an element"
     }
   }
 }

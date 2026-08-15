@@ -88,6 +88,23 @@ export function pickDominantScroller<T extends ScrollerCandidate>(
   return best;
 }
 
+/**
+ * True when a picked element scrolls its own content vertically, so element capture
+ * should grab its full scrollable content instead of just the visible box.
+ */
+export function isScrollableTarget(
+  c: Pick<ScrollerCandidate, 'overflowY' | 'scrollHeight' | 'clientHeight'>
+): boolean {
+  return (
+    (c.overflowY === 'auto' || c.overflowY === 'scroll') && c.scrollHeight > c.clientHeight + 100
+  );
+}
+
+/** Chip text for the element picker: tag name plus rounded CSS pixel size. */
+export function elementLabel(tagName: string, w: number, h: number): string {
+  return `${tagName.toLowerCase()} · ${Math.round(w)} × ${Math.round(h)}`;
+}
+
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);

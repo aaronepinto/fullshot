@@ -10,6 +10,7 @@ const entries = {
   background: 'src/background.ts',
   'content-capture': 'src/content/capture.ts',
   'content-select': 'src/content/select.ts',
+  'content-element': 'src/content/element.ts',
   editor: 'src/editor/editor.ts',
   options: 'src/options/options.ts',
 };
