@@ -6,14 +6,20 @@
 import type { Rect } from '../lib/types';
 import type { BigImage } from './stitch';
 
+/**
+ * `rotation` is in radians, clockwise, about the centre of the annotation's own
+ * unrotated box, and is optional so every capture saved before it existed still
+ * loads. Lines and arrows carry their angle in their endpoints instead, and a
+ * freehand stroke has no box to turn, so neither kind has the field.
+ */
 export type Anno =
   | { kind: 'arrow' | 'line'; x1: number; y1: number; x2: number; y2: number; color: string; width: number }
-  | { kind: 'rect' | 'ellipse'; x: number; y: number; w: number; h: number; color: string; width: number; fill: boolean }
-  | { kind: 'highlight'; x: number; y: number; w: number; h: number; color: string }
+  | { kind: 'rect' | 'ellipse'; x: number; y: number; w: number; h: number; color: string; width: number; fill: boolean; rotation?: number }
+  | { kind: 'highlight'; x: number; y: number; w: number; h: number; color: string; rotation?: number }
   | { kind: 'pen'; points: number[]; color: string; width: number }
-  | { kind: 'text'; x: number; y: number; text: string; color: string; size: number }
-  | { kind: 'blur'; x: number; y: number; w: number; h: number; px: number }
-  | { kind: 'emoji'; x: number; y: number; char: string; size: number };
+  | { kind: 'text'; x: number; y: number; text: string; color: string; size: number; rotation?: number }
+  | { kind: 'blur'; x: number; y: number; w: number; h: number; px: number; rotation?: number }
+  | { kind: 'emoji'; x: number; y: number; char: string; size: number; rotation?: number };
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
@@ -22,6 +28,15 @@ export const TEXT_FONT = (size: number) =>
 
 export function drawAnno(ctx: Ctx, a: Anno, image: BigImage): void {
   ctx.save();
+  // One transform ahead of every kind, so each case keeps drawing in the annotation's
+  // own upright frame and export bakes the same rotation the screen shows.
+  const rot = rotationOf(a);
+  if (rot) {
+    const c = centerOf(a);
+    ctx.translate(c.x, c.y);
+    ctx.rotate(rot);
+    ctx.translate(-c.x, -c.y);
+  }
   switch (a.kind) {
     case 'line':
     case 'arrow': {
@@ -174,7 +189,63 @@ function textSize(a: Extract<Anno, { kind: 'text' }>): { w: number; h: number } 
   return m;
 }
 
-export function bounds(a: Anno): Rect {
+// ---------------------------------------------------------------------------
+// Rotation
+// ---------------------------------------------------------------------------
+
+/** Angle snap for a rotation drag held with Shift. */
+export const ROTATE_STEP = Math.PI / 12;
+/** How far above the top edge the rotation handle floats, in screen px. */
+export const ROTATE_ARM = 28;
+
+/** Kinds that turn about their centre rather than by moving their endpoints. */
+export const canRotate = (a: Anno): boolean =>
+  a.kind !== 'line' && a.kind !== 'arrow' && a.kind !== 'pen';
+
+export const rotationOf = (a: Anno): number => ('rotation' in a && a.rotation ? a.rotation : 0);
+
+/** The pivot every rotation turns about: the centre of the unrotated box. */
+export function centerOf(a: Anno): { x: number; y: number } {
+  const r = localBounds(a);
+  return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+}
+
+/** Folds an angle into [-PI, PI), so a full turn reads as zero rather than 2PI. */
+export function normalizeAngle(rad: number): number {
+  const t = ((rad + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+  return t - Math.PI;
+}
+
+function rotateAbout(x: number, y: number, cx: number, cy: number, rad: number) {
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = x - cx;
+  const dy = y - cy;
+  return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+}
+
+/** Image-space point mapped into the annotation's upright frame. */
+export function toLocal(a: Anno, x: number, y: number): { x: number; y: number } {
+  const rot = rotationOf(a);
+  if (!rot) return { x, y };
+  const c = centerOf(a);
+  return rotateAbout(x, y, c.x, c.y, -rot);
+}
+
+/** The inverse of `toLocal`: a point in the upright frame, placed on the image. */
+export function toWorld(a: Anno, x: number, y: number): { x: number; y: number } {
+  const rot = rotationOf(a);
+  if (!rot) return { x, y };
+  const c = centerOf(a);
+  return rotateAbout(x, y, c.x, c.y, rot);
+}
+
+/**
+ * The annotation's own box, ignoring any rotation. This is what resize handles,
+ * hit tests and the size readout work in; `bounds` wraps it in the axis-aligned
+ * box the rotated shape actually occupies.
+ */
+export function localBounds(a: Anno): Rect {
   switch (a.kind) {
     case 'line':
     case 'arrow': {
@@ -215,6 +286,22 @@ export function bounds(a: Anno): Rect {
 }
 
 /**
+ * The upright box the annotation occupies once its rotation is applied. Marquee
+ * sweeps, the jump-to-annotation camera and the flash outline all want this one;
+ * anything working in the annotation's own frame wants `localBounds`.
+ */
+export function bounds(a: Anno): Rect {
+  const r = localBounds(a);
+  const rot = rotationOf(a);
+  if (!rot) return r;
+  const cos = Math.abs(Math.cos(rot));
+  const sin = Math.abs(Math.sin(rot));
+  const w = r.w * cos + r.h * sin;
+  const h = r.w * sin + r.h * cos;
+  return { x: r.x + r.w / 2 - w / 2, y: r.y + r.h / 2 - h / 2, w, h };
+}
+
+/**
  * Whether a point lands on the annotation itself, not merely inside its bounding
  * box. A bounding-box test let a large unfilled rectangle swallow every click in
  * its empty interior and let a diagonal line claim its whole box, which is why
@@ -222,7 +309,12 @@ export function bounds(a: Anno): Rect {
  *
  * `tol` is a screen-constant slop already converted to image units by the caller.
  */
-export function hitTest(a: Anno, x: number, y: number, tol: number): boolean {
+export function hitTest(a: Anno, px: number, py: number, tol: number): boolean {
+  // Every shape below is described in its upright frame, so the point comes to it
+  // rather than each case learning to turn.
+  const p = toLocal(a, px, py);
+  const x = p.x;
+  const y = p.y;
   switch (a.kind) {
     case 'line':
     case 'arrow':
@@ -259,7 +351,7 @@ export function hitTest(a: Anno, x: number, y: number, tol: number): boolean {
       return inRect(norm(a), x, y, tol);
     case 'text':
     case 'emoji':
-      return inRect(bounds(a), x, y, tol);
+      return inRect(localBounds(a), x, y, tol);
   }
 }
 
@@ -316,8 +408,15 @@ function boxHandles(r: Rect): Handle[] {
   ];
 }
 
-/** Resize/endpoint handles for the selected annotation. */
-export function handles(a: Anno): Handle[] {
+/**
+ * Resize, rotate and endpoint handles for the selected annotation, in image space
+ * with any rotation already applied, so callers hit-test and draw them directly.
+ *
+ * `scale` is image px per screen px (1 / zoom). Only the rotation handle's arm
+ * uses it: the arm has to stay the same length on screen at every magnification,
+ * where the box handles simply sit on the geometry.
+ */
+export function handles(a: Anno, scale = 1): Handle[] {
   switch (a.kind) {
     case 'line':
     case 'arrow':
@@ -325,19 +424,24 @@ export function handles(a: Anno): Handle[] {
         { id: 'p1', x: a.x1, y: a.y1 },
         { id: 'p2', x: a.x2, y: a.y2 },
       ];
-    case 'rect':
-    case 'ellipse':
-    case 'highlight':
-    case 'blur':
-      return boxHandles(norm(a));
-    case 'text':
-    case 'emoji':
-      // Text and emoji resize by scaling their size, so they get the same eight.
-      return boxHandles(bounds(a));
     case 'pen':
       // A freehand stroke has no meaningful box to pull on.
       return [];
+    default: {
+      // Text and emoji resize by scaling their size, so they get the same eight.
+      const r = localBounds(a);
+      const list = boxHandles(r);
+      list.push({ id: 'rot', x: r.x + r.w / 2, y: r.y - ROTATE_ARM * scale });
+      return list.map((h) => ({ id: h.id, ...toWorld(a, h.x, h.y) }));
+    }
   }
+}
+
+/** Foot of the lollipop stem: the top edge midpoint, turned with the shape. */
+export function rotateStem(a: Anno): { x: number; y: number } | null {
+  if (!canRotate(a)) return null;
+  const r = localBounds(a);
+  return toWorld(a, r.x + r.w / 2, r.y);
 }
 
 export const isBoxKind = (a: Anno): a is Extract<Anno, { kind: 'rect' | 'ellipse' | 'highlight' | 'blur' }> =>
@@ -372,11 +476,86 @@ export function applyHandle(a: Anno, start: Anno, id: string, x: number, y: numb
     if (mods.shift) snapToOctant(a, id === 'p1');
     return;
   }
-  if (isBoxKind(a) && isBoxKind(start)) {
-    Object.assign(a, resizeBox(norm(start), id, x, y, mods));
+  if (id === 'rot') {
+    applyRotation(a, start, x, y, mods);
     return;
   }
-  if (a.kind === 'text' || a.kind === 'emoji') scaleGlyph(a, start, id, x, y);
+  // A resize is described in the frame the gesture started in, so the pointer is
+  // unturned before any edge maths and the result is turned back afterwards.
+  const rot = rotationOf(start);
+  const c = centerOf(start);
+  const p = rot ? rotateAbout(x, y, c.x, c.y, -rot) : { x, y };
+  if (isBoxKind(a) && isBoxKind(start)) {
+    Object.assign(a, anchored(localBounds(start), id, p.x, p.y, mods, c, rot));
+    return;
+  }
+  if (a.kind === 'text' || a.kind === 'emoji') scaleGlyph(a, start, id, p.x, p.y, c, rot);
+}
+
+/**
+ * Turns an annotation so its rotation handle follows the pointer. The handle sits
+ * straight above the centre at rest, hence the quarter turn; Shift lands it on the
+ * nearest 15 degree step. A pointer sitting on the centre has no angle to report,
+ * so the gesture holds whatever it had rather than snapping to an arbitrary one.
+ */
+function applyRotation(a: Anno, start: Anno, x: number, y: number, mods: HandleMods): void {
+  if (!canRotate(a)) return;
+  const c = centerOf(start);
+  const dx = x - c.x;
+  const dy = y - c.y;
+  if (Math.hypot(dx, dy) < 1) return;
+  let rot = Math.atan2(dy, dx) + Math.PI / 2;
+  if (mods.shift) rot = Math.round(rot / ROTATE_STEP) * ROTATE_STEP;
+  (a as { rotation?: number }).rotation = normalizeAngle(rot);
+}
+
+/**
+ * The point a resize pivots on: the corner or edge opposite the handle, or the
+ * centre when Alt is held. It is what must stay put on screen while a rotated
+ * shape changes size, since the box's own centre moves as the edges do.
+ */
+function anchorOf(r: Rect, id: string, mods: HandleMods): { x: number; y: number } {
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  if (mods.alt) return { x: cx, y: cy };
+  const west = id.includes('w');
+  const east = id.includes('e');
+  const north = id.includes('n');
+  const south = id.includes('s');
+  return {
+    x: west ? r.x + r.w : east ? r.x : cx,
+    y: north ? r.y + r.h : south ? r.y : cy,
+  };
+}
+
+/**
+ * Resizes in the upright frame, then places the result so the anchor lands back
+ * where it was on the image. With no rotation the placement is the identity, so
+ * an upright resize comes out exactly as it did before rotation existed.
+ */
+function anchored(
+  r: Rect,
+  id: string,
+  x: number,
+  y: number,
+  mods: HandleMods,
+  c: { x: number; y: number },
+  rot: number
+): Rect {
+  const nr = resizeBox(r, id, x, y, mods);
+  if (!rot) return nr;
+  const anchor = anchorOf(r, id, mods);
+  const world = rotateAbout(anchor.x, anchor.y, c.x, c.y, rot);
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  const dx = nr.x + nr.w / 2 - anchor.x;
+  const dy = nr.y + nr.h / 2 - anchor.y;
+  return {
+    x: world.x + dx * cos - dy * sin - nr.w / 2,
+    y: world.y + dx * sin + dy * cos - nr.h / 2,
+    w: nr.w,
+    h: nr.h,
+  };
 }
 
 /** New edges for a box, given the handle being dragged and where the pointer is. */
@@ -420,16 +599,22 @@ function resizeBox(r: Rect, id: string, x: number, y: number, mods: HandleMods):
 const GLYPH_MIN = 8;
 const GLYPH_MAX = 400;
 
-/** Text and emoji resize by scaling their font size, opposite corner pinned. */
+/**
+ * Text and emoji resize by scaling their font size, opposite corner pinned. `x`
+ * and `y` arrive already unturned into `start`'s frame; `c` and `rot` put the
+ * result back on the image with that corner still where the eye left it.
+ */
 function scaleGlyph(
   a: Extract<Anno, { kind: 'text' | 'emoji' }>,
   start: Anno,
   id: string,
   x: number,
-  y: number
+  y: number,
+  c: { x: number; y: number },
+  rot: number
 ): void {
   if (start.kind !== 'text' && start.kind !== 'emoji') return;
-  const b = bounds(start);
+  const b = localBounds(start);
   const west = id.includes('w');
   const north = id.includes('n');
   const anchorX = west ? b.x + b.w : b.x;
@@ -441,15 +626,23 @@ function scaleGlyph(
   const scale = Math.max(sx, sy);
   a.size = Math.min(GLYPH_MAX, Math.max(GLYPH_MIN, start.size * scale));
 
-  const now = bounds(a);
+  // Only the size of the new box matters here; its position is about to be set.
+  const now = localBounds(a);
   const left = west ? anchorX - now.w : anchorX;
   const top = north ? anchorY - now.h : anchorY;
+  const cos = Math.cos(rot);
+  const sin = Math.sin(rot);
+  const world = rot ? rotateAbout(anchorX, anchorY, c.x, c.y, rot) : { x: anchorX, y: anchorY };
+  const dx = left + now.w / 2 - anchorX;
+  const dy = top + now.h / 2 - anchorY;
+  const cx = world.x + dx * cos - dy * sin;
+  const cy = world.y + dx * sin + dy * cos;
   if (a.kind === 'text') {
-    a.x = left;
-    a.y = top;
+    a.x = cx - now.w / 2;
+    a.y = cy - now.h / 2;
   } else {
-    a.x = left + now.w / 2;
-    a.y = top + now.h / 2;
+    a.x = cx;
+    a.y = cy;
   }
 }
 
