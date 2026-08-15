@@ -4,7 +4,7 @@
  * scrollbars, sticky/fixed elements, animations), drives the scroll loop, and
  * restores everything afterwards.
  */
-import { pickDominantScroller } from '../lib/capture-common';
+import { AUTO_LOAD, pickDominantScroller, shouldContinueAutoLoad } from '../lib/capture-common';
 import type { CaptureContentMsg, PageMetrics, Rect, ScrollResult } from '../lib/types';
 
 interface SavedInline {
@@ -249,6 +249,26 @@ interface SavedInline {
     await sleep(120);
   }
 
+  /**
+   * Repeatedly jumps to the bottom so infinite-scroll pages load more content,
+   * until growth stalls or a bound (height ceiling, rounds, time) is hit.
+   */
+  async function autoLoadMore(maxHeight: number) {
+    const start = Date.now();
+    let rounds = 0;
+    let height = scroller().scrollHeight;
+    for (;;) {
+      const s = scroller();
+      s.scrollTop = s.scrollHeight;
+      await nextFrame();
+      await sleep(AUTO_LOAD.settleMs);
+      rounds++;
+      const grown = scroller().scrollHeight;
+      if (!shouldContinueAutoLoad(height, grown, maxHeight, rounds, Date.now() - start)) break;
+      height = grown;
+    }
+  }
+
   async function scrollTo(x: number, y: number, settleMs: number, hideFixed: boolean): Promise<ScrollResult> {
     setFixedHidden(hideFixed);
     const s = scroller();
@@ -284,9 +304,16 @@ interface SavedInline {
       case 'fs:prepare':
         prepare(msg.hideSticky, msg.freezeAnimations);
         return { ok: true };
-      case 'fs:prescroll':
-        await prescroll(msg.stepY, msg.maxY);
+      case 'fs:prescroll': {
+        let maxY = msg.maxY;
+        if (msg.autoLoadMaxHeight) {
+          await autoLoadMore(msg.autoLoadMaxHeight);
+          // The lazy-load pass should now sweep the grown page, up to the ceiling.
+          maxY = Math.max(maxY, Math.min(scroller().scrollHeight, msg.autoLoadMaxHeight));
+        }
+        await prescroll(msg.stepY, maxY);
         return { ok: true };
+      }
       case 'fs:scrollTo':
         return scrollTo(msg.x, msg.y, msg.settleMs, msg.hideFixed);
       case 'fs:restore':
