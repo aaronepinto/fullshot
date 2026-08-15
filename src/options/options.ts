@@ -7,6 +7,7 @@ const FIELDS: (keyof Settings)[] = [
   'captureDelayMs',
   'captureStartDelaySeconds',
   'prescroll',
+  'autoLoadMore',
   'hideSticky',
   'freezeAnimations',
   'maxCaptureHeight',

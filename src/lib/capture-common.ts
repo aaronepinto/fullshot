@@ -66,6 +66,38 @@ export function countdownSteps(seconds: number): number[] {
   return steps;
 }
 
+/** Limits for the infinite-scroll auto-load loop. */
+export const AUTO_LOAD = {
+  /** Minimum growth per round (CSS px) for the page to count as still loading. */
+  minGrowth: 200,
+  /** Hard cap on scroll-to-bottom rounds. */
+  maxRounds: 40,
+  /** Wall-clock budget for the whole loop, ms. */
+  maxTotalMs: 30_000,
+  /** Wait after each scroll to the bottom for new content to arrive, ms. */
+  settleMs: 500,
+} as const;
+
+/**
+ * Whether the auto-load loop should scroll to the bottom again: the last round must
+ * have grown the page by at least minGrowth, the page must still be under the capture
+ * ceiling, and neither the round cap nor the time budget is exhausted.
+ */
+export function shouldContinueAutoLoad(
+  prevHeight: number,
+  height: number,
+  maxHeight: number,
+  rounds: number,
+  elapsedMs: number
+): boolean {
+  return (
+    height - prevHeight >= AUTO_LOAD.minGrowth &&
+    height < maxHeight &&
+    rounds < AUTO_LOAD.maxRounds &&
+    elapsedMs < AUTO_LOAD.maxTotalMs
+  );
+}
+
 /** Plain-data description of a possible inner scroll container. */
 export interface ScrollerCandidate {
   overflowY: string;
