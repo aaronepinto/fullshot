@@ -1,3 +1,8 @@
+import {
+  debuggerAvailable,
+  hasDebuggerPermission,
+  requestDebuggerPermission,
+} from '../lib/debugger-permission';
 import { DEFAULTS, getSettings, saveSettings, type Settings } from '../lib/settings';
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -32,9 +37,17 @@ function flashSaved() {
 }
 
 async function updateTurboUi() {
-  const engine = $<HTMLSelectElement>('#engine').value;
-  const granted = await chrome.permissions.contains({ permissions: ['debugger'] });
-  $('#grantDebugger').hidden = engine !== 'turbo' || granted;
+  const engineEl = $<HTMLSelectElement>('#engine');
+  if (!debuggerAvailable()) {
+    // Firefox has no chrome.debugger, so Turbo can never work there.
+    engineEl.querySelector<HTMLOptionElement>('option[value="turbo"]')!.disabled = true;
+    $('#turboHint').textContent =
+      'Turbo is unavailable in this browser: it needs the DevTools debugger API, which only Chromium-based browsers provide.';
+    $('#grantDebugger').hidden = true;
+    return;
+  }
+  const granted = await hasDebuggerPermission();
+  $('#grantDebugger').hidden = engineEl.value !== 'turbo' || granted;
 }
 
 async function load() {
@@ -72,7 +85,7 @@ for (const key of FIELDS) {
       await updateTurboUi();
       // Requesting inside the change handler keeps the user-gesture requirement satisfied.
       if (el.value === 'turbo') {
-        const granted = await chrome.permissions.request({ permissions: ['debugger'] });
+        const granted = await requestDebuggerPermission();
         if (!granted) {
           await saveSettings({ engine: 'stitch' });
           (el as HTMLSelectElement).value = 'stitch';
@@ -85,7 +98,7 @@ for (const key of FIELDS) {
 }
 
 $('#grantDebugger').addEventListener('click', async () => {
-  await chrome.permissions.request({ permissions: ['debugger'] });
+  await requestDebuggerPermission();
   await updateTurboUi();
 });
 
