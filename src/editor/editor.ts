@@ -46,6 +46,14 @@ type Tool =
   | 'emoji';
 
 const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#0f172a', '#ffffff'];
+
+// Selection chrome is painted on the canvas rather than in CSS, so the shell's
+// tokens have to exist here as literals. These four mirror editor.css: --accent,
+// a wash of it, --cream for the handle bodies, and --ink-950 for the crop dim.
+const ACCENT = '#38bdf8';
+const ACCENT_WASH = 'rgba(56, 189, 248, 0.12)';
+const HANDLE_FILL = '#faf6ec';
+const DIM = 'rgba(10, 10, 12, 0.62)';
 // Segment into graphemes so multi-codepoint emoji stay intact.
 const EMOJI_SET = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment('✅❌⭐❤️🔥🎉👍👎👀💡⚠️❗❓🚀🐛💯😀😂😍🤔😱🙏🔒📌')].map((s) => s.segment);
 
@@ -238,13 +246,13 @@ function render() {
   const cropRect = state.cropDraft ?? state.crop;
   if (cropRect) {
     ctx.save();
-    ctx.fillStyle = 'rgba(2, 6, 23, 0.55)';
+    ctx.fillStyle = DIM;
     ctx.beginPath();
     ctx.rect(-1e6, -1e6, 2e6, 2e6);
     const r = normRect(cropRect);
     ctx.rect(r.x, r.y + r.h, r.w, -r.h); // counter-clockwise hole
     ctx.fill('evenodd');
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = ACCENT;
     ctx.lineWidth = 1.5 / s;
     ctx.setLineDash([6 / s, 4 / s]);
     ctx.strokeRect(r.x, r.y, r.w, r.h);
@@ -254,8 +262,8 @@ function render() {
   if (drag.kind === 'marquee') {
     const r = normRect({ x: drag.x0, y: drag.y0, w: drag.x1 - drag.x0, h: drag.y1 - drag.y0 });
     ctx.save();
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
-    ctx.strokeStyle = '#38bdf8';
+    ctx.fillStyle = ACCENT_WASH;
+    ctx.strokeStyle = ACCENT;
     ctx.lineWidth = 1.5 / s;
     ctx.setLineDash([5 / s, 4 / s]);
     ctx.fillRect(r.x, r.y, r.w, r.h);
@@ -268,7 +276,7 @@ function render() {
     const sel = state.annos[i];
     if (!sel) continue;
     ctx.save();
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = ACCENT;
     ctx.lineWidth = 1.5 / s;
     ctx.setLineDash([5 / s, 4 / s]);
     // The outline hugs the shape rather than its upright bounding box, so a turned
@@ -290,7 +298,7 @@ function render() {
     const stem = rotateStem(sel);
     const knob = list.find((h) => h.id === 'rot');
     if (stem && knob) {
-      ctx.strokeStyle = '#0ea5e9';
+      ctx.strokeStyle = ACCENT;
       ctx.lineWidth = 1.5 / s;
       ctx.beginPath();
       ctx.moveTo(stem.x, stem.y);
@@ -299,8 +307,8 @@ function render() {
     }
     for (const h of list) {
       const hot = h.id === hoverHandle && drag.kind !== 'handle' && drag.kind !== 'rotate';
-      ctx.fillStyle = hot ? '#38bdf8' : '#fff';
-      ctx.strokeStyle = '#0ea5e9';
+      ctx.fillStyle = hot ? ACCENT : HANDLE_FILL;
+      ctx.strokeStyle = ACCENT;
       ctx.lineWidth = 2 / s;
       ctx.beginPath();
       ctx.arc(h.x, h.y, HANDLE_RADIUS / s, 0, Math.PI * 2);

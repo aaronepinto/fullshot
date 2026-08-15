@@ -62,6 +62,9 @@ async function copyStatic() {
   await cp('src/options/options.html', `${outdir}/options.html`);
   await cp('src/options/options.css', `${outdir}/options.css`);
   await cp('src/icons', `${outdir}/icons`, { recursive: true });
+  // Both pages sit at the bundle root, so one shared folder serves them both.
+  // The fonts ship with the extension because an extension page has no network.
+  await cp('src/fonts', `${outdir}/fonts`, { recursive: true });
 }
 
 if (watch) {
