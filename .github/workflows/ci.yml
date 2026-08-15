@@ -37,10 +37,19 @@ jobs:
           name: screencappy-${{ github.sha }}
           path: screencappy.zip
 
+  # One packed extension, every Chromium browser we can install on a hosted
+  # runner. tests/e2e.mjs is shared: only the binary behind CHROME changes.
   e2e:
+    name: e2e (${{ matrix.browser }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      # A failure in one browser is a result about that browser, not a reason to
+      # stop learning about the others.
+      fail-fast: false
+      matrix:
+        browser: [chrome, edge, brave]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -48,20 +57,56 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
+
       - uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        if: matrix.browser == 'chrome'
         id: chrome
         with:
           chrome-version: stable
+      - uses: browser-actions/setup-edge@e2f31d5d9f2e6d75e72516221b4df8528e6325cf # v1
+        if: matrix.browser == 'edge'
+        id: edge
+        with:
+          edge-version: stable
+      # There is no setup action for Brave, so it comes from Brave's own apt
+      # repository, which is the install path Brave documents for Debian/Ubuntu.
+      - name: Install Brave
+        if: matrix.browser == 'brave'
+        run: |
+          sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg \
+            https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+          sudo curl -fsSLo /etc/apt/sources.list.d/brave-browser-release.sources \
+            https://brave-browser-apt-release.s3.brave.com/brave-browser.sources
+          sudo apt-get update
+          sudo apt-get install -y brave-browser
+
+      - name: Resolve the browser binary
+        run: |
+          case "$BROWSER" in
+            chrome) binary=$CHROME_PATH ;;
+            edge) binary=$EDGE_PATH ;;
+            brave) binary=$(command -v brave-browser) ;;
+            *) echo "No binary rule for $BROWSER"; exit 1 ;;
+          esac
+          test -x "$binary" || { echo "$BROWSER did not install: '$binary' is not executable"; exit 1; }
+          "$binary" --version
+          echo "CHROME=$binary" >> "$GITHUB_ENV"
+        env:
+          BROWSER: ${{ matrix.browser }}
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          EDGE_PATH: ${{ steps.edge.outputs.edge-path }}
+
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - name: End-to-end capture test (real Chrome)
+      - name: End-to-end capture test
         run: bun run e2e
         env:
-          CHROME: ${{ steps.chrome.outputs.chrome-path }}
+          BROWSER: ${{ matrix.browser }}
 
-  # The same packed extension must work in other Chromium browsers; Edge is the
-  # one we can install on a hosted runner, so it stands in for the family.
-  e2e-edge:
+  # Firefox ships from the same source through a different manifest, so it gets
+  # its own build, Mozilla's own linter, and a real capture run under geckodriver.
+  e2e-firefox:
+    name: e2e (firefox)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -72,13 +117,21 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
-      - uses: browser-actions/setup-edge@e2f31d5d9f2e6d75e72516221b4df8528e6325cf # v1
-        id: edge
+      - uses: browser-actions/setup-firefox@0bc507ddf224827e3b1af68e014d5e42ab93e795 # v1.7.2
+        id: firefox
         with:
-          edge-version: stable
+          firefox-version: latest
       - run: bun install --frozen-lockfile
-      - run: bun run build
-      - name: End-to-end capture test (real Edge)
-        run: bun run e2e
+      - run: bun run build:firefox
+      # addons-linter, the same validator AMO runs at submission. It exits
+      # non-zero on errors only, which is what we want: the build currently
+      # carries warnings for the debugger calls that Firefox does not implement,
+      # and those are guarded at runtime rather than removed from the bundle.
+      - name: Validate with Mozilla's add-on linter
+        run: bun run lint:firefox
+      # geckodriver is fetched by Selenium Manager, which ships inside
+      # selenium-webdriver, so there is nothing to install for it here.
+      - name: End-to-end capture test
+        run: bun run e2e:firefox
         env:
-          CHROME: ${{ steps.edge.outputs.edge-path }}
+          FIREFOX: ${{ steps.firefox.outputs.firefox-path }}
