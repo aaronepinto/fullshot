@@ -14,6 +14,10 @@ import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 import { SCENARIOS, assertComposed, startFixtureServer } from './fixtures.mjs';
 
+/** @typedef {import('./fixtures.mjs').Scenario} Scenario */
+/** @typedef {import('puppeteer-core').Browser} Browser */
+/** @typedef {import('puppeteer-core').Target} Target */
+
 const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = `${ROOT}dist`;
 const DIST_E2E = `${ROOT}dist-e2e`;
@@ -21,18 +25,23 @@ const BROWSER = process.env.BROWSER ?? 'chromium';
 
 function findChrome() {
   const candidates = [
-    process.env.CHROME,
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
     '/usr/bin/google-chrome',
     '/usr/bin/chromium-browser',
     '/usr/bin/chromium',
-  ].filter(Boolean);
+  ];
+  if (process.env.CHROME) candidates.unshift(process.env.CHROME);
   const found = candidates.find((p) => existsSync(p));
   if (!found) throw new Error('Chrome not found - set CHROME=/path/to/chrome');
   return found;
 }
 
+/**
+ * @param {Browser} browser
+ * @param {string} url
+ * @param {Scenario} scenario
+ */
 async function runScenario(browser, url, scenario) {
   const label = `${BROWSER}/${scenario.name}`;
   const page = await browser.newPage();
@@ -40,24 +49,32 @@ async function runScenario(browser, url, scenario) {
   await page.goto(url, { waitUntil: 'load' });
 
   const swTarget = await browser.waitForTarget(
-    (t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
+    (/** @type {Target} */ t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
     { timeout: 15000 }
   );
   const worker = await swTarget.worker();
+  if (!worker) throw new Error(`[${label}] The background service worker target had no worker`);
 
   await worker.evaluate(async () => {
+    // The extension parks its capture entry point on the worker's global.
+    const hook = /** @type {typeof globalThis & { __screencappyStart(tab: chrome.tabs.Tab, mode: string): Promise<void> }} */ (
+      globalThis
+    );
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    await globalThis.__screencappyStart(tab, 'full');
+    if (!tab) throw new Error('No active tab to capture');
+    await hook.__screencappyStart(tab, 'full');
   });
 
   const editorTarget = await browser.waitForTarget(
-    (t) => t.url().includes('editor.html'),
+    (/** @type {Target} */ t) => t.url().includes('editor.html'),
     { timeout: 60000 }
   );
   const editor = await editorTarget.page();
+  if (!editor) throw new Error(`[${label}] The editor target had no page`);
   await editor.waitForSelector('#loading[hidden]', { timeout: 60000 });
 
   const dims = await editor.$eval('#statDims', (el) => el.textContent);
+
   console.log(`[${label}] editor reports:`, dims);
   const { w, h } = assertComposed(label, dims, scenario);
 

@@ -43,6 +43,9 @@ import { Builder, By, until } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
 import { SCENARIOS, assertComposed, startFixtureServer } from './fixtures.mjs';
 
+/** @typedef {import('./fixtures.mjs').Scenario} Scenario */
+/** @typedef {firefox.Driver} FirefoxDriver */
+
 const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = `${ROOT}dist-firefox`;
 const DIST_E2E = `${ROOT}dist-firefox-e2e`;
@@ -56,11 +59,11 @@ const OPTIONS_URL = `moz-extension://${ADDON_UUID}/options.html`;
 
 function findFirefox() {
   const candidates = [
-    process.env.FIREFOX,
     '/Applications/Firefox.app/Contents/MacOS/firefox',
     '/usr/bin/firefox',
     '/snap/bin/firefox',
-  ].filter(Boolean);
+  ];
+  if (process.env.FIREFOX) candidates.unshift(process.env.FIREFOX);
   const found = candidates.find((p) => existsSync(p));
   if (!found) {
     throw new Error(
@@ -80,12 +83,17 @@ async function patchBuild() {
   await writeFile(`${DIST_E2E}/manifest.json`, JSON.stringify(manifest));
 }
 
+/**
+ * @param {FirefoxDriver} driver
+ * @param {string} fixtureBase
+ */
 async function openOptionsPage(driver, fixtureBase) {
   await driver.get(`${fixtureBase}/`);
   await driver.executeScript('location.href = arguments[0];', OPTIONS_URL);
   await driver.wait(until.elementLocated(By.css('#engine')), 30000);
 }
 
+/** @param {FirefoxDriver} driver */
 async function assertFirefoxOptionsUi(driver) {
   // options.ts fills the form from chrome.storage, so a settled engine value
   // means the storage round trip worked under Gecko.
@@ -107,7 +115,12 @@ async function assertFirefoxOptionsUi(driver) {
   console.log('✓ [firefox] Turbo correctly disabled: this browser has no chrome.debugger');
 }
 
-/** Drives one capture from the options page and returns the editor's window handle. */
+/**
+ * Drives one capture from the options page and returns the editor's window handle.
+ * @param {FirefoxDriver} driver
+ * @param {string} url Fixture page to capture.
+ * @returns {Promise<string>}
+ */
 async function startCapture(driver, url) {
   const before = new Set(await driver.getAllWindowHandles());
 
@@ -143,6 +156,12 @@ async function startCapture(driver, url) {
   throw new Error('The editor tab never opened');
 }
 
+/**
+ * @param {FirefoxDriver} driver
+ * @param {string} optionsHandle Window handle of the extension's options page.
+ * @param {string} fixtureBase
+ * @param {Scenario} scenario
+ */
 async function runScenario(driver, optionsHandle, fixtureBase, scenario) {
   const label = `firefox/${scenario.name}`;
   await driver.switchTo().window(optionsHandle);
@@ -174,7 +193,9 @@ async function main() {
     .addArguments('-headless', '--width=1200', '--height=800')
     .setPreference('extensions.webextensions.uuids', JSON.stringify({ [ADDON_ID]: ADDON_UUID }));
 
-  const driver = await new Builder().forBrowser('firefox').setFirefoxOptions(options).build();
+  const driver = /** @type {FirefoxDriver} */ (
+    await new Builder().forBrowser('firefox').setFirefoxOptions(options).build()
+  );
   let failed = false;
   try {
     await driver.manage().setTimeouts({ script: 180000 });
