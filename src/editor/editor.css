@@ -54,8 +54,16 @@ button.primary {
 }
 button.primary:hover { background: var(--accent); }
 button.icon { padding: 6px; line-height: 0; }
-svg { width: 18px; height: 18px; fill: currentColor; }
-button svg[fill="none"] { fill: none; }
+/* Every icon is a Lucide stroke icon, so the family's line style lives here rather
+   than repeated on seventeen elements. */
+svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
 .spacer { flex: 1; }
 
