@@ -47,7 +47,7 @@ Requires Chrome 116 or newer, or any Chromium browser of the same vintage.
 
 - **One click, whole page.** Click the toolbar icon or press `Alt+Shift+P`, and everything below the fold and off to the right is captured. Sticky headers appear exactly once.
 - **Four capture modes.** Full page, visible area, drag select a region (you can scroll mid selection to grab a region taller than the viewport), or pick an element DevTools style: hover highlights the node under the cursor, and a click captures exactly it.
-- **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or pixelate redaction. Every annotation is vector based and non destructive, with full undo and redo, zoom, and pan.
+- **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or pixelate redaction. Every annotation is vector based and non destructive, moves, scales and rotates, and has full undo and redo, zoom, and pan.
 - **Export anywhere.** PNG, JPEG, WebP, PDF (one tall page, or paginated to A4 or Letter), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
 - **Searchable PDF.** Right click and choose "Save as searchable PDF" to print the live page through the DevTools Protocol (`Page.printToPDF`) into a real PDF with selectable, searchable text rather than an image of the page.
 - **Delayed capture.** Set a start delay in Settings, or right click and pick a delayed capture, and the toolbar badge counts down before the shot. Use it when the thing you want only exists while a menu is open or an element is hovered.
@@ -112,9 +112,15 @@ In the editor, tools are single keys and the rest follow platform convention (`C
 | `Ctrl/Cmd` + `Shift` + `Z` | Redo |
 | `Ctrl/Cmd` + `S` | Download in the current export format |
 | `Ctrl/Cmd` + `C` | Copy to clipboard |
+| `Ctrl/Cmd` + `D` | Duplicate the selection |
+| `Ctrl/Cmd` + `+` or `-` | Zoom in or out |
+| `Ctrl/Cmd` + `0` | Actual size |
+| `Ctrl/Cmd` + `9` | Fit width |
+| `Ctrl/Cmd` and scroll | Zoom about the pointer (or pinch a trackpad) |
 | `Delete` or `Backspace` | Delete the selected annotation |
 | `Esc` | Deselect, cancel a crop |
 | Hold `Space` and drag | Pan the canvas |
+| Drag the handle above a selection | Rotate it, with `Shift` for 15 degree steps |
 
 ## 🏗️ Architecture
 
