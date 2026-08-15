@@ -16,9 +16,11 @@
     "e2e:firefox": "node tests/e2e-firefox.mjs",
     "lint:firefox": "web-ext lint --source-dir dist-firefox",
     "test": "bun test tests/unit --coverage",
+    "test:ux": "npm run build && playwright test",
     "build:store-fallback": "node scripts/gen-icons.mjs && node build.mjs --target=store-fallback"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/bun": "^1.3.14",
     "@types/chrome": "latest",
     "@types/selenium-webdriver": "^4.35.6",

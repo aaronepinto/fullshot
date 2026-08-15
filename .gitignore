@@ -8,3 +8,7 @@ screencappy-firefox.zip
 *.log
 .DS_Store
 .scratch/
+dist-store-fallback/
+screencappy-store-fallback.zip
+test-results/
+playwright-report/
