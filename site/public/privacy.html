@@ -94,7 +94,7 @@
     <p>Captures, annotations, and capture history are stored locally in your browser (IndexedDB) on your device. They are deleted when you delete them, when history pruning removes old captures, or when you uninstall the extension. They are never transmitted anywhere.</p>
 
     <h2>Settings</h2>
-    <p>Your preferences (output format, filename template, and similar) are stored with your browser profile using Chrome's extension storage. If you have Chrome sync enabled, Chrome may sync these preferences between your own devices. This is browser functionality under your control; Screencappy has no server involved.</p>
+    <p>Your preferences (output format, filename template, and similar) are stored with your browser profile using your browser's extension storage. If you have browser sync enabled, your browser may sync these preferences between your own devices. This is browser functionality under your control; Screencappy has no server involved.</p>
 
     <h2>Permissions</h2>
     <ul>
@@ -102,7 +102,7 @@
       <li><strong>downloads</strong>: saves exported images and PDFs to your computer.</li>
       <li><strong>storage, unlimitedStorage</strong>: stores settings and local capture history.</li>
       <li><strong>contextMenus</strong>: adds the right-click capture options.</li>
-      <li><strong>debugger</strong>: powers the Turbo capture engine, mobile-width capture, and searchable PDF export. Chrome does not allow this permission to be requested later, so Screencappy declares it at install. It is only active while one of those captures is running, Chrome shows a visible banner the whole time it is in use, and it is used solely to take the screenshot.</li>
+      <li><strong>debugger</strong> (power build only): the version downloaded from GitHub declares this permission for its advanced captures. It attaches only while one of those captures runs, and your browser shows a banner the whole time. The store version does not include this permission at all.</li>
     </ul>
     <p>Screencappy requests no host permissions and cannot read any page until you invoke it.</p>
 

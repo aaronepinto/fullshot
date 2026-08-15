@@ -141,7 +141,7 @@ src/
 
 ## 🔒 Privacy
 
-Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage`. There are **no host permissions**, so the extension cannot read any page until you invoke it. The optional Turbo engine, mobile width capture, and searchable PDF export additionally use `debugger`, and only if you grant it.
+Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage`. There are **no host permissions**, so the extension cannot read any page until you invoke it. The full build on GitHub also declares `debugger` for Turbo capture, mobile width capture and searchable PDF export; the store build omits that permission and those features entirely.
 
 There is no network code in this extension at all. No account, no telemetry, no remote config. Captures, annotations, and settings live in your browser and nowhere else.
 
