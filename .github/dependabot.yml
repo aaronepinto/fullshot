@@ -1,0 +1,60 @@
+# Dependabot, not Renovate. Grouped updates and cooldowns landed in Dependabot in
+# 2025, which was the last real reason to reach for Renovate on a repo this size.
+version: 2
+
+updates:
+  # Everything in package.json is a devDependency: esbuild, typescript,
+  # puppeteer-core, @types/*. The extension itself ships zero runtime dependencies,
+  # so one batched PR a week is the right cadence.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+      include: scope
+    # A 3-day cooldown became the platform default in July 2026. Stating it makes the
+    # policy visible and lets majors sit longer. Security updates always bypass it.
+    cooldown:
+      default-days: 5
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+      types:
+        patterns:
+          - "@types/*"
+
+  # Keeps the SHA pins in .github/workflows/ fresh. Note the directory is "/", not
+  # "/.github/workflows": that is the single most common mistake in this file.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Etc/UTC
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci
+    cooldown:
+      default-days: 5
+    groups:
+      actions:
+        patterns:
+          - "*"

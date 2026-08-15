@@ -1,0 +1,32 @@
+# Categorises GitHub's auto-generated release notes. release-please already writes
+# CHANGELOG.md from Conventional Commits, so this only shapes the "What's Changed"
+# block on the release page itself and the notes for any release cut by hand.
+# https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: ✨ Features
+      labels: [enhancement, feature]
+
+    - title: 🐛 Bug fixes
+      labels: [bug]
+
+    - title: 🖼️ Capture fixes
+      labels: [capture]
+
+    - title: 📝 Documentation
+      labels: [documentation]
+
+    # Catch-all. Excludes the two categories that must sort after it.
+    - title: 🧹 Other changes
+      labels: ["*"]
+      exclude:
+        labels: [dependencies, meta]
+
+    - title: 📦 Dependencies
+      labels: [dependencies]
+
+    - title: 🗂️ Meta
+      labels: [meta]
