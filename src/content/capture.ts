@@ -4,7 +4,8 @@
  * scrollbars, sticky/fixed elements, animations), drives the scroll loop, and
  * restores everything afterwards.
  */
-import type { CaptureContentMsg, PageMetrics, ScrollResult } from '../lib/types';
+import { pickDominantScroller } from '../lib/capture-common';
+import type { CaptureContentMsg, PageMetrics, Rect, ScrollResult } from '../lib/types';
 
 interface SavedInline {
   el: HTMLElement;
@@ -23,8 +24,9 @@ interface SavedInline {
   let savedInline: SavedInline[] = [];
   let fixedHidden = false;
   let originalScroll = { x: 0, y: 0 };
+  let containerEl: HTMLElement | null = null;
 
-  const scroller = () => document.scrollingElement ?? document.documentElement;
+  const scroller = () => containerEl ?? document.scrollingElement ?? document.documentElement;
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -33,6 +35,27 @@ interface SavedInline {
     const body = document.body;
     const pageW = Math.max(de.scrollWidth, body?.scrollWidth ?? 0, de.clientWidth);
     const rawH = Math.max(de.scrollHeight, body?.scrollHeight ?? 0, de.clientHeight);
+
+    // Window barely scrolls: look for the SPA-style inner container holding the content.
+    containerEl = rawH - window.innerHeight < 200 ? findScrollContainer() : null;
+    if (containerEl) {
+      const rawContainerH = containerEl.scrollHeight;
+      const truncated = rawContainerH > maxHeight;
+      return {
+        pageW: containerEl.scrollWidth,
+        pageH: truncated ? maxHeight : rawContainerH,
+        vpW: window.innerWidth,
+        vpH: window.innerHeight,
+        dpr: window.devicePixelRatio,
+        scrollX: containerEl.scrollLeft,
+        scrollY: containerEl.scrollTop,
+        title: document.title,
+        url: location.href,
+        truncated,
+        containerRect: visibleClientRect(containerEl),
+      };
+    }
+
     const truncated = rawH > maxHeight;
     return {
       pageW,
@@ -48,6 +71,44 @@ interface SavedInline {
     };
   }
 
+  function findScrollContainer(): HTMLElement | null {
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const minArea = vpW * vpH * 0.4;
+    const all = document.querySelectorAll<HTMLElement>('body *');
+    const limit = Math.min(all.length, 60_000);
+    const candidates: { el: HTMLElement; overflowY: string; scrollHeight: number; clientWidth: number; clientHeight: number }[] = [];
+    for (let i = 0; i < limit; i++) {
+      const el = all[i]!;
+      const ch = el.clientHeight;
+      // Cheap geometry pre-filter before the expensive computed-style read.
+      if (ch === 0 || el.scrollHeight <= ch + 100 || el.clientWidth * ch < minArea) continue;
+      candidates.push({
+        el,
+        overflowY: getComputedStyle(el).overflowY,
+        scrollHeight: el.scrollHeight,
+        clientWidth: el.clientWidth,
+        clientHeight: ch,
+      });
+    }
+    return pickDominantScroller(candidates, vpW, vpH)?.el ?? null;
+  }
+
+  /** Client area of el (borders excluded) clamped to the viewport, in viewport CSS px. */
+  function visibleClientRect(el: HTMLElement): Rect {
+    const r = el.getBoundingClientRect();
+    const left = r.left + el.clientLeft;
+    const top = r.top + el.clientTop;
+    const x = Math.max(0, left);
+    const y = Math.max(0, top);
+    return {
+      x,
+      y,
+      w: Math.max(1, Math.min(window.innerWidth, left + el.clientWidth) - x),
+      h: Math.max(1, Math.min(window.innerHeight, top + el.clientHeight) - y),
+    };
+  }
+
   function setInline(el: HTMLElement, prop: string, value: string) {
     savedInline.push({
       el,
@@ -59,7 +120,7 @@ interface SavedInline {
   }
 
   function prepare(hideSticky: boolean, freezeAnimations: boolean) {
-    originalScroll = { x: window.scrollX, y: window.scrollY };
+    originalScroll = { x: scroller().scrollLeft, y: scroller().scrollTop };
     styleEl = document.createElement('style');
     styleEl.textContent = `
       html, body { scroll-behavior: auto !important; overscroll-behavior: none !important; }
@@ -139,7 +200,7 @@ interface SavedInline {
     await nextFrame();
     await nextFrame();
     if (settleMs > 0) await sleep(settleMs);
-    return { x: window.scrollX, y: window.scrollY };
+    return { x: s.scrollLeft, y: s.scrollTop };
   }
 
   function restore() {
@@ -152,6 +213,7 @@ interface SavedInline {
     const s = scroller();
     s.scrollLeft = originalScroll.x;
     s.scrollTop = originalScroll.y;
+    containerEl = null;
   }
 
   async function handle(msg: CaptureContentMsg): Promise<unknown> {
