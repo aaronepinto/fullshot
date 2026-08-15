@@ -55,6 +55,17 @@ export function gridPositions(
   return positions.length ? positions : [0];
 }
 
+/**
+ * Descending whole seconds to show on the badge before a delayed capture:
+ * 5 gives [5, 4, 3, 2, 1]. Zero, negative, or invalid delays give [].
+ */
+export function countdownSteps(seconds: number): number[] {
+  const n = Number.isFinite(seconds) ? Math.floor(seconds) : 0;
+  const steps: number[] = [];
+  for (let s = n; s > 0; s--) steps.push(s);
+  return steps;
+}
+
 /** Plain-data description of a possible inner scroll container. */
 export interface ScrollerCandidate {
   overflowY: string;
