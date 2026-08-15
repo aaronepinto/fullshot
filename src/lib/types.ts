@@ -97,7 +97,13 @@ export interface ScrollResult {
 export type RuntimeMsg =
   | { type: 'fs:selection'; rect: Rect }
   | { type: 'fs:selection-cancel' }
-  | { type: 'fs:element'; rect: Rect; scrollable: boolean }
+  | {
+      type: 'fs:element';
+      rect: Rect;
+      scrollable: boolean;
+      /** Set when the picked element is a cross-origin iframe: its resolved src URL. */
+      frameUrl?: string;
+    }
   | { type: 'fs:element-cancel' };
 
 export const EDITOR_LIMITS = {

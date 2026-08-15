@@ -23,14 +23,19 @@ interface SavedInline {
   if (w.__screencappyCapture) return;
   w.__screencappyCapture = true;
 
-  let styleEl: HTMLStyleElement | null = null;
+  let styleEls: HTMLStyleElement[] = [];
   let fixedEls: HTMLElement[] = [];
   let savedInline: SavedInline[] = [];
   let fixedHidden = false;
   let originalScroll = { x: 0, y: 0 };
   let containerEl: HTMLElement | null = null;
+  /** Set when the picked element is a same-origin iframe: scrolling happens in here. */
+  let frameDoc: Document | null = null;
 
-  const scroller = () => containerEl ?? document.scrollingElement ?? document.documentElement;
+  const scroller = () =>
+    frameDoc
+      ? (frameDoc.scrollingElement ?? frameDoc.documentElement)
+      : (containerEl ?? document.scrollingElement ?? document.documentElement);
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -45,11 +50,35 @@ interface SavedInline {
     }
     // Element capture pins the scroller to the picked element; otherwise, when the
     // window barely scrolls, look for the SPA-style inner container holding the content.
+    frameDoc = null;
     containerEl = usePicked
       ? w.__screencappyPickedEl!
       : rawH - window.innerHeight < 200
         ? findScrollContainer()
         : null;
+    // A picked same-origin iframe scrolls inside its own document: the frame's
+    // scrollingElement is the scroller and its full content size is the page.
+    if (containerEl instanceof HTMLIFrameElement) {
+      const doc = accessibleFrameDoc(containerEl);
+      if (!doc) throw new Error('The iframe content is no longer accessible.');
+      frameDoc = doc;
+      const se = doc.scrollingElement ?? doc.documentElement;
+      const rawFrameH = se.scrollHeight;
+      const truncated = rawFrameH > maxHeight;
+      return {
+        pageW: se.scrollWidth,
+        pageH: truncated ? maxHeight : rawFrameH,
+        vpW: window.innerWidth,
+        vpH: window.innerHeight,
+        dpr: window.devicePixelRatio,
+        scrollX: se.scrollLeft,
+        scrollY: se.scrollTop,
+        title: document.title,
+        url: location.href,
+        truncated,
+        containerRect: visibleClientRect(containerEl),
+      };
+    }
     if (containerEl) {
       const rawContainerH = containerEl.scrollHeight;
       const truncated = rawContainerH > maxHeight;
@@ -106,6 +135,15 @@ interface SavedInline {
     return pickDominantScroller(candidates, vpW, vpH)?.el ?? null;
   }
 
+  // contentDocument is null for cross-origin frames; sandboxed ones can also throw.
+  function accessibleFrameDoc(el: HTMLIFrameElement): Document | null {
+    try {
+      return el.contentDocument;
+    } catch {
+      return null;
+    }
+  }
+
   /** Client area of el (borders excluded) clamped to the viewport, in viewport CSS px. */
   function visibleClientRect(el: HTMLElement): Rect {
     const r = el.getBoundingClientRect();
@@ -133,8 +171,7 @@ interface SavedInline {
 
   function prepare(hideSticky: boolean, freezeAnimations: boolean) {
     originalScroll = { x: scroller().scrollLeft, y: scroller().scrollTop };
-    styleEl = document.createElement('style');
-    styleEl.textContent = `
+    const css = `
       html, body { scroll-behavior: auto !important; overscroll-behavior: none !important; }
       ::-webkit-scrollbar { display: none !important; }
       html { scrollbar-width: none !important; }
@@ -147,21 +184,29 @@ interface SavedInline {
           : ''
       }
     `;
-    document.documentElement.appendChild(styleEl);
-
-    // One pass over the DOM: sticky elements are pinned back into normal flow for the
-    // whole capture (they render once, at their natural position); fixed elements are
-    // remembered so they can be hidden for every tile after the first.
+    // When capturing inside a same-origin iframe, its document needs the same treatment.
+    const docs = frameDoc ? [document, frameDoc] : [document];
     fixedEls = [];
-    const all = document.querySelectorAll<HTMLElement>('body *');
-    const limit = Math.min(all.length, 60_000);
-    for (let i = 0; i < limit; i++) {
-      const el = all[i]!;
-      const position = getComputedStyle(el).position;
-      if (position === 'fixed') {
-        fixedEls.push(el);
-      } else if (hideSticky && position === 'sticky') {
-        setInline(el, 'position', 'static');
+    for (const doc of docs) {
+      const styleEl = doc.createElement('style');
+      styleEl.textContent = css;
+      doc.documentElement.appendChild(styleEl);
+      styleEls.push(styleEl);
+
+      // One pass over the DOM: sticky elements are pinned back into normal flow for the
+      // whole capture (they render once, at their natural position); fixed elements are
+      // remembered so they can be hidden for every tile after the first.
+      const view = doc.defaultView ?? window;
+      const all = doc.querySelectorAll<HTMLElement>('body *');
+      const limit = Math.min(all.length, 60_000);
+      for (let i = 0; i < limit; i++) {
+        const el = all[i]!;
+        const position = view.getComputedStyle(el).position;
+        if (position === 'fixed') {
+          fixedEls.push(el);
+        } else if (hideSticky && position === 'sticky') {
+          setInline(el, 'position', 'static');
+        }
       }
     }
   }
@@ -216,8 +261,8 @@ interface SavedInline {
   }
 
   function restore() {
-    styleEl?.remove();
-    styleEl = null;
+    for (const styleEl of styleEls) styleEl.remove();
+    styleEls = [];
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);
     savedInline = [];
     fixedEls = [];
@@ -226,6 +271,7 @@ interface SavedInline {
     s.scrollLeft = originalScroll.x;
     s.scrollTop = originalScroll.y;
     containerEl = null;
+    frameDoc = null;
     delete w.__screencappyPickedEl;
   }
 
