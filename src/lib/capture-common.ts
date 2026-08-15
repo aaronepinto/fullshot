@@ -98,6 +98,43 @@ export function shouldContinueAutoLoad(
   );
 }
 
+/** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
+export const MAX_SCAN_NODES = 80_000;
+
+/** Minimal element shape for walkShadowTree, structural so plain objects test it. */
+export interface ShadowWalkNode<T> {
+  readonly children: ArrayLike<T>;
+  readonly shadowRoot?: { readonly children: ArrayLike<T> } | null;
+}
+
+/**
+ * Preorder walk over roots and their descendants that also descends into open
+ * shadow roots (shadow children before light children). Slot assignment is never
+ * followed: slotted elements are reached only through their light-DOM parent, so
+ * each element is visited exactly once. Stops after budget visits to bound cost
+ * on huge pages; returns the number of elements visited.
+ */
+export function walkShadowTree<T extends ShadowWalkNode<T>>(
+  roots: ArrayLike<T>,
+  visit: (el: T) => void,
+  budget: number
+): number {
+  const stack: T[] = [];
+  for (let i = roots.length - 1; i >= 0; i--) stack.push(roots[i]!);
+  let visited = 0;
+  while (stack.length > 0 && visited < budget) {
+    const el = stack.pop()!;
+    visit(el);
+    visited++;
+    // Children are pushed in reverse so they pop in document order, light after shadow.
+    const light = el.children;
+    for (let i = light.length - 1; i >= 0; i--) stack.push(light[i]!);
+    const shadow = el.shadowRoot?.children;
+    if (shadow) for (let i = shadow.length - 1; i >= 0; i--) stack.push(shadow[i]!);
+  }
+  return visited;
+}
+
 /** Plain-data description of a possible inner scroll container. */
 export interface ScrollerCandidate {
   overflowY: string;
