@@ -103,6 +103,9 @@
         </div>
       </div>
       <span class="sep"></span>
+      <button id="btnAnnos" class="icon" title="Annotations" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </button>
       <button id="btnHistory" class="icon" title="Capture history">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l3.5 2"/></svg>
       </button>
@@ -124,6 +127,7 @@
         <kbd>Enter</kbd> to apply · <kbd>⇧Enter</kbd> for a new line · <kbd>Esc</kbd> to cancel
       </div>
     </div>
+    <div id="annoFlash" data-testid="anno-flash" hidden></div>
     <div id="cropBar" class="floatbar" hidden>
       <span id="cropDims"></span>
       <button id="cropApply" class="primary">Apply crop</button>
@@ -133,6 +137,14 @@
       <button id="ctxCopy">Copy image</button>
       <button id="ctxDownload">Download</button>
     </div>
+    <aside id="annoPanel" data-testid="anno-panel" hidden>
+      <header>
+        <h2>Annotations</h2>
+        <button id="annoClose" class="icon" title="Close">✕</button>
+      </header>
+      <p class="drawer-hint">Newest first. Click one to jump to it.</p>
+      <ul id="annoList"></ul>
+    </aside>
     <div id="emptyState" class="empty" hidden>
       <img src="icons/icon128.png" alt="" width="72" />
       <h2>No capture selected</h2>
@@ -162,7 +174,7 @@
       <h2>History</h2>
       <button id="historyClose" class="icon" title="Close">✕</button>
     </header>
-    <p class="history-hint">Captures are stored locally on this device only.</p>
+    <p class="drawer-hint">Captures are stored locally on this device only.</p>
     <ul id="historyList"></ul>
   </aside>
 
