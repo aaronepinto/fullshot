@@ -13,6 +13,8 @@
     "zip": "npm run build && node build.mjs --zip",
     "zip:firefox": "npm run build:firefox && node build.mjs --target=firefox --zip",
     "e2e": "node tests/e2e.mjs",
+    "e2e:firefox": "node tests/e2e-firefox.mjs",
+    "lint:firefox": "web-ext lint --source-dir dist-firefox",
     "test": "bun test tests/unit --coverage"
   },
   "devDependencies": {
@@ -20,7 +22,9 @@
     "@types/chrome": "latest",
     "esbuild": "latest",
     "puppeteer-core": "^25.7.0",
-    "typescript": "latest"
+    "selenium-webdriver": "^4.47.0",
+    "typescript": "latest",
+    "web-ext": "^10.6.0"
   },
   "repository": {
     "type": "git",
