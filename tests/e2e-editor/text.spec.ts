@@ -212,6 +212,28 @@ test.describe('Item 2: style capture and toolbar focus safety', () => {
     expect(state.editing).toBeNull();
   });
 
+  test('the open editor owns the style bar, whatever is selected behind it', async ({
+    editor,
+    page,
+  }) => {
+    await editor.tool('rect');
+    await editor.drag([100, 100], [300, 250]);
+    expect((await editor.state()).selection).toEqual([0]);
+
+    await editor.tool('text');
+    await editor.click(500, 400);
+    await page.keyboard.type('over a rect');
+
+    await expect(page.locator('#ctlFont')).toBeVisible();
+    await expect(page.locator('#ctlWidth')).toBeHidden();
+    await page.selectOption('#fontSize', '56');
+    await page.keyboard.press('Enter');
+
+    const annos = await editor.annos();
+    expect(annos[1]?.size).toBe(56);
+    expect(annos[0]?.width).toBe(6);
+  });
+
   test('the style bar reflects the selected annotation', async ({ editor, page }) => {
     await editor.tool('rect');
     await editor.drag([100, 100], [300, 250]);
