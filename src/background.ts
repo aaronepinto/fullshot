@@ -665,7 +665,9 @@ function intersect(a: Rect, b: Rect): Rect {
 
 function badgeFor(tabId: number) {
   return {
-    async set(text: string, color = '#0ea5e9') {
+    // Sky is the product's one accent, so progress wears it. The error calls pass
+    // a red instead, which is functional rather than decorative.
+    async set(text: string, color = '#38bdf8') {
       await chrome.action.setBadgeBackgroundColor({ tabId, color }).catch(() => undefined);
       await chrome.action.setBadgeText({ tabId, text }).catch(() => undefined);
     },
