@@ -54,6 +54,8 @@ const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)
 interface Snapshot {
   annos: Anno[];
   crop: Rect | null;
+  /** Undoing a move should not also lose your place. */
+  selection: number[];
 }
 
 /**
@@ -295,11 +297,17 @@ function pushUndo(tag?: string) {
     return;
   }
   lastUndoTag = tag ? { tag, at: now } : null;
-  state.undoStack.push({ annos: structuredClone(state.annos), crop: state.crop && { ...state.crop } });
+  state.undoStack.push(snapshot());
   if (state.undoStack.length > 100) state.undoStack.shift();
   state.redoStack.length = 0;
   updateUndoButtons();
 }
+
+const snapshot = (): Snapshot => ({
+  annos: structuredClone(state.annos),
+  crop: state.crop && { ...state.crop },
+  selection: [...state.selection],
+});
 
 /** Drops the newest entry, for a gesture that turned out to change nothing. */
 function popUndo() {
@@ -312,7 +320,7 @@ function applySnapshot(snap: Snapshot) {
   lastUndoTag = null;
   state.annos = snap.annos;
   state.crop = snap.crop;
-  clearSelection();
+  state.selection = snap.selection.filter((i) => i < state.annos.length);
   persistAnnos();
   updateStatus();
   requestRender();
@@ -321,7 +329,7 @@ function applySnapshot(snap: Snapshot) {
 function undo() {
   const snap = state.undoStack.pop();
   if (!snap) return;
-  state.redoStack.push({ annos: structuredClone(state.annos), crop: state.crop && { ...state.crop } });
+  state.redoStack.push(snapshot());
   applySnapshot(snap);
   updateUndoButtons();
 }
@@ -329,7 +337,7 @@ function undo() {
 function redo() {
   const snap = state.redoStack.pop();
   if (!snap) return;
-  state.undoStack.push({ annos: structuredClone(state.annos), crop: state.crop && { ...state.crop } });
+  state.undoStack.push(snapshot());
   applySnapshot(snap);
   updateUndoButtons();
 }
@@ -361,7 +369,7 @@ type Drag =
   | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number; moved: boolean }
   | { kind: 'draw'; anno: Anno; ox: number; oy: number }
   | { kind: 'crop' }
-  | { kind: 'move'; indices: number[]; lastX: number; lastY: number; moved: boolean }
+  | { kind: 'move'; indices: number[]; startAnnos: Anno[]; lastX: number; lastY: number; moved: boolean }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; additive: boolean }
   | { kind: 'handle'; index: number; id: string; start: Anno; pressX: number; pressY: number; moved: boolean };
 
@@ -419,7 +427,14 @@ canvas.addEventListener('pointerdown', (e) => {
         // Pressing inside an existing multi-selection keeps it, so the group drags.
         selectOnly(hit);
       }
-      drag = { kind: 'move', indices: [...state.selection], lastX: p.x, lastY: p.y, moved: false };
+      drag = {
+        kind: 'move',
+        indices: [...state.selection],
+        startAnnos: state.selection.map((i) => structuredClone(state.annos[i]!)),
+        lastX: p.x,
+        lastY: p.y,
+        moved: false,
+      };
       requestRender();
       return;
     }
@@ -588,6 +603,8 @@ canvas.addEventListener('pointerup', () => {
       state.annos.push(a);
       selectOnly(state.annos.length - 1);
       persistAnnos();
+    } else {
+      toast('That was too small to draw, so nothing was added.');
     }
     requestRender();
   } else if (drag.kind === 'handle' && drag.moved) {
@@ -617,6 +634,50 @@ canvas.addEventListener('pointerup', () => {
   }
   drag = { kind: 'none' };
 });
+
+/**
+ * Rolls an in-flight gesture back to where it started and leaves history clean.
+ * Without this an interrupted gesture left `drag` live, so the next press carried
+ * on from a state the user thought they had abandoned.
+ */
+function cancelGesture(): boolean {
+  switch (drag.kind) {
+    case 'none':
+      return false;
+    case 'pan':
+      state.pan.x = drag.panX;
+      state.pan.y = drag.panY;
+      clampView();
+      break;
+    case 'draw':
+      state.draft = null;
+      break;
+    case 'crop':
+      state.cropDraft = null;
+      hideCropBar();
+      break;
+    case 'move':
+      drag.indices.forEach((index, n) => {
+        const original = drag.kind === 'move' ? drag.startAnnos[n] : undefined;
+        if (original) state.annos[index] = original;
+      });
+      if (drag.moved) popUndo();
+      persistAnnos();
+      break;
+    case 'handle':
+      state.annos[drag.index] = drag.start;
+      if (drag.moved) popUndo();
+      persistAnnos();
+      break;
+    case 'marquee':
+      break;
+  }
+  drag = { kind: 'none' };
+  requestRender();
+  return true;
+}
+
+canvas.addEventListener('pointercancel', () => cancelGesture());
 
 const overlaps = (a: Rect, b: Rect) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -1410,15 +1471,40 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     editTextAnno(selectedIndex());
   } else if (e.key === 'Escape') {
-    clearSelection();
-    state.cropDraft = null;
-    hideCropBar();
-    ctxMenu.hidden = true;
-    requestRender();
+    dismiss();
   } else if (!meta && TOOL_KEYS[e.key.toLowerCase()]) {
     setTool(TOOL_KEYS[e.key.toLowerCase()]!);
   }
 });
+/**
+ * Escape dismisses one thing at a time, most transient first, so it never throws
+ * away more than the user meant.
+ */
+function dismiss() {
+  if (cancelGesture()) return;
+  if (state.editing) {
+    state.editing.cancelled = true;
+    closeTextEditor('escape');
+    return;
+  }
+  for (const el of [ctxMenu, emojiPicker, formatMenu]) {
+    if (!el.hidden) {
+      el.hidden = true;
+      return;
+    }
+  }
+  if (state.cropDraft) {
+    state.cropDraft = null;
+    hideCropBar();
+    requestRender();
+    return;
+  }
+  if (state.selection.length) {
+    clearSelection();
+    requestRender();
+  }
+}
+
 document.addEventListener('keyup', (e) => {
   if (e.code === 'Space') spaceDown = false;
 });
