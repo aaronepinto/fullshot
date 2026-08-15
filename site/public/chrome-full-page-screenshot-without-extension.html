@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Full Page Screenshot in Chrome Without an Extension</title>
+  <meta name="description" content="Chrome captures a full size screenshot from DevTools with nothing installed, and Firefox has one behind a right click. The exact steps, the downsides, and when installing something is worth it." />
+  <link rel="canonical" href="https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension" />
+
+  <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSerif-Italic.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSans-Variable.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/Newsreader-Regular-Variable.woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Screencappy" />
+  <meta property="og:url" content="https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension" />
+  <meta property="og:title" content="Full page screenshots without an extension" />
+  <meta property="og:description" content="Chrome and Firefox can both do this on their own. If you only need it occasionally, use the built in feature rather than installing anything." />
+  <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension#webpage",
+        "url": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension",
+        "name": "How to take a full page screenshot in Chrome without an extension",
+        "description": "The built in route to a full page screenshot in Chrome, using the DevTools capture full size screenshot command, plus Firefox's built in full page capture, the downsides of each, and when an extension is worth installing.",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "about": { "@id": "https://screencappy.smollet.app/#software" },
+        "breadcrumb": { "@id": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Screencappy",
+            "item": "https://screencappy.smollet.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Alternatives",
+            "item": "https://screencappy.smollet.app/alternatives"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Full page screenshots without an extension"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension#faqpage",
+        "url": "https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension",
+        "name": "How to take a full page screenshot in Chrome without an extension",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What are the exact steps?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Press F12 or Command+Option+I to open DevTools. Click the device toolbar icon to enable Device Mode. Open the three dot More options menu in that toolbar. Select \"Capture a full size screenshot\". There is a related Command Menu route, reached with Control+Shift+P or Command+Shift+P, but Chrome documents that one for area screenshots rather than full size captures."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What are the downsides of the DevTools method?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Three, and the first is the one that sends most people looking for something else. It takes six interactions every time, including opening developer tooling and switching the page into a simulated device viewport, which can change how the page renders. It has no annotation, no cropping and no blur, so anything you need to mark up goes into a separate editor. And Chrome does not document how it handles lazy loaded images, sticky headers or very tall pages, which are exactly the cases where full page capture tends to go wrong."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Firefox have this built in?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, and it is noticeably friendlier than Chrome's. Right click an empty part of the page, choose Take Screenshot, then select \"Save full page\". The keyboard shortcut is Ctrl+Shift+S or Command+Shift+S. Firefox documents that the output is a PNG and names the file pattern it uses. Chrome's documentation does not state its output format anywhere we could find."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "When is an extension worth installing?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "When you take full page screenshots often enough that six interactions each time is friction, or when you need to do anything to the image afterwards. The DevTools route gives you a raw capture and nothing else. If you need to crop it, blur a customer name, point an arrow at the bug, or export as WebP or PDF, that is a second tool anyway."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which one should you use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "If you need a full page screenshot once a month, use DevTools. It is already there, it costs nothing, and installing an extension for that is overkill. We would rather tell you that than pretend otherwise. If you take them weekly, or you annotate before sharing, the built in method stops being the cheaper option fairly quickly."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="/"><img src="/icon.png" alt="" width="22" height="22" />Screencappy</a>
+    <span class="byline">by <a href="https://smollet.app">Smollet</a></span>
+  </header>
+  <main class="prose">
+    <nav class="crumbs"><a href="/">Screencappy</a> / <a href="/alternatives">Alternatives</a> / Full page screenshots without an extension</nav>
+
+    <h1>How to take a full page screenshot in Chrome without an extension</h1>
+    <p class="verified">Last verified: August 15, 2026</p>
+
+    <p class="lede">Chrome can do this on its own, and if you only need it occasionally you should
+    use the built in feature rather than installing anything.</p>
+
+    <p>Open DevTools, turn on Device Mode, open the More options menu in the device toolbar, and
+    choose "Capture a full size screenshot". That is the whole procedure, and it has been in Chrome
+    since version 59.</p>
+
+    <h2>What are the exact steps?</h2>
+
+    <p>Press F12 or Command+Option+I to open DevTools. Click the device toolbar icon to enable
+    Device Mode. Open the three dot More options menu in that toolbar. Select "Capture a full size
+    screenshot".</p>
+
+    <p>There is a related Command Menu route, reached with Control+Shift+P or Command+Shift+P, but
+    Chrome documents that one for area screenshots rather than full size captures.</p>
+
+    <h2>What are the downsides of the DevTools method?</h2>
+
+    <p>Three, and the first is the one that sends most people looking for something else.</p>
+
+    <p>It takes six interactions every time, including opening developer tooling and switching the
+    page into a simulated device viewport, which can change how the page renders. It has no
+    annotation, no cropping and no blur, so anything you need to mark up goes into a separate
+    editor. And Chrome does not document how it handles lazy loaded images, sticky headers or very
+    tall pages, which are exactly the cases where full page capture tends to go wrong.</p>
+
+    <h2>Does Firefox have this built in?</h2>
+
+    <p>Yes, and it is noticeably friendlier than Chrome's. Right click an empty part of the page,
+    choose Take Screenshot, then select "Save full page". The keyboard shortcut is Ctrl+Shift+S or
+    Command+Shift+S.</p>
+
+    <p>Firefox documents that the output is a PNG and names the file pattern it uses. Chrome's
+    documentation does not state its output format anywhere we could find.</p>
+
+    <h2>When is an extension worth installing?</h2>
+
+    <p>When you take full page screenshots often enough that six interactions each time is friction,
+    or when you need to do anything to the image afterwards.</p>
+
+    <p>The DevTools route gives you a raw capture and nothing else. If you need to crop it, blur a
+    customer name, point an arrow at the bug, or export as WebP or PDF, that is a second tool
+    anyway.</p>
+
+    <h2>How does DevTools compare to Screencappy?</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col"></th><th scope="col">Chrome DevTools</th><th scope="col">Screencappy</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Install required</th>
+            <td>None</td>
+            <td>Extension</td>
+          </tr>
+          <tr>
+            <th scope="row">Steps per capture</th>
+            <td>Six, including opening DevTools</td>
+            <td>One click or one keyboard shortcut</td>
+          </tr>
+          <tr>
+            <th scope="row">Changes page rendering</th>
+            <td>Yes, requires Device Mode</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <th scope="row">Annotation, crop, blur</th>
+            <td>None</td>
+            <td>Included, free</td>
+          </tr>
+          <tr>
+            <th scope="row">Export formats</th>
+            <td>Not documented by Chrome</td>
+            <td>PNG, JPEG, WebP, PDF</td>
+          </tr>
+          <tr>
+            <th scope="row">Price</th>
+            <td>Free</td>
+            <td>Free</td>
+          </tr>
+          <tr>
+            <th scope="row">Account</th>
+            <td>None</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <th scope="row">Host permissions</th>
+            <td>Not applicable</td>
+            <td>None requested</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p>The export formats row says not documented because no Chrome documentation page states the
+      output format for this feature. It is widely claimed to be PNG, and that may well be right,
+      but this page only states what can be checked.</p>
+    </div>
+
+    <h2>Which one should you use?</h2>
+
+    <p>If you need a full page screenshot once a month, use DevTools. It is already there, it costs
+    nothing, and installing an extension for that is overkill. We would rather tell you that than
+    pretend otherwise.</p>
+
+    <p>If you take them weekly, or you annotate before sharing, the built in method stops being the
+    cheaper option fairly quickly.</p>
+
+    <footer>
+      <p><a href="/alternatives">All comparisons</a> · <a href="/">Screencappy home</a> ·
+      <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a> ·
+      <a href="/faq">FAQ</a> · <a href="/privacy">Privacy policy</a> ·
+      <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
+      <p class="colophon">Screencappy, by <a href="https://smollet.app">Smollet</a></p>
+    </footer>
+  </main>
+</body>
+</html>
