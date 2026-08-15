@@ -272,7 +272,17 @@ function render() {
 // Undo / redo / persistence
 // ---------------------------------------------------------------------------
 
-function pushUndo() {
+/** Consecutive same-tag pushes inside this window fold into the first entry. */
+const UNDO_COALESCE_MS = 500;
+let lastUndoTag: { tag: string; at: number } | null = null;
+
+function pushUndo(tag?: string) {
+  const now = Date.now();
+  if (tag && lastUndoTag?.tag === tag && now - lastUndoTag.at < UNDO_COALESCE_MS) {
+    lastUndoTag.at = now;
+    return;
+  }
+  lastUndoTag = tag ? { tag, at: now } : null;
   state.undoStack.push({ annos: structuredClone(state.annos), crop: state.crop && { ...state.crop } });
   if (state.undoStack.length > 100) state.undoStack.shift();
   state.redoStack.length = 0;
@@ -286,6 +296,8 @@ function popUndo() {
 }
 
 function applySnapshot(snap: Snapshot) {
+  // A burst that has been undone must not fold the next one into it.
+  lastUndoTag = null;
   state.annos = snap.annos;
   state.crop = snap.crop;
   clearSelection();
@@ -1205,9 +1217,107 @@ const TOOL_KEYS: Record<string, Tool> = {
   p: 'pen', h: 'highlight', t: 'text', b: 'blur', e: 'emoji',
 };
 
+const ARROWS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
+
+/** Fine step for a keyboard nudge, in image px; Shift multiplies it. */
+const NUDGE = 1;
+const NUDGE_COARSE = 10;
+/** Offset a duplicate is placed at, so it does not hide under its original. */
+const DUPLICATE_OFFSET = 16;
+
+/**
+ * Whether a key belongs to whatever the user is typing into rather than to the
+ * editor. Covers contenteditable as well as form fields, so a future rich field
+ * does not silently start eating tool hotkeys.
+ */
+function isTypingTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  return (
+    el.tagName === 'INPUT' ||
+    el.tagName === 'TEXTAREA' ||
+    el.tagName === 'SELECT' ||
+    el.isContentEditable === true
+  );
+}
+
+/** Grows an annotation from its top-left, the keyboard equivalent of the SE handle. */
+function resizeAnno(a: Anno, dw: number, dh: number): void {
+  if (isBoxKind(a)) {
+    a.w += dw;
+    a.h += dh;
+    return;
+  }
+  if (a.kind === 'line' || a.kind === 'arrow') {
+    a.x2 += dw;
+    a.y2 += dh;
+    return;
+  }
+  if (a.kind === 'text' || a.kind === 'emoji') {
+    a.size = Math.min(400, Math.max(8, a.size + dw + dh));
+    return;
+  }
+  if (a.kind !== 'pen') return;
+  const b = bounds(a);
+  const fx = b.w > 0 ? (b.w + dw) / b.w : 1;
+  const fy = b.h > 0 ? (b.h + dh) / b.h : 1;
+  for (let i = 0; i + 1 < a.points.length; i += 2) {
+    a.points[i] = b.x + (a.points[i]! - b.x) * fx;
+    a.points[i + 1] = b.y + (a.points[i + 1]! - b.y) * fy;
+  }
+}
+
+function nudgeSelection(dx: number, dy: number, coarse: boolean, resize: boolean) {
+  if (!state.selection.length) return;
+  const step = coarse ? NUDGE_COARSE : NUDGE;
+  // One entry per burst: holding an arrow key should not fill history.
+  pushUndo(resize ? 'nudge-resize' : 'nudge-move');
+  for (const i of state.selection) {
+    const a = state.annos[i];
+    if (!a) continue;
+    if (resize) resizeAnno(a, dx * step, dy * step);
+    else translateAnno(a, dx * step, dy * step);
+  }
+  persistAnnos();
+  requestRender();
+}
+
+/** Steps the selection through the annotation list in paint order, wrapping. */
+function cycleSelection(step: number) {
+  if (!state.annos.length) return;
+  const from = state.selection.length ? Math.max(...state.selection) : step > 0 ? -1 : 0;
+  const next = (from + step + state.annos.length) % state.annos.length;
+  selectOnly(next);
+  requestRender();
+}
+
+function duplicateSelection() {
+  if (!state.selection.length) return;
+  pushUndo();
+  const copies = state.selection
+    .map((i) => state.annos[i])
+    .filter((a): a is Anno => a !== undefined)
+    .map((a) => {
+      const copy = structuredClone(a);
+      translateAnno(copy, DUPLICATE_OFFSET, DUPLICATE_OFFSET);
+      return copy;
+    });
+  const first = state.annos.length;
+  state.annos.push(...copies);
+  state.selection = copies.map((_, i) => first + i);
+  persistAnnos();
+  requestRender();
+}
+
 document.addEventListener('keydown', (e) => {
-  if ((e.target as HTMLElement).tagName === 'TEXTAREA' || (e.target as HTMLElement).tagName === 'INPUT') return;
+  if (isTypingTarget(e.target)) return;
   const meta = e.metaKey || e.ctrlKey;
+  const arrow = ARROWS[e.key];
   if (e.code === 'Space') spaceDown = true;
   if (meta && e.key.toLowerCase() === 'z') {
     e.preventDefault();
@@ -1218,6 +1328,15 @@ document.addEventListener('keydown', (e) => {
   } else if (meta && e.key.toLowerCase() === 'c') {
     e.preventDefault();
     $('#btnCopy').click();
+  } else if (meta && e.key.toLowerCase() === 'd') {
+    e.preventDefault();
+    duplicateSelection();
+  } else if (arrow && state.selection.length) {
+    e.preventDefault();
+    nudgeSelection(arrow[0], arrow[1], e.shiftKey, e.altKey);
+  } else if (e.key === 'Tab' && state.annos.length) {
+    e.preventDefault();
+    cycleSelection(e.shiftKey ? -1 : 1);
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selection.length) {
     pushUndo();
     deleteSelection();
