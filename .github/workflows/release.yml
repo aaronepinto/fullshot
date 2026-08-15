@@ -42,12 +42,17 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run build
+      - run: bun run build:firefox
       - name: Pack
-        run: cd dist && zip -r -X ../screencappy.zip .
-      - name: Attach zip to release
+        run: |
+          (cd dist && zip -r -X ../screencappy.zip .)
+          (cd dist-firefox && zip -r -X ../screencappy-firefox.zip .)
+      - name: Attach zips to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ needs.release-please.outputs.tag_name }}" screencappy.zip --clobber
+        run: >
+          gh release upload "${{ needs.release-please.outputs.tag_name }}"
+          screencappy.zip screencappy-firefox.zip --clobber
 
   publish-cws:
     needs: [release-please, upload-assets]
