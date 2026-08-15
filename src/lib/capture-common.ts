@@ -35,6 +35,26 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
+/**
+ * Scroll stops covering [start, start+span) in viewport-size steps, clamped to
+ * what the page can actually scroll to. Consecutive duplicates are dropped.
+ */
+export function gridPositions(
+  start: number,
+  span: number,
+  step: number,
+  maxScroll: number
+): number[] {
+  const positions: number[] = [];
+  const limit = Math.max(0, maxScroll);
+  for (let v = start; v < start + span; v += step) {
+    const clamped = Math.max(0, Math.min(v, limit));
+    if (positions[positions.length - 1] !== clamped) positions.push(clamped);
+    if (clamped >= limit && v > start) break;
+  }
+  return positions.length ? positions : [0];
+}
+
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);

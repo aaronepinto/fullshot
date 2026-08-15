@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/gen-icons.mjs",
     "zip": "npm run build && node build.mjs --zip",
-    "e2e": "node tests/e2e.mjs"
+    "e2e": "node tests/e2e.mjs",
+    "test": "bun test tests/unit"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.14",
     "@types/chrome": "latest",
     "esbuild": "latest",
     "puppeteer-core": "^25.7.0",
