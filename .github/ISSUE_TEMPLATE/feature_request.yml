@@ -19,7 +19,7 @@ body:
     attributes:
       label: Prerequisites
       options:
-        - label: I searched [existing issues and discussions](https://github.com/aaronepinto/fullshot/issues?q=is%3Aissue) and this is not a duplicate.
+        - label: I searched [existing issues and discussions](https://github.com/aaronepinto/screencappy/issues?q=is%3Aissue) and this is not a duplicate.
           required: true
         - label: This does not require network access or a runtime dependency.
           required: true
@@ -38,7 +38,7 @@ body:
   - type: textarea
     id: proposal
     attributes:
-      label: What would you like FullShot to do
+      label: What would you like Screencappy to do
     validations:
       required: true
 
@@ -51,7 +51,7 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: Which part of FullShot
+      label: Which part of Screencappy
       options:
         - Capture (full page, visible, region)
         - Editor and annotation tools

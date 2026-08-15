@@ -1,8 +1,8 @@
-# FullShot 📸
+# Screencappy 📸
 
 **One-click full page screenshots for Chrome - capture, annotate, export. Free, open source, private by design.**
 
-FullShot is a modern, MIT-licensed alternative to GoFullPage, built for the developer community. Everything that's paid elsewhere - annotation, blur/redaction, emoji, PDF export - is free here, and nothing ever leaves your machine: no account, no cloud, no analytics, no host permissions.
+Screencappy is a modern, MIT-licensed alternative to GoFullPage, built for the developer community. Everything that's paid elsewhere - annotation, blur/redaction, emoji, PDF export - is free here, and nothing ever leaves your machine: no account, no cloud, no analytics, no host permissions.
 
 ## Features
 
@@ -16,12 +16,12 @@ FullShot is a modern, MIT-licensed alternative to GoFullPage, built for the deve
 - **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur/pixelate redaction - all vector-based and non-destructive with full undo/redo, zoom, and pan.
 - **Export anywhere.** PNG, JPEG, WebP, PDF (single tall page or A4/Letter pagination - the PDF writer is hand-rolled, zero dependencies), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
 - **Searchable PDF.** Right-click and "Save as searchable PDF" prints the live page via the DevTools Protocol (`Page.printToPDF`) into a real PDF with selectable, searchable text - unlike image-based PDFs - and downloads it directly. Uses the same optional `debugger` permission as Turbo, requested on first use.
-- **Infinite scroll, handled.** Enable "Auto-load more content" in Settings and FullShot keeps scrolling to the bottom until the page stops growing (bounded by the max capture height and a time budget), then captures the fully loaded page.
-- **SPA scroll containers.** When the window itself barely scrolls (Gmail, Slack, Notion style apps), FullShot detects the inner container that holds the real content and captures all of it instead of a single viewport.
+- **Infinite scroll, handled.** Enable "Auto-load more content" in Settings and Screencappy keeps scrolling to the bottom until the page stops growing (bounded by the max capture height and a time budget), then captures the fully loaded page.
+- **SPA scroll containers.** When the window itself barely scrolls (Gmail, Slack, Notion style apps), Screencappy detects the inner container that holds the real content and captures all of it instead of a single viewport.
 - **Iframes, in depth.** Pick an iframe with the element picker and you get its *entire* content, not just the part visible in its box: same-origin frames are scrolled and stitched internally, cross-origin frames are deep-captured via the DevTools Protocol when the Turbo permission is granted, and anything else falls back to the frame's visible box.
 - **Huge pages just work.** The composed image is stored as strips, so pages taller than the browser's canvas limits render fine and exports auto-split into numbered files / extra PDF pages instead of failing.
 - **Local capture history.** Recent captures (with annotations) live in IndexedDB with thumbnails; prune limits are configurable. Nothing syncs anywhere.
-- **Restricted pages degrade gracefully.** `chrome://` pages and the Web Store can't be scripted, so FullShot falls back to a visible-area capture instead of erroring.
+- **Restricted pages degrade gracefully.** `chrome://` pages and the Web Store can't be scripted, so Screencappy falls back to a visible-area capture instead of erroring.
 
 ## Install (from source)
 
@@ -36,7 +36,7 @@ Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacke
 
 - **Chrome, Edge, Opera, Brave** (and other Chromium browsers): use the regular Chrome build in `dist/` - it loads unchanged, every feature works.
 - **Firefox** (128+): build the Firefox variant with `bun run build:firefox` (outputs `dist-firefox/`, same code with a Firefox-flavored manifest: background scripts instead of a service worker, a gecko add-on id) and load it via `about:debugging` → **This Firefox** → **Load Temporary Add-on**. The scroll & stitch engine works fully; Turbo, "Capture as mobile", and "Save as searchable PDF" are unavailable because Firefox has no `chrome.debugger` API - the options page marks Turbo accordingly.
-- Store listings (Chrome Web Store, Firefox Add-ons) are coming; until then, install from source as above. `bun run zip:firefox` packs `fullshot-firefox.zip` for submission.
+- Store listings (Chrome Web Store, Firefox Add-ons) are coming; until then, install from source as above. `bun run zip:firefox` packs `screencappy-firefox.zip` for submission.
 
 ## Architecture
 
@@ -69,7 +69,7 @@ src/
 
 ## Privacy
 
-FullShot requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` - no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine and the searchable PDF export additionally use `debugger`, and only if you grant it. There is no network code in this extension at all.
+Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` - no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine and the searchable PDF export additionally use `debugger`, and only if you grant it. There is no network code in this extension at all.
 
 ## License
 

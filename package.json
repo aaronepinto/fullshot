@@ -1,7 +1,7 @@
 {
-  "name": "fullshot",
+  "name": "screencappy",
   "version": "0.1.0",
-  "description": "FullShot - one-click full page screenshots. Capture, annotate, export. Private by design.",
+  "description": "Screencappy - one-click full page screenshots. Capture, annotate, export. Private by design.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aaronepinto/fullshot.git"
+    "url": "https://github.com/aaronepinto/screencappy.git"
   },
-  "homepage": "https://fullshot.smollet.app"
+  "homepage": "https://screencappy.smollet.app"
 }

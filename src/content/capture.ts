@@ -23,12 +23,12 @@ interface SavedInline {
 
 (() => {
   const w = window as typeof window & {
-    __fullshotCapture?: boolean;
+    __screencappyCapture?: boolean;
     /** Scrollable element chosen by the element picker (shared isolated world). */
-    __fullshotPickedEl?: HTMLElement;
+    __screencappyPickedEl?: HTMLElement;
   };
-  if (w.__fullshotCapture) return;
-  w.__fullshotCapture = true;
+  if (w.__screencappyCapture) return;
+  w.__screencappyCapture = true;
 
   let styleEls: HTMLStyleElement[] = [];
   let fixedEls: HTMLElement[] = [];
@@ -52,14 +52,14 @@ interface SavedInline {
     const pageW = Math.max(de.scrollWidth, body?.scrollWidth ?? 0, de.clientWidth);
     const rawH = Math.max(de.scrollHeight, body?.scrollHeight ?? 0, de.clientHeight);
 
-    if (usePicked && !w.__fullshotPickedEl?.isConnected) {
+    if (usePicked && !w.__screencappyPickedEl?.isConnected) {
       throw new Error('The picked element is no longer in the page.');
     }
     // Element capture pins the scroller to the picked element; otherwise, when the
     // window barely scrolls, look for the SPA-style inner container holding the content.
     frameDoc = null;
     containerEl = usePicked
-      ? w.__fullshotPickedEl!
+      ? w.__screencappyPickedEl!
       : rawH - window.innerHeight < 200
         ? findScrollContainer()
         : null;
@@ -314,7 +314,7 @@ interface SavedInline {
     s.scrollTop = originalScroll.y;
     containerEl = null;
     frameDoc = null;
-    delete w.__fullshotPickedEl;
+    delete w.__screencappyPickedEl;
   }
 
   async function handle(msg: CaptureContentMsg): Promise<unknown> {

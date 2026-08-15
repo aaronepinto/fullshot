@@ -1,5 +1,5 @@
 /**
- * FullShot service worker: routes user gestures (toolbar click, shortcuts, context menu)
+ * Screencappy service worker: routes user gestures (toolbar click, shortcuts, context menu)
  * into a capture run, drives the chosen engine, stores tiles in IndexedDB, then opens
  * the editor tab. All capture state lives in IndexedDB so the editor is fully decoupled.
  */
@@ -267,7 +267,7 @@ async function startCapture(
     });
     await badge.clear();
   } catch (err) {
-    console.error('[fullshot] capture failed', err);
+    console.error('[screencappy] capture failed', err);
     await badge.set('ERR', '#dc2626');
     setTimeout(() => void badge.clear(), 4000);
   } finally {
@@ -309,7 +309,7 @@ async function savePdf(tab: chrome.tabs.Tab): Promise<void> {
     });
     await badge.clear();
   } catch (err) {
-    console.error('[fullshot] pdf export failed', err);
+    console.error('[screencappy] pdf export failed', err);
     await badge.set('ERR', '#dc2626');
     setTimeout(() => void badge.clear(), 4000);
   } finally {
@@ -344,7 +344,7 @@ async function frameDeepCapture(
       (done, total) => void badge.set(`${Math.round((done / total) * 100)}%`)
     );
   } catch (err) {
-    console.warn('[fullshot] iframe deep capture failed, falling back to visible box', err);
+    console.warn('[screencappy] iframe deep capture failed, falling back to visible box', err);
     await deleteTiles(capId).catch(() => undefined);
     return null;
   }
@@ -639,4 +639,4 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Test hook: lets the e2e harness drive a capture without a user gesture (the
 // harness grants host permissions in its patched manifest). Inert otherwise -
 // only code running inside the extension's own service worker can reach it.
-(globalThis as { __fullshotStart?: typeof startCapture }).__fullshotStart = startCapture;
+(globalThis as { __screencappyStart?: typeof startCapture }).__screencappyStart = startCapture;

@@ -1,6 +1,6 @@
 import type { CaptureRecord, Strip, Tile } from './types';
 
-const DB_NAME = 'fullshot';
+const DB_NAME = 'screencappy';
 const DB_VERSION = 1;
 
 let dbPromise: Promise<IDBDatabase> | null = null;

@@ -13,7 +13,7 @@ export function toFirefoxManifest(manifest) {
     if (out.optional_permissions.length === 0) delete out.optional_permissions;
   }
   out.browser_specific_settings = {
-    gecko: { id: 'fullshot@smollet.app', strict_min_version: '128.0' },
+    gecko: { id: 'screencappy@smollet.app', strict_min_version: '128.0' },
   };
   return out;
 }

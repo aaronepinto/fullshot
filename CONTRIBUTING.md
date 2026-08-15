@@ -1,6 +1,6 @@
-# Contributing to FullShot
+# Contributing to Screencappy
 
-Thanks for taking the time. FullShot is a small, dependency-free codebase, so the loop is short and there is not much to learn before you can be useful.
+Thanks for taking the time. Screencappy is a small, dependency-free codebase, so the loop is short and there is not much to learn before you can be useful.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -8,15 +8,15 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 A **real, public URL where a capture comes out wrong**. Screenshot stitching breaks in site-specific ways: an unusual sticky header, a virtualized list, a canvas that repaints on scroll, a lazy-loader that needs two passes. Those bugs are almost impossible to guess at and trivial to fix once someone hands over a page that reproduces them.
 
-Use the [capture problem form](https://github.com/aaronepinto/fullshot/issues/new/choose) and include the URL, even if the page looks boring.
+Use the [capture problem form](https://github.com/aaronepinto/screencappy/issues/new/choose) and include the URL, even if the page looks boring.
 
 ## Setup
 
 You need [Bun](https://bun.com) and a Chromium browser. Node also works if you prefer it, but the lockfile and CI are Bun.
 
 ```sh
-git clone https://github.com/aaronepinto/fullshot.git
-cd fullshot
+git clone https://github.com/aaronepinto/screencappy.git
+cd screencappy
 bun install
 bun run build
 ```
@@ -38,7 +38,7 @@ bun run test        # unit tests
 bun run e2e         # end-to-end capture against a real Chrome
 ```
 
-`bun run watch` rebuilds, but Chrome does not reload the extension for you. After a rebuild, hit the reload icon on the FullShot card in `chrome://extensions`. Changes to the service worker (`background.ts`) always need that reload. Changes inside the editor tab only need a page refresh.
+`bun run watch` rebuilds, but Chrome does not reload the extension for you. After a rebuild, hit the reload icon on the Screencappy card in `chrome://extensions`. Changes to the service worker (`background.ts`) always need that reload. Changes inside the editor tab only need a page refresh.
 
 Before opening a pull request, run the three checks that CI runs:
 
@@ -113,4 +113,4 @@ You do not need to do anything to cut a release. release-please keeps an open re
 
 ## Questions
 
-Open an [issue](https://github.com/aaronepinto/fullshot/issues/new/choose) for bugs, questions, and ideas. For anything security related, see [SECURITY.md](SECURITY.md).
+Open an [issue](https://github.com/aaronepinto/screencappy/issues/new/choose) for bugs, questions, and ideas. For anything security related, see [SECURITY.md](SECURITY.md).

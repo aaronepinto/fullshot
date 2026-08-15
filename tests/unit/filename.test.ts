@@ -46,7 +46,7 @@ describe('pdfFilename', () => {
   });
 
   test('falls back to the default base name when the template renders empty', () => {
-    expect(pdfFilename('', { title: '', url: '', mode: 'pdf', when })).toBe('fullshot.pdf');
+    expect(pdfFilename('', { title: '', url: '', mode: 'pdf', when })).toBe('screencappy.pdf');
   });
 });
 

@@ -1,15 +1,15 @@
-// FullShot marketing site: pure static assets, no server code, no bindings.
+// Screencappy marketing site: pure static assets, no server code, no bindings.
 // Deploy with: cd site && bunx wrangler deploy
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",
-  "name": "fullshot-site",
+  "name": "screencappy-site",
   "compatibility_date": "2026-08-15",
   "assets": {
     "directory": "./public"
   },
   "routes": [
     {
-      "pattern": "fullshot.smollet.app",
+      "pattern": "screencappy.smollet.app",
       "custom_domain": true
     }
   ]

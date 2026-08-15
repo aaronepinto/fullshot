@@ -1,5 +1,5 @@
 /**
- * FullShot editor: loads a capture from IndexedDB, stitches it, and provides
+ * Screencappy editor: loads a capture from IndexedDB, stitches it, and provides
  * annotation, crop, history, and export. Everything runs locally in this tab.
  */
 import { deleteCapture, getCapture, listCaptures, putCapture } from '../lib/db';
@@ -927,7 +927,7 @@ async function boot() {
     const record = await getCapture(id);
     if (!record) throw new Error('Capture not found - it may have been pruned from history.');
     state.record = record;
-    document.title = `FullShot - ${record.title || record.url}`;
+    document.title = `Screencappy - ${record.title || record.url}`;
     const stored = record as CaptureRecord & { annos?: Anno[]; cropRect?: Rect | null };
     state.annos = stored.annos ?? [];
     state.crop = stored.cropRect ?? null;

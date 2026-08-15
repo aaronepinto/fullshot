@@ -1,4 +1,4 @@
-// Generates the FullShot toolbar/store icons as PNGs with zero dependencies.
+// Generates the Screencappy toolbar/store icons as PNGs with zero dependencies.
 // Design: rounded dark slate tile, sky-blue camera lens with a bright inner ring,
 // and a small "full page" strip down the right edge.
 import { deflateSync } from 'node:zlib';

@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to FullShot.
+Thanks for contributing to Screencappy.
 
 Two things worth checking before you hit Create:
 

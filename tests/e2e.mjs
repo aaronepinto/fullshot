@@ -45,7 +45,7 @@ async function runScenario(browser, url, { name, minW, minH, maxH }) {
 
   await worker.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    await globalThis.__fullshotStart(tab, 'full');
+    await globalThis.__screencappyStart(tab, 'full');
   });
 
   const editorTarget = await browser.waitForTarget(

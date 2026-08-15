@@ -6,9 +6,9 @@ The files in this directory are the templates. Search and replace these four str
 
 | Placeholder | Example |
 | :-- | :-- |
-| `aaronepinto/fullshot` | `owner/repo` |
-| `FullShot` | project name |
-| `fullshot.smollet.app` | docs or product site |
+| `aaronepinto/screencappy` | `owner/repo` |
+| `Screencappy` | project name |
+| `screencappy.smollet.app` | docs or product site |
 | `security@smollet.app` | security contact, or delete the line |
 
 ---

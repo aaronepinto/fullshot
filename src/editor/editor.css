@@ -1,4 +1,4 @@
-/* FullShot editor - dark-first, light via prefers-color-scheme. */
+/* Screencappy editor - dark-first, light via prefers-color-scheme. */
 :root {
   color-scheme: dark light;
   --bg: #0b1220;

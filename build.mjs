@@ -12,7 +12,7 @@ if (buildTarget !== 'chrome' && buildTarget !== 'firefox') {
   process.exit(1);
 }
 const outdir = buildTarget === 'firefox' ? 'dist-firefox' : 'dist';
-const zipName = buildTarget === 'firefox' ? 'fullshot-firefox.zip' : 'fullshot.zip';
+const zipName = buildTarget === 'firefox' ? 'screencappy-firefox.zip' : 'screencappy.zip';
 
 const entries = {
   background: 'src/background.ts',

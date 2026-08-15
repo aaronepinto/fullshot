@@ -6,8 +6,8 @@
 import type { RuntimeMsg } from '../lib/types';
 
 (() => {
-  const w = window as typeof window & { __fullshotSelectCleanup?: () => void };
-  w.__fullshotSelectCleanup?.();
+  const w = window as typeof window & { __screencappySelectCleanup?: () => void };
+  w.__screencappySelectCleanup?.();
 
   const host = document.createElement('div');
   host.style.cssText =
@@ -116,7 +116,7 @@ import type { RuntimeMsg } from '../lib/types';
     window.removeEventListener('keydown', onKey, true);
     window.removeEventListener('scroll', onScroll);
     host.remove();
-    delete w.__fullshotSelectCleanup;
+    delete w.__screencappySelectCleanup;
   }
-  w.__fullshotSelectCleanup = cleanup;
+  w.__screencappySelectCleanup = cleanup;
 })();

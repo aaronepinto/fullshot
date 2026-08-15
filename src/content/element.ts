@@ -11,10 +11,10 @@ import type { RuntimeMsg } from '../lib/types';
 
 (() => {
   const w = window as typeof window & {
-    __fullshotElementCleanup?: () => void;
-    __fullshotPickedEl?: HTMLElement;
+    __screencappyElementCleanup?: () => void;
+    __screencappyPickedEl?: HTMLElement;
   };
-  w.__fullshotElementCleanup?.();
+  w.__screencappyElementCleanup?.();
 
   const host = document.createElement('div');
   // pointer-events:none keeps elementFromPoint and native scrolling working; all
@@ -133,7 +133,7 @@ import type { RuntimeMsg } from '../lib/types';
         frameUrl = el.src;
       }
     }
-    if (scrollable) w.__fullshotPickedEl = el as HTMLElement;
+    if (scrollable) w.__screencappyPickedEl = el as HTMLElement;
     finish({
       type: 'fs:element',
       scrollable,
@@ -172,7 +172,7 @@ import type { RuntimeMsg } from '../lib/types';
     window.removeEventListener('pointerdown', swallow, true);
     window.removeEventListener('pointerup', swallow, true);
     host.remove();
-    delete w.__fullshotElementCleanup;
+    delete w.__screencappyElementCleanup;
   }
-  w.__fullshotElementCleanup = cleanup;
+  w.__screencappyElementCleanup = cleanup;
 })();

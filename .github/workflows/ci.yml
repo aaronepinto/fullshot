@@ -31,11 +31,11 @@ jobs:
       - name: Build
         run: bun run build
       - name: Pack
-        run: cd dist && zip -r -X ../fullshot.zip .
+        run: cd dist && zip -r -X ../screencappy.zip .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: fullshot-${{ github.sha }}
-          path: fullshot.zip
+          name: screencappy-${{ github.sha }}
+          path: screencappy.zip
 
   e2e:
     runs-on: ubuntu-latest

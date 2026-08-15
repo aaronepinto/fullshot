@@ -11,7 +11,7 @@ body:
         Thanks for taking the time to file this.
 
         **If a capture comes out wrong on a specific website**, please close this and use
-        the [Capture problem](https://github.com/aaronepinto/fullshot/issues/new?template=capture_problem.yml)
+        the [Capture problem](https://github.com/aaronepinto/screencappy/issues/new?template=capture_problem.yml)
         form instead. It asks for the one thing that makes those reports fixable: the URL.
 
   - type: checkboxes
@@ -19,11 +19,11 @@ body:
     attributes:
       label: Prerequisites
       options:
-        - label: I am on the latest release of FullShot.
+        - label: I am on the latest release of Screencappy.
           required: true
-        - label: I searched [existing issues](https://github.com/aaronepinto/fullshot/issues?q=is%3Aissue) and this is not a duplicate.
+        - label: I searched [existing issues](https://github.com/aaronepinto/screencappy/issues?q=is%3Aissue) and this is not a duplicate.
           required: true
-        - label: I can reproduce this with FullShot as the only enabled extension in a fresh browser profile.
+        - label: I can reproduce this with Screencappy as the only enabled extension in a fresh browser profile.
           required: true
 
   - type: textarea
@@ -77,7 +77,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: FullShot version
+      label: Screencappy version
       description: Shown on the card in `chrome://extensions`.
       placeholder: "0.3.1"
     validations:
@@ -105,7 +105,7 @@ body:
     attributes:
       label: Console output
       description: >
-        Open `chrome://extensions`, click **service worker** on the FullShot card for
+        Open `chrome://extensions`, click **service worker** on the Screencappy card for
         background errors, and use DevTools on the editor tab for editor errors.
         Paste anything red. This is rendered as a code block, no backticks needed.
       render: shell

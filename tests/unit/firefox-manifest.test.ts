@@ -4,7 +4,7 @@ import { toFirefoxManifest } from '../../scripts/firefox-manifest.mjs';
 
 const chromeManifest = {
   manifest_version: 3,
-  name: 'FullShot',
+  name: 'Screencappy',
   version: '0.1.0',
   minimum_chrome_version: '116',
   offline_enabled: true,
@@ -37,7 +37,7 @@ describe('toFirefoxManifest', () => {
   test('adds gecko settings and preserves the rest', () => {
     const out = toFirefoxManifest(chromeManifest);
     expect(out.browser_specific_settings).toEqual({
-      gecko: { id: 'fullshot@smollet.app', strict_min_version: '128.0' },
+      gecko: { id: 'screencappy@smollet.app', strict_min_version: '128.0' },
     });
     expect(out.permissions).toEqual(['activeTab', 'scripting']);
     expect(out.version).toBe('0.1.0');
