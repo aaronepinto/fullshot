@@ -419,8 +419,9 @@ interface SavedInline {
    * analytics beacon rewriting a hidden node) must not hold the capture up, and only
    * the first few records of a batch are inspected so a huge batch stays cheap.
    */
-  function watchMutations(): { readonly count: number; stop: () => void } {
+  function watchMutations(): { readonly count: number; readonly lastAt: number; stop: () => void } {
     let count = 0;
+    let lastAt = 0;
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
     const inViewport = (node: Node): boolean => {
@@ -437,11 +438,13 @@ interface SavedInline {
           for (let j = 0; j < rec.addedNodes.length; j++) {
             if (inViewport(rec.addedNodes[j]!)) {
               count++;
+              lastAt = Date.now();
               return;
             }
           }
         } else if (inViewport(rec.target)) {
           count++;
+          lastAt = Date.now();
           return;
         }
       }
@@ -452,6 +455,9 @@ interface SavedInline {
     return {
       get count() {
         return count;
+      },
+      get lastAt() {
+        return lastAt;
       },
       stop: () => obs.disconnect(),
     };
@@ -468,11 +474,14 @@ interface SavedInline {
     await nextFrame();
     await nextFrame();
     if (settleMs > 0) await sleep(settleMs);
-    // settleMs is the floor; virtualized feeds render on a timer well after it, so the
-    // shot waits for the viewport to hold still for two frames (or for the hard cap).
+    // settleMs is the floor; a virtualized feed streams its rows in well after it, so
+    // the shot waits for the viewport to hold still (or for the hard cap).
     let seen = watch.count;
     let quiet = 0;
-    while (shouldKeepSettling(quiet, Date.now() - startedAt)) {
+    for (;;) {
+      const now = Date.now();
+      const quietFor = watch.lastAt ? now - watch.lastAt : now - startedAt;
+      if (!shouldKeepSettling(quiet, quietFor, now - startedAt)) break;
       await nextFrame();
       quiet = watch.count === seen ? quiet + 1 : 0;
       seen = watch.count;

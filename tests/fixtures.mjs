@@ -28,10 +28,10 @@ export const SCENARIOS = [
   // sections, so the composed height must match the container content (3000px)
   // rather than the viewport.
   { name: 'container', path: '/container', minW: 1000, minH: 2950, maxH: 3100 },
-  // Virtualized feed: 50 rows of 120px behind a spacer, each rendered 300ms after the
-  // scroll that reveals it. The samples prove rows are actually in the image all the
-  // way down, not blank or duplicated bands.
-  { name: 'virtualized', path: '/virtualized', minW: 1100, minH: 5950, maxH: 6100, samples: [0.12, 0.37, 0.62, 0.87] },
+  // Virtualized feed: 50 rows of 120px behind a spacer, streamed in over ~750ms after
+  // each scroll. The samples sit 20px above the bottom edge of four different tiles,
+  // where the last rows of that tile land, so a capture that shot early leaves white.
+  { name: 'virtualized', path: '/virtualized', minW: 1100, minH: 5950, maxH: 6100, samples: [1580 / 6000, 3180 / 6000, 4780 / 6000, 5980 / 6000] },
   // Mail layout: the reading pane (75% wide, 2600px of content) must win over the
   // folder list beside it, so the capture is pane-shaped rather than window-shaped.
   { name: 'mail', path: '/mail', minW: 850, maxW: 950, minH: 2550, maxH: 2700 },
