@@ -192,7 +192,25 @@ kbd {
   font-size: 11px;
 }
 
-#textEditor { position: absolute; z-index: 30; }
+#canvas:focus { outline: none; }
+
+/* Only the textarea takes clicks: the overlay's padding and its hint line must not
+   swallow a click meant for the canvas underneath. */
+#textEditor { position: absolute; z-index: 30; pointer-events: none; }
+#textEditor textarea { pointer-events: auto; }
+#textHint {
+  margin-top: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#textHint kbd { font-size: 10px; padding: 0 4px; }
 #textEditor textarea {
   background: transparent;
   border: 1.5px dashed var(--accent);

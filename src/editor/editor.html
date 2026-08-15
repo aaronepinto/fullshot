@@ -113,12 +113,17 @@
   </header>
 
   <main id="viewport">
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" tabindex="0"></canvas>
     <div id="loading" class="loading">
       <div class="spinner"></div>
       <p id="loadingMsg">Stitching your capture…</p>
     </div>
-    <div id="textEditor" hidden><textarea rows="1" spellcheck="false" placeholder="Type…"></textarea></div>
+    <div id="textEditor" data-testid="text-editor" hidden>
+      <textarea rows="1" spellcheck="false" placeholder="Type…" data-testid="text-input"></textarea>
+      <div id="textHint" data-testid="text-hint" role="status" aria-live="polite">
+        <kbd>Enter</kbd> to apply · <kbd>⇧Enter</kbd> for a new line · <kbd>Esc</kbd> to cancel
+      </div>
+    </div>
     <div id="cropBar" class="floatbar" hidden>
       <span id="cropDims"></span>
       <button id="cropApply" class="primary">Apply crop</button>
