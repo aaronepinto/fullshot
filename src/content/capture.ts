@@ -13,6 +13,7 @@ import {
   intersectsViewport,
   movedEnough,
   pickDominantScroller,
+  settleWatchMs,
   shouldContinueAutoLoad,
   shouldKeepSettling,
   walkShadowTree,
@@ -51,6 +52,11 @@ interface SavedInline {
   let frameDoc: Document | null = null;
   /** Scroller the hijack probe recovered; measure() keeps using it for the whole run. */
   let adoptedScroller: HTMLElement | null = null;
+  /** Viewport mutation watcher, live from prepare() to restore(). */
+  let watcher: ReturnType<typeof watchMutations> | null = null;
+  let lastScrollAt = 0;
+  /** Slowest reaction to a scroll seen in this run, ms: how long the next tile waits. */
+  let renderLatency = 0;
 
   const scroller = () =>
     frameDoc
@@ -243,6 +249,9 @@ interface SavedInline {
         budget
       );
     }
+    // Started last so the sticky and fixed pass above is not mistaken for the page
+    // reacting to a scroll.
+    watcher = watchMutations();
   }
 
   function setFixedHidden(hide: boolean) {
@@ -419,7 +428,12 @@ interface SavedInline {
    * analytics beacon rewriting a hidden node) must not hold the capture up, and only
    * the first few records of a batch are inspected so a huge batch stays cheap.
    */
-  function watchMutations(): { readonly count: number; readonly lastAt: number; stop: () => void } {
+  function watchMutations(): {
+    readonly count: number;
+    readonly lastAt: number;
+    reset: () => void;
+    stop: () => void;
+  } {
     let count = 0;
     let lastAt = 0;
     const vpW = window.innerWidth;
@@ -459,16 +473,32 @@ interface SavedInline {
       get lastAt() {
         return lastAt;
       },
+      reset: () => {
+        lastAt = 0;
+      },
       stop: () => obs.disconnect(),
     };
+  }
+
+  /**
+   * Folds the previous tile's reaction into the run's render latency. The observer keeps
+   * running while the tile is shot and stored, so a page that reacted only after the
+   * shot still gets counted here and buys the next tile a longer wait.
+   */
+  function noteRenderLatency() {
+    if (!watcher || !lastScrollAt || !watcher.lastAt) return;
+    renderLatency = Math.max(renderLatency, watcher.lastAt - lastScrollAt);
   }
 
   async function scrollTo(x: number, y: number, settleMs: number, hideFixed: boolean): Promise<ScrollResult> {
     setFixedHidden(hideFixed);
     const s = scroller();
-    // Watching starts before the scroll so renders landing during settleMs count too.
-    const watch = watchMutations();
+    noteRenderLatency();
+    const watchMs = settleWatchMs(renderLatency);
+    // The reset comes before the scroll, so renders landing during settleMs count too.
+    watcher?.reset();
     const startedAt = Date.now();
+    lastScrollAt = startedAt;
     s.scrollLeft = x;
     s.scrollTop = y;
     await nextFrame();
@@ -476,21 +506,26 @@ interface SavedInline {
     if (settleMs > 0) await sleep(settleMs);
     // settleMs is the floor; a virtualized feed streams its rows in well after it, so
     // the shot waits for the viewport to hold still (or for the hard cap).
-    let seen = watch.count;
+    let seen = watcher?.count ?? 0;
     let quiet = 0;
     for (;;) {
       const now = Date.now();
-      const quietFor = watch.lastAt ? now - watch.lastAt : now - startedAt;
-      if (!shouldKeepSettling(quiet, quietFor, now - startedAt)) break;
+      const lastAt = watcher?.lastAt ?? 0;
+      const quietFor = lastAt ? now - lastAt : now - startedAt;
+      if (!shouldKeepSettling(quiet, quietFor, now - startedAt, watchMs)) break;
       await nextFrame();
-      quiet = watch.count === seen ? quiet + 1 : 0;
-      seen = watch.count;
+      const count = watcher?.count ?? 0;
+      quiet = count === seen ? quiet + 1 : 0;
+      seen = count;
     }
-    watch.stop();
     return { x: s.scrollLeft, y: s.scrollTop };
   }
 
   function restore() {
+    watcher?.stop();
+    watcher = null;
+    lastScrollAt = 0;
+    renderLatency = 0;
     for (const styleEl of styleEls) styleEl.remove();
     styleEls = [];
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);

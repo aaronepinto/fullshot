@@ -124,6 +124,7 @@ async function runScenario(browser, url, scenario) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1200, height: 800 });
   await page.goto(url, { waitUntil: 'load' });
+  const startedAt = Date.now();
 
   const swTarget = await browser.waitForTarget(
     (/** @type {Target} */ t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
@@ -152,7 +153,7 @@ async function runScenario(browser, url, scenario) {
 
   const dims = await editor.$eval('#statDims', (el) => el.textContent);
 
-  console.log(`[${label}] editor reports:`, dims);
+  console.log(`[${label}] editor reports:`, dims, `after ${Date.now() - startedAt}ms`);
   const { w, h } = assertComposed(label, dims, scenario);
 
   if (scenario.note !== undefined) {

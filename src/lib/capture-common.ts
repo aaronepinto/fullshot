@@ -116,13 +116,19 @@ export const SETTLE = {
    */
   quietMs: 160,
   /**
-   * Minimum window watched after each scroll, ms. A timer-driven renderer leaves the
-   * page quiet for a few frames before it touches anything at all, so an immediate
-   * verdict of "still" is worth nothing. Kept under the ~550ms captureVisibleTab
-   * throttle gap: for every tile after the first this wait costs no wall-clock time,
-   * because the shot would have been waiting on the quota anyway.
+   * Minimum window watched after each scroll, ms, measured from the scroll itself so a
+   * generous captureDelayMs already counts towards it. A page that has not touched
+   * anything yet cannot be called still, and a virtualized list starts rendering around
+   * 150 to 200ms in, so the window has to reach past that. Every millisecond here is
+   * paid on every tile of every page, which is why it is not simply set to the cap.
    */
-  minWatchMs: 400,
+  minWatchMs: 250,
+  /**
+   * Added to the render latency measured on earlier tiles to size the window for the
+   * next one, ms. This is what lets a page that renders slower than the minimum window
+   * pull the wait out to fit, without charging a fast page for it.
+   */
+  latencyMargin: 120,
   /** Hard cap, ms, so tickers and spinners that never go quiet still get shot. */
   maxWaitMs: 900,
   /** Mutation records inspected per batch when testing against the visible region. */
@@ -130,17 +136,24 @@ export const SETTLE = {
 } as const;
 
 /**
- * Whether the adaptive settle should watch the page for another frame. Elapsed time is
- * measured from the moment the scroll was commanded, so a generous captureDelayMs
- * already counts towards the minimum watch window.
+ * How long to watch after a scroll, given the slowest reaction seen so far in this
+ * capture. Reactions that arrive after a tile is shot still count, so a page only pays
+ * for the wait it has shown it needs.
  */
+export function settleWatchMs(renderLatencyMs: number): number {
+  const wanted = Math.max(0, renderLatencyMs) + SETTLE.latencyMargin;
+  return Math.min(SETTLE.maxWaitMs, Math.max(SETTLE.minWatchMs, wanted));
+}
+
+/** Whether the adaptive settle should watch the page for another frame. */
 export function shouldKeepSettling(
   quietFrames: number,
   quietForMs: number,
-  elapsedMs: number
+  elapsedMs: number,
+  watchMs: number
 ): boolean {
   if (elapsedMs >= SETTLE.maxWaitMs) return false;
-  if (elapsedMs < SETTLE.minWatchMs) return true;
+  if (elapsedMs < watchMs) return true;
   return quietFrames < SETTLE.quietFrames || quietForMs < SETTLE.quietMs;
 }
 
