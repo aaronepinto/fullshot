@@ -1,5 +1,5 @@
 /**
- * Screencappy service worker: routes user gestures (toolbar click, shortcuts, context menu)
+ * screencappy service worker: routes user gestures (toolbar click, shortcuts, context menu)
  * into a capture run, drives the chosen engine, stores tiles in IndexedDB, then opens
  * the editor tab. All capture state lives in IndexedDB so the editor is fully decoupled.
  */

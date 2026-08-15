@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "screencappy | full page screenshot",
+  "name": "Screencappy - Full Page Screenshot",
   "version": "0.1.0",
   "description": "One-click full page screenshots. Annotate, redact and export as PNG, JPEG, WebP or PDF. Nothing leaves your device.",
   "minimum_chrome_version": "116",
@@ -13,7 +13,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "screencappy | capture full page (Alt+Shift+P)",
+    "default_title": "Screencappy - capture full page (Alt+Shift+P)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png"
@@ -29,8 +29,7 @@
     "storage",
     "downloads",
     "contextMenus",
-    "unlimitedStorage",
-    "debugger"
+    "unlimitedStorage"
   ],
   "commands": {
     "capture-full": {
@@ -54,5 +53,8 @@
     "capture-element": {
       "description": "Capture an element"
     }
-  }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }
