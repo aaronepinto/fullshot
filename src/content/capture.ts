@@ -7,6 +7,7 @@
 import {
   AUTO_LOAD,
   MAX_SCAN_NODES,
+  hasFixedBackground,
   pickDominantScroller,
   shouldContinueAutoLoad,
   walkShadowTree,
@@ -205,15 +206,26 @@ interface SavedInline {
       // remembered so they can be hidden for every tile after the first. querySelectorAll
       // cannot pierce shadow roots, so the walk descends into open shadow trees too.
       const view = doc.defaultView ?? window;
+      // The walk starts below body, so the roots need their own parallax check:
+      // background-attachment fixed most often lives on html or body.
+      for (const root of [doc.documentElement, doc.body]) {
+        if (root && hasFixedBackground(view.getComputedStyle(root).backgroundAttachment)) {
+          setInline(root, 'background-attachment', 'scroll');
+        }
+      }
       if (!doc.body) continue;
       budget -= walkShadowTree<Element>(
         doc.body.children,
         (el) => {
-          const position = view.getComputedStyle(el).position;
-          if (position === 'fixed') {
+          const style = view.getComputedStyle(el);
+          if (style.position === 'fixed') {
             fixedEls.push(el as HTMLElement);
-          } else if (hideSticky && position === 'sticky') {
+          } else if (hideSticky && style.position === 'sticky') {
             setInline(el as HTMLElement, 'position', 'static');
+          }
+          // Viewport-glued backgrounds repeat in every tile: scroll them with the page.
+          if (hasFixedBackground(style.backgroundAttachment)) {
+            setInline(el as HTMLElement, 'background-attachment', 'scroll');
           }
         },
         budget
