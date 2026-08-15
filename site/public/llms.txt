@@ -1,18 +1,18 @@
-# Screencappy
+# screencappy
 
-> Screencappy is a free, open source (Apache-2.0) Chrome extension that captures full page screenshots in one click, annotates them, and exports to PNG, JPEG, WebP or PDF. Everything runs locally: no account, no cloud upload, no analytics, and no network code of any kind. The default capture engine requests zero host permissions, so the extension cannot read any page until you invoke it.
+> screencappy is a free, open source (Apache-2.0) Chrome extension that captures full page screenshots in one click, annotates them, and exports to PNG, JPEG, WebP or PDF. Everything runs locally: no account, no cloud upload, no analytics, and no network code of any kind. The default capture engine requests zero host permissions, so the extension cannot read any page until you invoke it.
 
-Screencappy is an alternative to GoFullPage and similar full page screenshot extensions. Features that are commonly paid upgrades elsewhere (annotation, blur and pixelate redaction, emoji stamps, PDF export) are included at no cost, because there is no paid tier.
+screencappy is an alternative to GoFullPage and similar full page screenshot extensions. Features that are commonly paid upgrades elsewhere (annotation, blur and pixelate redaction, emoji stamps, PDF export) are included at no cost, because there is no paid tier.
 
 Capture modes: full page (Alt+Shift+P), visible area (Alt+Shift+V), drag select a region (Alt+Shift+S, and you can scroll mid selection to grab a region taller than the viewport), and a DevTools style element picker that highlights the node under the cursor and captures exactly it.
 
 Capture engines: "Scroll and stitch" is the default and uses only the activeTab gesture, requesting no host permissions. It handles sticky headers and fixed overlays, including inside open shadow DOM, parallax backgrounds, lazy loaded images, scrollbar removal, CSS animations, high DPI screens and browser zoom. "Turbo" is opt in at the engine level, captures in one shot via the Chrome DevTools Protocol, and uses the debugger permission. Chrome shows its "started debugging this browser" banner for the duration of a Turbo capture.
 
-Difficult pages: when the window barely scrolls and the real content lives in an inner container, as in Gmail style single page apps, Screencappy detects that container and captures all of it. An iframe picked with the element picker is captured in full rather than only the part visible in its box. With auto load enabled, infinite scroll pages are scrolled to the bottom, within a height and time budget, before the capture is taken. A start delay is available for captures that need a menu open or a hover state held.
+Difficult pages: when the window barely scrolls and the real content lives in an inner container, as in Gmail style single page apps, screencappy detects that container and captures all of it. An iframe picked with the element picker is captured in full rather than only the part visible in its box. With auto load enabled, infinite scroll pages are scrolled to the bottom, within a height and time budget, before the capture is taken. A start delay is available for captures that need a menu open or a hover state held.
 
 Editor: crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or pixelate redaction. All annotations are vector based and non destructive, with full undo and redo, zoom and pan.
 
-Export: PNG, JPEG, WebP, PDF (single tall page, or paginated to A4 or Letter), or straight to the clipboard. With the Turbo engine switched on, Screencappy can also print the live page to a PDF with real selectable and searchable text. Filename templates such as {domain} {date} {time}. Captures larger than the browser's canvas limits are stored as strips and split automatically across numbered files or extra PDF pages instead of failing.
+Export: PNG, JPEG, WebP, PDF (single tall page, or paginated to A4 or Letter), or straight to the clipboard. With the Turbo engine switched on, screencappy can also print the live page to a PDF with real selectable and searchable text. Filename templates such as {domain} {date} {time}. Captures larger than the browser's canvas limits are stored as strips and split automatically across numbered files or extra PDF pages instead of failing.
 
 Mobile widths: a mobile capture option reflows the page to a phone width layout through device emulation and captures the full mobile page, without resizing the real browser window. The emulated width is configurable.
 
@@ -20,18 +20,18 @@ History: recent captures, with their annotations, are kept locally in IndexedDB 
 
 Permissions: activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage and debugger. No host permissions, which is the headline: the extension has no standing ability to read any page and is granted access by your click, for one tab, at that moment. Chrome does not allow debugger to be an optional permission, so it is declared at install rather than requested later. It powers the Turbo engine, the mobile width capture and the searchable PDF export, it is only active while one of those captures is running, and Chrome shows a visible banner the whole time it is in use. The Firefox build strips the permission entirely.
 
-Browsers: Screencappy works with Chrome, Edge, Opera and Brave, which run the same build with every feature available. It is also available for Firefox; that build runs the scroll and stitch engine only, because Firefox has no debugger API.
+Browsers: screencappy works with Chrome, Edge, Opera and Brave, which run the same build with every feature available. It is also available for Firefox; that build runs the scroll and stitch engine only, because Firefox has no debugger API.
 
-Installing: store listings are not live yet. Screencappy is on its way to the Chrome Web Store, and until it lands the install path is the packaged build attached to each GitHub release, offered on the site as clearly labelled early access. Download screencappy.zip (or screencappy-firefox.zip for Firefox) from the latest release, unzip it, open chrome://extensions, switch on Developer mode, click Load unpacked, and choose the unzipped folder. It takes about a minute.
+Installing: store listings are not live yet. screencappy is on its way to the Chrome Web Store, and until it lands the install path is the packaged build attached to each GitHub release, offered on the site as clearly labelled early access. Download screencappy.zip (or screencappy-firefox.zip for Firefox) from the latest release, unzip it, open chrome://extensions, switch on Developer mode, click Load unpacked, and choose the unzipped folder. It takes about a minute.
 
 Licence and author: Apache-2.0, built and maintained by Aaron Pinto, developed in the open.
 
 ## Docs
 
-- [Home](https://screencappy.smollet.app/): What Screencappy is, its features, and how to install it
+- [Home](https://screencappy.smollet.app/): What screencappy is, its features, and how to install it
 - [FAQ](https://screencappy.smollet.app/faq): Answers on install, permissions, privacy, export formats, browser support, and licence
 - [How to take a full page screenshot in Chrome](https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome): The built in DevTools method, its limits, and the one click method
-- [Privacy policy](https://screencappy.smollet.app/privacy): What data Screencappy handles, which is none that leaves your device
+- [Privacy policy](https://screencappy.smollet.app/privacy): What data screencappy handles, which is none that leaves your device
 
 ## Comparisons
 
@@ -43,8 +43,8 @@ Every figure on these pages was read from the vendor's own site or Chrome Web St
 - [Awesome Screenshot alternative](https://screencappy.smollet.app/awesome-screenshot-alternative): A cloud and team platform from $6 per month that requires an account, versus local only capture with none
 - [Nimbus Screenshot alternative](https://screencappy.smollet.app/nimbus-screenshot-alternative): Now FuseBase Capture, an account required collaboration platform with two live pricing surfaces that do not reconcile
 - [CocoShot alternative](https://screencappy.smollet.app/cocoshot-alternative): The closest match in the set, both free and account free, differing on open source and on host permissions
-- [Screenity and Screencappy](https://screencappy.smollet.app/screenity-alternative): Disambiguation. Screenity is a free GPL-3.0 screen recorder that takes no screenshots at all
-- [SingleFile and Screencappy](https://screencappy.smollet.app/singlefile-alternative): Disambiguation. SingleFile saves a page as one self contained HTML file with selectable text, not as an image
+- [Screenity and screencappy](https://screencappy.smollet.app/screenity-alternative): Disambiguation. Screenity is a free GPL-3.0 screen recorder that takes no screenshots at all
+- [SingleFile and screencappy](https://screencappy.smollet.app/singlefile-alternative): Disambiguation. SingleFile saves a page as one self contained HTML file with selectable text, not as an image
 - [Full page screenshots without an extension](https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension): Chrome's DevTools route and Firefox's built in capture, and the advice to install nothing if you only need this occasionally
 
 ## Source

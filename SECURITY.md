@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Screencappy ships as a browser extension, so there is only ever one supported version: the latest release. Store installs update automatically. If you loaded an unpacked build, pull the [latest release](https://github.com/smollet-app/screencappy/releases/latest) before reporting anything.
+screencappy ships as a browser extension, so there is only ever one supported version: the latest release. Store installs update automatically. If you loaded an unpacked build, pull the [latest release](https://github.com/smollet-app/screencappy/releases/latest) before reporting anything.
 
 | Version | Supported |
 | :-- | :-- |
@@ -38,7 +38,7 @@ In scope:
 Out of scope:
 
 - Vulnerabilities in Chrome or Chromium itself. Report those to the [Chrome VRP](https://g.co/chrome/vrp).
-- Vulnerabilities in third-party sites that Screencappy captures.
+- Vulnerabilities in third-party sites that screencappy captures.
 - Anything that requires a compromised browser profile, a malicious extension already installed, or physical access to the device.
 - The `debugger` permission being powerful. It is opt-in, it is disabled by default, and Chrome shows its own persistent warning banner while it is active. That is the documented design, not a flaw.
 - Automated scanner output with no demonstrated impact.

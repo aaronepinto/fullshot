@@ -1,6 +1,6 @@
-/* Screencappy site. One stylesheet, no external requests.
+/* screencappy site. One stylesheet, no external requests.
 
-   Type, colour and motion come from the Smollet design system: a cream
+   Type, colour and motion come from the smollet design system: a cream
    scholarly shell by default, the ink shell under prefers-color-scheme: dark.
    Text tiers are alpha of a single ink colour rather than separate greys, and
    emphasis is a solid ink fill rather than a coloured accent. */
@@ -200,10 +200,11 @@ a:hover { color: var(--link-hover); }
 .byline a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--border-default); }
 .byline a:hover { color: var(--text-primary); border-bottom-color: var(--border-strong); }
 
-/* "Smollet" is a wordmark, so it is set as one: the approved lowercase
+/* "smollet" is a wordmark, so it is set as one: the approved lowercase
    logotype in Instrument Serif italic, rather than swept up into the tracked
-   mono label that introduces it. The markup keeps the name capitalised so the
-   entity name and the screen reader text stay "Smollet". */
+   mono label that introduces it. The lowercasing here is not styling the brand,
+   which is already lowercase in the markup; it is undoing the uppercase the
+   `.byline` label sets, which would otherwise shout the name. */
 .byline a, .colophon a {
   font: italic 400 15px/1 var(--font-display);
   letter-spacing: 0;

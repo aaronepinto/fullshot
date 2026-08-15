@@ -1,4 +1,4 @@
-// Screencappy marketing site: pure static assets, no server code, no bindings.
+// screencappy marketing site: pure static assets, no server code, no bindings.
 // Deploy with: cd site && bunx wrangler deploy
 {
   "$schema": "https://unpkg.com/wrangler/config-schema.json",

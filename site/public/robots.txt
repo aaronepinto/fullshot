@@ -1,4 +1,4 @@
-# Screencappy: https://screencappy.smollet.app
+# screencappy: https://screencappy.smollet.app
 #
 # This site wants to be crawled, indexed, cited, and trained on. It is a small
 # static site for a free Apache-2.0 licensed browser extension, there is nothing
