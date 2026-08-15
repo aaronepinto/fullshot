@@ -17,6 +17,7 @@ const TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
   '.json': 'application/json',
+  '.woff2': 'font/woff2',
 };
 
 if (!existsSync(join(DIST, 'editor.html'))) {
