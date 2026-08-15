@@ -32,6 +32,12 @@ bun run build      # outputs the unpacked extension to dist/
 
 Then open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**, and pick the `dist/` folder. `bun run watch` rebuilds on save while you develop.
 
+## Browser support
+
+- **Chrome, Edge, Opera, Brave** (and other Chromium browsers): use the regular Chrome build in `dist/` - it loads unchanged, every feature works.
+- **Firefox** (128+): build the Firefox variant with `bun run build:firefox` (outputs `dist-firefox/`, same code with a Firefox-flavored manifest: background scripts instead of a service worker, a gecko add-on id) and load it via `about:debugging` → **This Firefox** → **Load Temporary Add-on**. The scroll & stitch engine works fully; Turbo, "Capture as mobile", and "Save as searchable PDF" are unavailable because Firefox has no `chrome.debugger` API - the options page marks Turbo accordingly.
+- Store listings (Chrome Web Store, Firefox Add-ons) are coming; until then, install from source as above. `bun run zip:firefox` packs `screencappy-firefox.zip` for submission.
+
 ## Architecture
 
 Zero runtime dependencies. TypeScript, bundled by esbuild, Manifest V3.
