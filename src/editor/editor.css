@@ -268,6 +268,82 @@ kbd {
 .zoomctl button { padding: 2px 8px; }
 #statZoom { min-width: 44px; text-align: right; }
 
+/* ---- Right-hand drawers ---- */
+/* Inside the viewport rather than fixed to the window, so the toolbars and the
+   status bar stay reachable while it is open. */
+#annoPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  z-index: 60;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+#annoPanel header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 4px;
+}
+#annoPanel h2 { margin: 0; font-size: 15px; }
+#annoList {
+  list-style: none;
+  margin: 0;
+  padding: 0 10px 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+#annoList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#annoList li:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+#annoList li.current { outline: 1.5px solid var(--accent-strong); }
+#annoList .chip-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex: none;
+}
+#annoList .kind { font-weight: 600; text-transform: capitalize; }
+#annoList .summary {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#annoList .del { padding: 2px 7px; color: var(--text-dim); }
+#annoList .del:hover { color: var(--danger); }
+#annoList .empty-row { color: var(--text-dim); cursor: default; }
+
+#annoFlash {
+  position: absolute;
+  z-index: 35;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  animation: flash 0.7s ease-out;
+}
+@keyframes flash {
+  from { opacity: 1; }
+  to { opacity: 0.25; }
+}
+
+.drawer-hint { margin: 0 14px 10px; color: var(--text-dim); font-size: 11px; }
+
 /* ---- History drawer ---- */
 #history {
   position: fixed;
@@ -289,7 +365,6 @@ kbd {
   padding: 12px 14px 4px;
 }
 #history h2 { margin: 0; font-size: 15px; }
-.history-hint { margin: 0 14px 10px; color: var(--text-dim); font-size: 11px; }
 #historyList {
   list-style: none;
   margin: 0;

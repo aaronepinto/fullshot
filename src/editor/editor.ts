@@ -194,6 +194,8 @@ function render() {
   resizeCanvas();
   syncTextOverlay();
   syncStyleBar();
+  syncAnnoPanel();
+  syncFlash();
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-canvas');
@@ -1208,6 +1210,142 @@ $('#ctxDownload').addEventListener('click', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Annotation panel
+// ---------------------------------------------------------------------------
+
+const annoPanel = $('#annoPanel');
+const annoList = $('#annoList');
+const annoFlash = $('#annoFlash');
+/** Which annotation is flashing after a jump, and until when. */
+let flash: { index: number; until: number } | null = null;
+let flashTimer: ReturnType<typeof setTimeout> | undefined;
+/** What the rendered list was built from, so it is only rebuilt when it changes. */
+let annoListKey = '';
+
+$('#btnAnnos').addEventListener('click', () => {
+  annoPanel.hidden = !annoPanel.hidden;
+  $('#btnAnnos').setAttribute('aria-expanded', String(!annoPanel.hidden));
+  if (!annoPanel.hidden) historyPanel.hidden = true;
+  requestRender();
+});
+$('#annoClose').addEventListener('click', () => {
+  annoPanel.hidden = true;
+  $('#btnAnnos').setAttribute('aria-expanded', 'false');
+});
+
+/** One line describing an annotation, for the list. */
+function annoSummary(a: Anno): string {
+  switch (a.kind) {
+    case 'text':
+      return a.text.replace(/\s+/g, ' ');
+    case 'emoji':
+      return a.char;
+    case 'pen':
+      return `${Math.round(a.points.length / 2)} points`;
+    case 'line':
+    case 'arrow':
+      return `${Math.round(Math.hypot(a.x2 - a.x1, a.y2 - a.y1))} px long`;
+    default: {
+      const r = bounds(a);
+      return `${Math.round(r.w)} × ${Math.round(r.h)}`;
+    }
+  }
+}
+
+const annoColor = (a: Anno) => ('color' in a ? a.color : 'transparent');
+
+function syncAnnoPanel() {
+  if (annoPanel.hidden) return;
+  const key = state.annos
+    .map((a) => `${a.kind}:${annoColor(a)}:${annoSummary(a)}`)
+    .join('|') + `#${state.selection.join(',')}`;
+  if (key === annoListKey) return;
+  annoListKey = key;
+  annoList.textContent = '';
+
+  if (!state.annos.length) {
+    const li = document.createElement('li');
+    li.className = 'empty-row';
+    li.textContent = 'Nothing drawn yet.';
+    annoList.appendChild(li);
+    return;
+  }
+
+  // Newest first, so the row order matches what is on top of the image.
+  for (let i = state.annos.length - 1; i >= 0; i--) {
+    const a = state.annos[i]!;
+    const li = document.createElement('li');
+    li.dataset.testid = 'anno-row';
+    li.dataset.index = String(i);
+    if (state.selection.includes(i)) li.classList.add('current');
+
+    const chip = document.createElement('span');
+    chip.className = 'chip-color';
+    chip.style.background = annoColor(a);
+    const kind = document.createElement('span');
+    kind.className = 'kind';
+    kind.textContent = a.kind;
+    const summary = document.createElement('span');
+    summary.className = 'summary';
+    summary.textContent = annoSummary(a);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.dataset.testid = 'anno-delete';
+    del.title = 'Delete';
+    del.textContent = '✕';
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      pushUndo();
+      state.annos.splice(i, 1);
+      clearSelection();
+      persistAnnos();
+      requestRender();
+    });
+
+    li.append(chip, kind, summary, del);
+    li.addEventListener('click', () => jumpToAnno(i));
+    annoList.appendChild(li);
+  }
+}
+
+/** Selects an annotation, brings it into view, and flashes it briefly. */
+function jumpToAnno(index: number) {
+  const a = state.annos[index];
+  if (!a) return;
+  selectOnly(index);
+  const b = bounds(a);
+  state.pan.x = b.x + b.w / 2 - viewport.clientWidth / state.zoom / 2;
+  state.pan.y = b.y + b.h / 2 - viewport.clientHeight / state.zoom / 2;
+  clampView();
+  flash = { index, until: Date.now() + FLASH_MS };
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => {
+    flash = null;
+    requestRender();
+  }, FLASH_MS);
+  requestRender();
+}
+
+const FLASH_MS = 700;
+
+function syncFlash() {
+  const a = flash ? state.annos[flash.index] : undefined;
+  if (!a) {
+    annoFlash.hidden = true;
+    return;
+  }
+  const b = bounds(a);
+  const tl = toScreen(b.x, b.y);
+  const rect = viewport.getBoundingClientRect();
+  annoFlash.hidden = false;
+  annoFlash.style.left = `${tl.x - rect.left - 4}px`;
+  annoFlash.style.top = `${tl.y - rect.top - 4}px`;
+  annoFlash.style.width = `${b.w * state.zoom + 8}px`;
+  annoFlash.style.height = `${b.h * state.zoom + 8}px`;
+}
+
+// ---------------------------------------------------------------------------
 // History drawer
 // ---------------------------------------------------------------------------
 
@@ -1224,6 +1362,8 @@ async function toggleHistory(forceOpen = false) {
   }
   await renderHistory();
   historyPanel.hidden = false;
+  annoPanel.hidden = true;
+  $('#btnAnnos').setAttribute('aria-expanded', 'false');
 }
 
 async function renderHistory() {
