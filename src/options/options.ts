@@ -47,7 +47,7 @@ async function updateTurboUi() {
     return;
   }
   const granted = await hasDebuggerPermission();
-  $('#grantDebugger').hidden = engineEl.value !== 'turbo' || granted;
+  $('#grantDebugger').hidden = true;
 }
 
 async function load() {

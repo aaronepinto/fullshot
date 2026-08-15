@@ -1,7 +1,8 @@
 /**
- * Guards around the optional "debugger" permission. Firefox has no
- * chrome.debugger API and rejects the permission name outright, so every
- * check and request must degrade to false instead of throwing there.
+ * Guards around the "debugger" permission. Chrome does not allow debugger to be
+ * an optional permission, so it is declared as required in the Chrome manifest;
+ * Firefox has no chrome.debugger API at all and its build strips the permission,
+ * so every check must degrade to false instead of throwing there.
  */
 
 export function debuggerAvailable(): boolean {
@@ -18,10 +19,7 @@ export async function hasDebuggerPermission(): Promise<boolean> {
 }
 
 export async function requestDebuggerPermission(): Promise<boolean> {
-  if (!debuggerAvailable()) return false;
-  try {
-    return await chrome.permissions.request({ permissions: ['debugger'] });
-  } catch {
-    return false;
-  }
+  // The permission is granted at install in Chrome; this stays as the single
+  // call site gate so a future packaging change only has to edit this module.
+  return hasDebuggerPermission();
 }
