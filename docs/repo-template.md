@@ -7,7 +7,7 @@ The files in this directory are the templates. Search and replace these four str
 | Placeholder | Example |
 | :-- | :-- |
 | `smollet-app/screencappy` | `owner/repo` |
-| `Screencappy` | project name |
+| `screencappy` | project name |
 | `screencappy.smollet.app` | docs or product site |
 | `security@smollet.app` | security contact, or delete the line |
 

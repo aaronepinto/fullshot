@@ -1,7 +1,7 @@
 {
   "name": "screencappy",
   "version": "0.1.0",
-  "description": "Screencappy - one-click full page screenshots. Capture, annotate, export. Private by design.",
+  "description": "screencappy · one-click full page screenshots. Capture, annotate, export. Private by design.",
   "private": true,
   "type": "module",
   "scripts": {

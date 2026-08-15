@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to Screencappy.
+Thanks for contributing to screencappy.
 
 Two things worth checking before you hit Create:
 

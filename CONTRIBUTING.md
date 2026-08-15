@@ -1,6 +1,6 @@
-# Contributing to Screencappy
+# Contributing to screencappy
 
-Thanks for taking the time. Screencappy is a small, dependency-free codebase, so the loop is short and there is not much to learn before you can be useful.
+Thanks for taking the time. screencappy is a small, dependency-free codebase, so the loop is short and there is not much to learn before you can be useful.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
@@ -39,7 +39,7 @@ bun run e2e         # end-to-end capture against a real Chromium browser
 bun run e2e:firefox # the same capture against a real Firefox
 ```
 
-`bun run watch` rebuilds, but Chrome does not reload the extension for you. After a rebuild, hit the reload icon on the Screencappy card in `chrome://extensions`. Changes to the service worker (`background.ts`) always need that reload. Changes inside the editor tab only need a page refresh.
+`bun run watch` rebuilds, but Chrome does not reload the extension for you. After a rebuild, hit the reload icon on the screencappy card in `chrome://extensions`. Changes to the service worker (`background.ts`) always need that reload. Changes inside the editor tab only need a page refresh.
 
 Before opening a pull request, run the three checks that CI runs:
 

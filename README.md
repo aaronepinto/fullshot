@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="src/icons/icon128.png" alt="Screencappy icon" width="96" height="96">
+<img src="src/icons/icon128.png" alt="screencappy icon" width="96" height="96">
 
-# Screencappy
+# screencappy
 
 **One click, one full page screenshot. Capture, annotate, export.**
 <br>
@@ -20,7 +20,7 @@ Free, open source, and private by design.
 
 </div>
 
-Screencappy is a free, Apache-2.0 licensed Chrome extension that captures full page screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF. Everything that sits behind a paywall elsewhere, annotation, blur and redaction, emoji stamps, PDF export, is free here. Nothing ever leaves your machine: no account, no cloud, no analytics, and no host permissions, so the extension cannot read a page until you ask it to.
+screencappy is a free, Apache-2.0 licensed Chrome extension that captures full page screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF. Everything that sits behind a paywall elsewhere, annotation, blur and redaction, emoji stamps, PDF export, is free here. Nothing ever leaves your machine: no account, no cloud, no analytics, and no host permissions, so the extension cannot read a page until you ask it to.
 
 ## 📦 Install
 
@@ -52,12 +52,12 @@ Requires Chrome 116 or newer, or any Chromium browser of the same vintage.
 - **Searchable PDF.** Right click and choose "Save as searchable PDF" to print the live page through the DevTools Protocol (`Page.printToPDF`) into a real PDF with selectable, searchable text rather than an image of the page.
 - **Delayed capture.** Set a start delay in Settings, or right click and pick a delayed capture, and the toolbar badge counts down before the shot. Use it when the thing you want only exists while a menu is open or an element is hovered.
 - **Mobile width capture.** Reflow the page to a phone width layout through DevTools device emulation and capture the full mobile page at 2x, without resizing your real window. The emulated width is configurable.
-- **Infinite scroll, handled.** Turn on "Auto-load more content" and Screencappy keeps scrolling to the bottom until the page stops growing, bounded by the maximum capture height and a time budget, then captures the loaded page.
-- **SPA scroll containers.** When the window itself barely scrolls, as in Gmail, Slack and Notion style apps, Screencappy finds the inner container holding the real content and captures all of it instead of a single viewport.
+- **Infinite scroll, handled.** Turn on "Auto-load more content" and screencappy keeps scrolling to the bottom until the page stops growing, bounded by the maximum capture height and a time budget, then captures the loaded page.
+- **SPA scroll containers.** When the window itself barely scrolls, as in Gmail, Slack and Notion style apps, screencappy finds the inner container holding the real content and captures all of it instead of a single viewport.
 - **Iframes, in depth.** Pick an iframe with the element picker and you get its entire content, not just the part visible in its box. Same origin frames are scrolled and stitched internally, cross origin frames are deep captured through the DevTools Protocol when the Turbo permission is granted, and anything else falls back to the frame's visible box.
 - **Huge pages just work.** The composed image is stored as strips, so pages taller than the browser's canvas limits still render, and exports auto split into numbered files or extra PDF pages instead of failing.
 - **Local capture history.** Recent captures keep their annotations in IndexedDB with thumbnails. Prune limits are configurable. Nothing syncs anywhere.
-- **Graceful on restricted pages.** `chrome://` pages and the Web Store cannot be scripted, so Screencappy falls back to a visible area capture rather than erroring.
+- **Graceful on restricted pages.** `chrome://` pages and the Web Store cannot be scripted, so screencappy falls back to a visible area capture rather than erroring.
 
 ### Capture engines
 
@@ -147,7 +147,7 @@ src/
 
 ## 🔒 Privacy
 
-Screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage`. There are **no host permissions**, so the extension cannot read any page until you invoke it. The full build on GitHub also declares `debugger` for Turbo capture, mobile width capture and searchable PDF export; the store build omits that permission and those features entirely.
+screencappy requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage`. There are **no host permissions**, so the extension cannot read any page until you invoke it. The full build on GitHub also declares `debugger` for Turbo capture, mobile width capture and searchable PDF export; the store build omits that permission and those features entirely.
 
 There is no network code in this extension at all. No account, no telemetry, no remote config. Captures, annotations, and settings live in your browser and nowhere else.
 
@@ -176,10 +176,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full loop, commit conventions, an
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Found a page Screencappy captures badly? That is the most useful bug report you can file, and there is [a dedicated form](https://github.com/smollet-app/screencappy/issues/new/choose) for it. Include the URL.
+Found a page screencappy captures badly? That is the most useful bug report you can file, and there is [a dedicated form](https://github.com/smollet-app/screencappy/issues/new/choose) for it. Include the URL.
 
 Security reports go through [GitHub's private advisory flow](https://github.com/smollet-app/screencappy/security/advisories/new), not the public issue tracker. See [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Screencappy contributors
+[Apache-2.0](LICENSE) © screencappy contributors
