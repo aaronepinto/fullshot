@@ -1,27 +1,83 @@
-/* Screencappy editor - dark-first, light via prefers-color-scheme. */
-:root {
-  color-scheme: dark light;
-  --bg: #0b1220;
-  --bg-raised: #111a2e;
-  --bg-canvas: #060a14;
-  --border: #24324d;
-  --text: #e2e8f0;
-  --text-dim: #94a3b8;
-  --accent: #38bdf8;
-  --accent-strong: #0ea5e9;
-  --danger: #ef4444;
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+/* screencappy editor, on the Smollet design system.
+
+   One shell only: near-black ink ground, warm cream ink on top of it. The
+   editor is a dark tool the way the site's ink shell is dark, so there is no
+   light variant to keep in step; `color-scheme: dark` is what native form
+   controls and scrollbars read.
+
+   Text tiers are alpha of one cream rather than separate greys, borders are
+   alpha of white, and exactly one hue enters the page: sky. It marks the
+   primary action, the active tool, selection, and focus, and nothing else.
+   Annotation swatches are the deliberate exception: those colours are the
+   user's content, not chrome. */
+
+/* ---------------------------------------------------------------- fonts */
+
+/* Vendored beside the page: an extension page cannot reach the site, and a
+   remote font request would be a network call this product does not make. */
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('fonts/InstrumentSans-Variable.woff2') format('woff2');
 }
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f1f5f9;
-    --bg-raised: #ffffff;
-    --bg-canvas: #dbe2ec;
-    --border: #cbd5e1;
-    --text: #0f172a;
-    --text-dim: #64748b;
-    --shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
-  }
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/InstrumentSerif-Italic.woff2') format('woff2');
+}
+
+/* --------------------------------------------------------------- tokens */
+
+:root {
+  color-scheme: dark;
+
+  --ink-950: oklch(0.145 0.005 285);
+  --ink-900: oklch(0.185 0.007 285);
+  --cream: oklch(0.95 0.006 88);
+
+  --font-ui: 'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --label-tracking: 0.14em;
+
+  --surface-canvas: var(--ink-950);
+  --surface-canvas-deep: oklch(0.12 0.004 285);
+  --surface-raised: var(--ink-900);
+  --surface-raised-hover: color-mix(in oklch, var(--ink-900) 84%, white 7%);
+
+  --text-primary: var(--cream);
+  --text-secondary: color-mix(in oklch, var(--cream) 70%, transparent);
+  --text-tertiary: color-mix(in oklch, var(--cream) 50%, transparent);
+
+  --border-hairline: color-mix(in oklch, white 12%, transparent);
+  --border-default: color-mix(in oklch, white 20%, transparent);
+  --border-strong: color-mix(in oklch, white 38%, transparent);
+
+  /* The one hue on the page. */
+  --accent: #38bdf8;
+  --accent-quiet: color-mix(in oklch, var(--accent) 12%, transparent);
+  --accent-tint: color-mix(in oklch, var(--accent) 20%, transparent);
+  --text-on-accent: var(--ink-950);
+  --focus-ring: var(--accent);
+
+  /* Functional, never decorative: destructive rows and error toasts. */
+  --danger: #f87171;
+  --warn: #fbbf24;
+
+  --radius-xs: 7px;
+  --radius-sm: 11px;
+  --radius-md: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 4px oklch(0 0 0 / 0.4);
+  --shadow-md: 0 12px 36px oklch(0 0 0 / 0.5), 0 1px 4px oklch(0 0 0 / 0.4);
+
+  --ease-soft-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-instant: 0.15s;
+  --duration-fast: 0.25s;
 }
 
 * { box-sizing: border-box; }
@@ -30,29 +86,41 @@ html, body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font: 13px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+  font: 400 13px/1.45 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
 }
 body { display: flex; flex-direction: column; }
+
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 button {
   font: inherit;
   color: inherit;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   padding: 6px 12px;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-soft-out),
+              border-color var(--duration-fast) var(--ease-soft-out),
+              color var(--duration-fast) var(--ease-soft-out);
 }
-button:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-button:disabled { opacity: 0.35; cursor: default; }
+button:hover { background: color-mix(in oklch, white 8%, transparent); }
+button:active { transition-duration: var(--duration-instant); }
+button:disabled { opacity: 0.32; cursor: default; }
+button:disabled:hover { background: transparent; }
 button.primary {
-  background: var(--accent-strong);
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
   font-weight: 600;
 }
-button.primary:hover { background: var(--accent); }
+button.primary:hover {
+  background: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
+  border-color: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
+}
 button.icon { padding: 6px; line-height: 0; }
 /* Every icon is a Lucide stroke icon, so the family's line style lives here rather
    than repeated on seventeen elements. */
@@ -64,7 +132,7 @@ svg {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+.sep { width: 1px; height: 22px; background: var(--border-hairline); margin: 0 4px; }
 .spacer { flex: 1; }
 
 /* ---- Top bar ---- */
@@ -72,29 +140,40 @@ svg {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
+  padding: 8px 14px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border-hairline);
   flex-wrap: wrap;
 }
+/* The wordmark, set as a wordmark: lowercase Instrument Serif italic, the one
+   place on the page that uses the display face. */
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 14px;
-  margin-right: 10px;
+  gap: 9px;
+  margin-right: 12px;
+  color: var(--text-primary);
 }
+.brand span {
+  font: italic 400 20px/1 var(--font-display);
+  text-transform: lowercase;
+}
+.brand img { border-radius: 6px; }
 .toolgroup { display: flex; align-items: center; gap: 2px; }
+.tool { color: var(--text-secondary); }
+.tool:hover { color: var(--text-primary); }
 .tool.active {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border-color: var(--accent-strong);
+  background: var(--accent-quiet);
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
   color: var(--accent);
 }
 
 /* ---- Style bar ---- */
 .stylebar { display: flex; align-items: center; gap: 8px; margin-left: 10px; position: relative; }
 .swatches { display: flex; gap: 5px; }
+/* Annotation colours are the user's content rather than page chrome, so the
+   functional palette stays exactly as it is; only the ring around the active
+   one belongs to the system. */
 .swatch {
   width: 20px;
   height: 20px;
@@ -103,24 +182,34 @@ svg {
   padding: 0;
   cursor: pointer;
 }
-.swatch.active { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg-raised) inset; }
+.swatch:hover { background: none; box-shadow: 0 0 0 2px var(--border-default); }
+.swatch.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface-raised) inset;
+}
 .ctl {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--text-dim);
+  color: var(--text-secondary);
 }
 .ctl select {
   font: inherit;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
   padding: 3px 6px;
 }
 .ctl.checkbox { cursor: pointer; user-select: none; }
-.ctl-label { font-weight: 700; }
-#emojiCurrent { font-size: 18px; padding: 3px 8px; border: 1px solid var(--border); }
+.ctl input[type="checkbox"] { accent-color: var(--accent); }
+.ctl-label { font-weight: 600; letter-spacing: 0.01em; }
+#emojiCurrent {
+  font-size: 18px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+}
 
 /* ---- Popovers / menus ---- */
 .popover {
@@ -128,10 +217,10 @@ svg {
   top: calc(100% + 6px);
   right: 0;
   z-index: 50;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   padding: 6px;
 }
 #emojiPicker {
@@ -142,19 +231,24 @@ svg {
 #emojiPicker button { font-size: 20px; padding: 4px; }
 .menu { display: flex; flex-direction: column; min-width: 180px; }
 #ctxMenu { top: 0; right: auto; z-index: 70; min-width: 150px; }
-.menu button { text-align: left; border-radius: 6px; }
-.menu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.menu button { text-align: left; border-radius: var(--radius-xs); color: var(--text-secondary); }
+.menu button:hover { color: var(--text-primary); }
+.menu hr { border: none; border-top: 1px solid var(--border-hairline); margin: 4px 0; }
 .actions { display: flex; align-items: center; gap: 4px; position: relative; }
 .split { display: flex; position: relative; }
-.split .primary:first-child { border-radius: 8px 0 0 8px; }
-.split .caret { border-radius: 0 8px 8px 0; padding: 6px 8px; border-left: 1px solid rgba(255, 255, 255, 0.25); }
+.split .primary:first-child { border-radius: var(--radius-xs) 0 0 var(--radius-xs); }
+.split .caret {
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  padding: 6px 8px;
+  border-left: 1px solid color-mix(in oklch, var(--ink-950) 28%, transparent);
+}
 
 /* ---- Viewport ---- */
 #viewport {
   position: relative;
   flex: 1;
   overflow: hidden;
-  background: var(--bg-canvas);
+  background: var(--surface-canvas-deep);
 }
 #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
@@ -166,14 +260,14 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: var(--text-dim);
-  background: var(--bg-canvas);
+  color: var(--text-secondary);
+  background: var(--surface-canvas-deep);
 }
 .spinner {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid var(--border);
+  border: 3px solid var(--border-hairline);
   border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
@@ -187,17 +281,22 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--text-dim);
+  color: var(--text-secondary);
   text-align: center;
 }
-.empty h2 { color: var(--text); margin: 10px 0 0; }
+.empty h2 {
+  color: var(--text-primary);
+  margin: 10px 0 0;
+  font: 500 19px/1.3 var(--font-ui);
+  letter-spacing: -0.01em;
+}
 kbd {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
+  background: var(--surface-canvas);
+  border: 1px solid var(--border-default);
   border-radius: 5px;
   padding: 1px 5px;
-  font-size: 11px;
+  font: 500 11px/1.5 var(--font-ui);
+  color: var(--text-primary);
 }
 
 #canvas:focus { outline: none; }
@@ -209,11 +308,11 @@ kbd {
 #textHint {
   margin-top: 4px;
   padding: 3px 7px;
-  border-radius: 6px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  color: var(--text-dim);
+  border-radius: var(--radius-xs);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
   font-size: 11px;
   white-space: nowrap;
   pointer-events: none;
@@ -229,6 +328,8 @@ kbd {
   padding: 2px 4px;
   min-width: 60px;
   font-weight: 600;
+  /* Deliberately not the UI face: this has to be the font the canvas will draw
+     when the label commits, so what is typed is what gets exported. */
   font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 }
@@ -242,38 +343,41 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   padding: 8px 12px;
 }
-#cropDims { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+#cropDims { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 
 /* ---- Status bar ---- */
 .statusbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 12px;
-  background: var(--bg-raised);
-  border-top: 1px solid var(--border);
-  color: var(--text-dim);
+  padding: 5px 14px;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border-hairline);
+  color: var(--text-secondary);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.statusbar a { color: var(--text-dim); text-decoration: none; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.statusbar a:hover { color: var(--accent); }
-.note { color: #f59e0b; }
-.statusbar .hint { color: var(--text-dim); opacity: 0.75; }
+.statusbar a { color: var(--text-secondary); text-decoration: none; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.statusbar a:hover { color: var(--text-primary); }
+.note { color: var(--warn); }
+.statusbar .hint { color: var(--text-tertiary); }
 .chip {
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
   padding: 1px 10px;
   font-size: 11px;
+  color: var(--text-secondary);
 }
+.chip:hover { color: var(--text-primary); border-color: var(--border-strong); }
 .zoomctl { display: flex; align-items: center; gap: 2px; }
-.zoomctl button { padding: 2px 8px; }
+.zoomctl button { padding: 2px 8px; color: var(--text-secondary); }
+.zoomctl button:hover { color: var(--text-primary); }
 #statZoom { min-width: 44px; text-align: right; }
 
 /* ---- Right-hand drawers ---- */
@@ -286,9 +390,9 @@ kbd {
   bottom: 0;
   width: 300px;
   z-index: 60;
-  background: var(--bg-raised);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
 }
@@ -298,7 +402,15 @@ kbd {
   justify-content: space-between;
   padding: 12px 14px 4px;
 }
-#annoPanel h2 { margin: 0; font-size: 15px; }
+/* Drawer titles are labels rather than headlines, so they take the tracked
+   small caps treatment the site uses for its eyebrows. */
+#annoPanel h2, #history h2 {
+  margin: 0;
+  font: 600 11px/1.4 var(--font-ui);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
 #annoList {
   list-style: none;
   margin: 0;
@@ -311,30 +423,60 @@ kbd {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
-#annoList li:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-#annoList li.current { outline: 1.5px solid var(--accent-strong); }
+#annoList li:hover { background: var(--surface-raised-hover); }
+#annoList li.current { outline: 1.5px solid var(--accent); }
 #annoList .chip-color {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-default);
   flex: none;
 }
 #annoList .kind { font-weight: 600; text-transform: capitalize; }
 #annoList .summary {
   flex: 1;
   min-width: 0;
-  color: var(--text-dim);
+  color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#annoList .del { padding: 2px 7px; color: var(--text-dim); }
-#annoList .del:hover { color: var(--danger); }
-#annoList .empty-row { color: var(--text-dim); cursor: default; }
+#annoList .del { padding: 2px 7px; color: var(--text-tertiary); }
+#annoList .del:hover { color: var(--danger); background: transparent; }
+#annoList .empty-row { color: var(--text-tertiary); cursor: default; }
+/* The crop is a property of the whole image rather than one more drawn object, so
+   it reads as a header for the list rather than another row in it. */
+#annoList .crop-row {
+  border-bottom: 1px solid var(--border-hairline);
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  margin-bottom: 4px;
+}
+#annoList .chip-icon { display: flex; color: var(--accent); flex: none; }
+#annoList .chip-icon svg { width: 14px; height: 14px; }
+
+/* ---- Placement preview ---- */
+/* Centred on the pointer and never a click target, so it previews the stamp without
+   ever standing between the pointer and the canvas. */
+#toolGhost {
+  position: absolute;
+  z-index: 25;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 0.72;
+  line-height: 1;
+  user-select: none;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+#toolGhost.caret {
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform: translate(0, 0);
+  opacity: 0.9;
+}
 
 #annoFlash {
   position: absolute;
@@ -342,7 +484,7 @@ kbd {
   pointer-events: none;
   border: 2px solid var(--accent);
   border-radius: 4px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: var(--accent-tint);
   animation: flash 0.7s ease-out;
 }
 @keyframes flash {
@@ -350,19 +492,23 @@ kbd {
   to { opacity: 0.25; }
 }
 
-.drawer-hint { margin: 0 14px 10px; color: var(--text-dim); font-size: 11px; }
+.drawer-hint { margin: 0 14px 10px; color: var(--text-tertiary); font-size: 11px; }
 
 /* ---- History drawer ---- */
+/* Absolute inside the viewport, like the annotations drawer. Fixed to the window it
+   sat on top of the toolbar instead of beside it, so opening it sliced the right
+   half of the actions off: copy, download, the drawer buttons and settings all
+   disappeared under it, and its own header ran into the top bar. */
 #history {
-  position: fixed;
+  position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   width: 320px;
   z-index: 60;
-  background: var(--bg-raised);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
 }
@@ -372,7 +518,6 @@ kbd {
   justify-content: space-between;
   padding: 12px 14px 4px;
 }
-#history h2 { margin: 0; font-size: 15px; }
 #historyList {
   list-style: none;
   margin: 0;
@@ -384,19 +529,19 @@ kbd {
   display: flex;
   gap: 10px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   align-items: flex-start;
 }
-#historyList li:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-#historyList li.current { outline: 1.5px solid var(--accent-strong); }
+#historyList li:hover { background: var(--surface-raised-hover); }
+#historyList li.current { outline: 1.5px solid var(--accent); }
 #historyList img {
   width: 84px;
   height: 62px;
   object-fit: cover;
   object-position: top;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hairline);
   background: #fff;
 }
 #historyList .meta { flex: 1; min-width: 0; }
@@ -406,9 +551,9 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#historyList .meta .d { color: var(--text-dim); font-size: 11px; }
-#historyList .del { padding: 2px 7px; color: var(--text-dim); }
-#historyList .del:hover { color: var(--danger); }
+#historyList .meta .d { color: var(--text-tertiary); font-size: 11px; }
+#historyList .del { padding: 2px 7px; color: var(--text-tertiary); }
+#historyList .del:hover { color: var(--danger); background: transparent; }
 
 /* ---- Toast ---- */
 .toast {
@@ -417,11 +562,20 @@ kbd {
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   padding: 9px 16px;
   max-width: 70vw;
 }
 .toast.error { border-color: var(--danger); }
+
+/* Reduced motion is answered per element rather than by collapsing every
+   duration to nothing: the spinner and the flash are loops, and a loop with a
+   0.01s duration strobes instead of stopping. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01s !important; }
+  .spinner { animation: none; border-color: var(--border-hairline); border-top-color: var(--accent); }
+  #annoFlash { animation: none; }
+}
