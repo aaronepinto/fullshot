@@ -28,9 +28,22 @@ Licence and author: Apache-2.0, built and maintained by Aaron Pinto, developed i
 
 - [Home](https://screencappy.smollet.app/): What Screencappy is, its features, and how to install it
 - [FAQ](https://screencappy.smollet.app/faq): Answers on install, permissions, privacy, export formats, browser support, and licence
-- [GoFullPage alternative](https://screencappy.smollet.app/gofullpage-alternative): Factual comparison on licence, cost, source availability and annotation
 - [How to take a full page screenshot in Chrome](https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome): The built in DevTools method, its limits, and the one click method
 - [Privacy policy](https://screencappy.smollet.app/privacy): What data Screencappy handles, which is none that leaves your device
+
+## Comparisons
+
+Every figure on these pages was read from the vendor's own site or Chrome Web Store listing on 15 August 2026, and each page carries that verification date. The set deliberately names the cases where a competitor is the better tool, including two pages that recommend the other product outright and one that recommends installing nothing at all.
+
+- [Full page screenshot tools compared](https://screencappy.smollet.app/alternatives): The hub, sorted by use case rather than by rank, with a summary table of price, licence, account, uploads and annotation
+- [GoFullPage alternative](https://screencappy.smollet.app/gofullpage-alternative): Free capture with cropping and annotation behind Premium at $12 USD per year, versus free annotation and public source
+- [FireShot alternative](https://screencappy.smollet.app/fireshot-alternative): The widest format and browser support in the set, at $39.95 per year or $99.95 once, with most of the editor available on Windows only
+- [Awesome Screenshot alternative](https://screencappy.smollet.app/awesome-screenshot-alternative): A cloud and team platform from $6 per month that requires an account, versus local only capture with none
+- [Nimbus Screenshot alternative](https://screencappy.smollet.app/nimbus-screenshot-alternative): Now FuseBase Capture, an account required collaboration platform with two live pricing surfaces that do not reconcile
+- [CocoShot alternative](https://screencappy.smollet.app/cocoshot-alternative): The closest match in the set, both free and account free, differing on open source and on host permissions
+- [Screenity and Screencappy](https://screencappy.smollet.app/screenity-alternative): Disambiguation. Screenity is a free GPL-3.0 screen recorder that takes no screenshots at all
+- [SingleFile and Screencappy](https://screencappy.smollet.app/singlefile-alternative): Disambiguation. SingleFile saves a page as one self contained HTML file with selectable text, not as an image
+- [Full page screenshots without an extension](https://screencappy.smollet.app/chrome-full-page-screenshot-without-extension): Chrome's DevTools route and Firefox's built in capture, and the advice to install nothing if you only need this occasionally
 
 ## Source
 
