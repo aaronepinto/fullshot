@@ -60,7 +60,7 @@ const state = {
   image: null as BigImage | null,
   annos: [] as Anno[],
   crop: null as Rect | null,
-  selected: -1,
+  selection: [] as number[],
   tool: 'select' as Tool,
   style: { color: '#ef4444', strokeWidth: 6, fontSize: 36, fill: false, emoji: '✅', blurPx: 14 },
   zoom: 1,
@@ -75,6 +75,23 @@ const state = {
 const canvas = $<HTMLCanvasElement>('#canvas');
 const ctx = canvas.getContext('2d')!;
 const viewport = $('#viewport');
+
+/** The single selected annotation, or -1 when the selection is empty or plural. */
+const selectedIndex = () => (state.selection.length === 1 ? state.selection[0]! : -1);
+
+function selectOnly(i: number) {
+  state.selection = i >= 0 ? [i] : [];
+}
+
+function clearSelection() {
+  state.selection = [];
+}
+
+/** Removes every selected annotation. Splices high-to-low so indices stay valid. */
+function deleteSelection() {
+  for (const i of [...state.selection].sort((a, b) => b - a)) state.annos.splice(i, 1);
+  clearSelection();
+}
 
 function requestRender() {
   if (state.dirty) return;
@@ -199,8 +216,9 @@ function render() {
   }
 
   // Selection outline + handles, drawn crisp in screen space.
-  const sel = state.annos[state.selected];
-  if (sel) {
+  for (const i of state.selection) {
+    const sel = state.annos[i];
+    if (!sel) continue;
     const b = bounds(sel);
     ctx.save();
     ctx.strokeStyle = '#38bdf8';
@@ -236,7 +254,7 @@ function pushUndo() {
 function applySnapshot(snap: Snapshot) {
   state.annos = snap.annos;
   state.crop = snap.crop;
-  state.selected = -1;
+  clearSelection();
   persistAnnos();
   updateStatus();
   requestRender();
@@ -310,12 +328,12 @@ canvas.addEventListener('pointerdown', (e) => {
       const h = handleHit(e);
       if (h) {
         pushUndo();
-        drag = { kind: 'handle', index: state.selected, id: h.id };
+        drag = { kind: 'handle', index: selectedIndex(), id: h.id };
         return;
       }
       const hit = topHit(e);
       if (hit >= 0) {
-        state.selected = hit;
+        selectOnly(hit);
         drag = { kind: 'move', index: hit, lastX: p.x, lastY: p.y, moved: false };
         requestRender();
       }
@@ -332,7 +350,7 @@ canvas.addEventListener('pointerdown', (e) => {
     case 'emoji': {
       pushUndo();
       state.annos.push({ kind: 'emoji', x: p.x, y: p.y, char: st.emoji, size: st.fontSize * 2 });
-      state.selected = state.annos.length - 1;
+      selectOnly(state.annos.length - 1);
       persistAnnos();
       requestRender();
       return;
@@ -443,7 +461,7 @@ canvas.addEventListener('pointerup', () => {
     if (big) {
       pushUndo();
       state.annos.push(a);
-      state.selected = state.annos.length - 1;
+      selectOnly(state.annos.length - 1);
       persistAnnos();
     }
     requestRender();
@@ -470,7 +488,7 @@ function topHit(e: MouseEvent): number {
 }
 
 function handleHit(e: MouseEvent): { id: string } | null {
-  const sel = state.annos[state.selected];
+  const sel = state.annos[selectedIndex()];
   if (!sel) return null;
   for (const h of handles(sel)) {
     const s = toScreen(h.x, h.y);
@@ -543,7 +561,7 @@ function commitText() {
   if (!text) return;
   pushUndo();
   state.annos.push({ kind: 'text', x: textAt.x, y: textAt.y, text, color: state.style.color, size: state.style.fontSize });
-  state.selected = state.annos.length - 1;
+  selectOnly(state.annos.length - 1);
   persistAnnos();
   requestRender();
 }
@@ -639,7 +657,7 @@ for (const color of COLORS) {
     state.style.color = color;
     swatches.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'));
     b.classList.add('active');
-    const sel = state.annos[state.selected];
+    const sel = state.annos[selectedIndex()];
     if (sel && 'color' in sel) {
       pushUndo();
       sel.color = color;
@@ -883,14 +901,13 @@ document.addEventListener('keydown', (e) => {
   } else if (meta && e.key.toLowerCase() === 'c') {
     e.preventDefault();
     $('#btnCopy').click();
-  } else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selected >= 0) {
+  } else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selection.length) {
     pushUndo();
-    state.annos.splice(state.selected, 1);
-    state.selected = -1;
+    deleteSelection();
     persistAnnos();
     requestRender();
   } else if (e.key === 'Escape') {
-    state.selected = -1;
+    clearSelection();
     state.cropDraft = null;
     hideCropBar();
     ctxMenu.hidden = true;
@@ -973,5 +990,56 @@ function clampRect(r: Rect): Rect {
     h: Math.min(img.height, r.y + r.h) - y,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Test surface
+// ---------------------------------------------------------------------------
+
+/**
+ * Everything is painted to one canvas, so a UI test has nothing to locate by role
+ * or text. This exposes the state a spec needs to assert on, plus the coordinate
+ * transforms it needs to drive the mouse to an exact image pixel at any zoom.
+ * Unconditional: it reads state and never mutates it, so it is harmless shipped.
+ */
+interface TestApi {
+  getState(): {
+    tool: Tool;
+    zoom: number;
+    pan: { x: number; y: number };
+    crop: Rect | null;
+    selection: number[];
+    annos: Anno[];
+    undoDepth: number;
+    redoDepth: number;
+  };
+  imageToClient(x: number, y: number): { x: number; y: number };
+  clientToImage(x: number, y: number): { x: number; y: number };
+  handlesOf(index: number): { id: string; x: number; y: number }[];
+  boundsOf(index: number): Rect | null;
+}
+
+const testApi: TestApi = {
+  getState: () => ({
+    tool: state.tool,
+    zoom: state.zoom,
+    pan: { ...state.pan },
+    crop: state.crop && { ...state.crop },
+    selection: [...state.selection],
+    annos: structuredClone(state.annos),
+    undoDepth: state.undoStack.length,
+    redoDepth: state.redoStack.length,
+  }),
+  imageToClient: (x, y) => toScreen(x, y),
+  clientToImage: (x, y) => toImage(x, y),
+  handlesOf: (index) => {
+    const a = state.annos[index];
+    return a ? handles(a).map((h) => ({ ...h })) : [];
+  },
+  boundsOf: (index) => {
+    const a = state.annos[index];
+    return a ? bounds(a) : null;
+  },
+};
+(window as unknown as { __screencappyTest: TestApi }).__screencappyTest = testApi;
 
 void boot();
