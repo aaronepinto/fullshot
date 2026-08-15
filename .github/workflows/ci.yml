@@ -58,3 +58,27 @@ jobs:
         run: bun run e2e
         env:
           CHROME: ${{ steps.chrome.outputs.chrome-path }}
+
+  # The same packed extension must work in other Chromium browsers; Edge is the
+  # one we can install on a hosted runner, so it stands in for the family.
+  e2e-edge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+      - uses: browser-actions/setup-edge@e2f31d5d9f2e6d75e72516221b4df8528e6325cf # v1
+        id: edge
+        with:
+          edge-version: stable
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - name: End-to-end capture test (real Edge)
+        run: bun run e2e
+        env:
+          CHROME: ${{ steps.edge.outputs.edge-path }}
