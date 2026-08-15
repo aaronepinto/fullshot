@@ -11,7 +11,7 @@ body:
         Thanks for taking the time to file this.
 
         **If a capture comes out wrong on a specific website**, please close this and use
-        the [Capture problem](https://github.com/aaronepinto/screencappy/issues/new?template=capture_problem.yml)
+        the [Capture problem](https://github.com/aaronepinto/smollet-screencappy/issues/new?template=capture_problem.yml)
         form instead. It asks for the one thing that makes those reports fixable: the URL.
 
   - type: checkboxes
@@ -21,7 +21,7 @@ body:
       options:
         - label: I am on the latest release of Screencappy.
           required: true
-        - label: I searched [existing issues](https://github.com/aaronepinto/screencappy/issues?q=is%3Aissue) and this is not a duplicate.
+        - label: I searched [existing issues](https://github.com/aaronepinto/smollet-screencappy/issues?q=is%3Aissue) and this is not a duplicate.
           required: true
         - label: I can reproduce this with Screencappy as the only enabled extension in a fresh browser profile.
           required: true
