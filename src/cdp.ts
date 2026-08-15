@@ -15,6 +15,28 @@ export async function hasDebuggerPermission(): Promise<boolean> {
   return chrome.permissions.contains({ permissions: ['debugger'] });
 }
 
+/**
+ * Prints the page to a real PDF with selectable, searchable text via Page.printToPDF.
+ * Returns the PDF as base64. Chrome lays out the whole document in one go, so very
+ * large pages can fail inside the renderer; such errors are rethrown with context.
+ */
+export async function printToPdf(tabId: number): Promise<string> {
+  const target = { tabId };
+  await chrome.debugger.attach(target, PROTOCOL);
+  try {
+    const res = (await chrome.debugger.sendCommand(target, 'Page.printToPDF', {
+      printBackground: true,
+    })) as { data?: string };
+    if (!res.data) throw new Error('Page.printToPDF returned no data');
+    return res.data;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`PDF print failed, the page may be too large to print: ${msg}`);
+  } finally {
+    await chrome.debugger.detach(target).catch(() => undefined);
+  }
+}
+
 interface TurboResult {
   clip: Rect;
   tileCount: number;
