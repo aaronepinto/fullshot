@@ -107,12 +107,18 @@ export function shouldContinueAutoLoad(
  * pages mid-render and the tile comes out blank.
  */
 export const SETTLE = {
-  /** Consecutive mutation-free animation frames that end the wait. */
+  /** Consecutive mutation-free animation frames before the page counts as still. */
   quietFrames: 2,
   /**
+   * And this long since the last mutation landed, ms. Rows stream in one at a time
+   * rather than all at once, and the gap between two of them is several frames wide,
+   * so frame counting alone would call the page still halfway through the list.
+   */
+  quietMs: 160,
+  /**
    * Minimum window watched after each scroll, ms. A timer-driven renderer leaves the
-   * page quiet for a few frames before it repaints the whole viewport, so quiet frames
-   * alone are not proof the page is done. Kept under the ~550ms captureVisibleTab
+   * page quiet for a few frames before it touches anything at all, so an immediate
+   * verdict of "still" is worth nothing. Kept under the ~550ms captureVisibleTab
    * throttle gap: for every tile after the first this wait costs no wall-clock time,
    * because the shot would have been waiting on the quota anyway.
    */
@@ -128,9 +134,14 @@ export const SETTLE = {
  * measured from the moment the scroll was commanded, so a generous captureDelayMs
  * already counts towards the minimum watch window.
  */
-export function shouldKeepSettling(quietFrames: number, elapsedMs: number): boolean {
+export function shouldKeepSettling(
+  quietFrames: number,
+  quietForMs: number,
+  elapsedMs: number
+): boolean {
   if (elapsedMs >= SETTLE.maxWaitMs) return false;
-  return quietFrames < SETTLE.quietFrames || elapsedMs < SETTLE.minWatchMs;
+  if (elapsedMs < SETTLE.minWatchMs) return true;
+  return quietFrames < SETTLE.quietFrames || quietForMs < SETTLE.quietMs;
 }
 
 /** Viewport-relative box, matching the fields of a DOMRect that we care about. */

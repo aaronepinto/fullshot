@@ -1,24 +1,28 @@
 import { describe, expect, test } from 'bun:test';
 import { SETTLE, intersectsViewport, shouldKeepSettling } from '../../src/lib/capture-common';
 
+const quiet = SETTLE.quietFrames;
+
 describe('shouldKeepSettling', () => {
   test('keeps watching until the minimum window, even on a quiet page', () => {
-    expect(shouldKeepSettling(SETTLE.quietFrames, 0)).toBe(true);
-    expect(shouldKeepSettling(SETTLE.quietFrames, SETTLE.minWatchMs - 1)).toBe(true);
+    expect(shouldKeepSettling(quiet, 0, 0)).toBe(true);
+    expect(shouldKeepSettling(quiet, SETTLE.minWatchMs - 1, SETTLE.minWatchMs - 1)).toBe(true);
   });
 
   test('stops once the page has been quiet past the minimum window', () => {
-    expect(shouldKeepSettling(SETTLE.quietFrames, SETTLE.minWatchMs)).toBe(false);
+    expect(shouldKeepSettling(quiet, SETTLE.minWatchMs, SETTLE.minWatchMs)).toBe(false);
   });
 
-  test('keeps waiting while mutations keep arriving', () => {
-    expect(shouldKeepSettling(0, SETTLE.minWatchMs + 100)).toBe(true);
-    expect(shouldKeepSettling(SETTLE.quietFrames - 1, SETTLE.maxWaitMs - 1)).toBe(true);
+  test('keeps waiting while rows are still streaming in', () => {
+    // Every row resets the frame count; the gap between two of them does not.
+    expect(shouldKeepSettling(0, 0, SETTLE.minWatchMs + 100)).toBe(true);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs - 1, SETTLE.minWatchMs + 100)).toBe(true);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs, SETTLE.minWatchMs + 100)).toBe(false);
   });
 
   test('gives up at the hard cap so a ticker cannot stall the capture', () => {
-    expect(shouldKeepSettling(0, SETTLE.maxWaitMs)).toBe(false);
-    expect(shouldKeepSettling(SETTLE.quietFrames, SETTLE.maxWaitMs)).toBe(false);
+    expect(shouldKeepSettling(0, 0, SETTLE.maxWaitMs)).toBe(false);
+    expect(shouldKeepSettling(quiet, SETTLE.quietMs, SETTLE.maxWaitMs)).toBe(false);
   });
 
   test('the minimum window stays under the captureVisibleTab throttle gap', () => {
