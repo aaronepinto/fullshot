@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { renderFilename, sanitizeFilename } from '../../src/lib/filename';
+import { pdfFilename, renderFilename, sanitizeFilename } from '../../src/lib/filename';
 
 const when = new Date(2026, 7, 15, 9, 5, 3); // Aug 15 2026, 09:05:03
 
@@ -31,6 +31,22 @@ describe('renderFilename', () => {
 
   test('unknown tokens are left alone, output is never empty', () => {
     expect(renderFilename('{nope}', { title: '', url: '', mode: 'full', when })).not.toBe('');
+  });
+});
+
+describe('pdfFilename', () => {
+  test('appends the pdf extension to the rendered template', () => {
+    const name = pdfFilename('{domain} {date} {mode}', {
+      title: 'Hello',
+      url: 'https://www.example.com/page',
+      mode: 'pdf',
+      when,
+    });
+    expect(name).toBe('example.com 2026-08-15 pdf.pdf');
+  });
+
+  test('falls back to the default base name when the template renders empty', () => {
+    expect(pdfFilename('', { title: '', url: '', mode: 'pdf', when })).toBe('screencappy.pdf');
   });
 });
 
