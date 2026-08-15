@@ -37,7 +37,11 @@ describe('toFirefoxManifest', () => {
   test('adds gecko settings and preserves the rest', () => {
     const out = toFirefoxManifest(chromeManifest);
     expect(out.browser_specific_settings).toEqual({
-      gecko: { id: 'screencappy@smollet.app', strict_min_version: '128.0' },
+      gecko: {
+        id: 'screencappy@smollet.app',
+        strict_min_version: '128.0',
+        data_collection_permissions: { required: ['none'] },
+      },
     });
     expect(out.permissions).toEqual(['activeTab', 'scripting']);
     expect(out.version).toBe('0.1.0');

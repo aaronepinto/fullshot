@@ -16,7 +16,9 @@ export function toFirefoxManifest(manifest) {
     if (out.optional_permissions.length === 0) delete out.optional_permissions;
   }
   out.browser_specific_settings = {
-    gecko: { id: 'screencappy@smollet.app', strict_min_version: '128.0' },
+    gecko: {
+      // AMO refuses submissions without an explicit data collection declaration.
+      data_collection_permissions: { required: ['none'] }, id: 'screencappy@smollet.app', strict_min_version: '128.0' },
   };
   return out;
 }

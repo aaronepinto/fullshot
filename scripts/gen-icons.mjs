@@ -58,7 +58,7 @@ const sdRoundRect = (x, y, cx, cy, hw, hh, r) => {
 };
 const sdCircle = (x, y, cx, cy, r) => Math.hypot(x - cx, y - cy) - r;
 
-function draw(size) {
+function drawRGBA(size) {
   const rgba = Buffer.alloc(size * size * 4);
   const aa = 1.25 / size; // anti-alias width in normalized units
   const cover = (d) => Math.min(1, Math.max(0, 0.5 - d / (2 * aa)));
@@ -96,10 +96,25 @@ function draw(size) {
       if (a > 0) put(i, 0xff, 0xff, 0xff, a * 0.9);
     }
   }
-  return png(size, size, rgba);
+  return rgba;
 }
+
+const draw = (size) => png(size, size, drawRGBA(size));
 
 for (const size of [16, 32, 48, 128]) {
   writeFileSync(`${OUT}icon${size}.png`, draw(size));
   console.log(`icons/icon${size}.png`);
+}
+
+// Chrome Web Store listing icon guideline: 96x96 of artwork centred on a
+// 128x128 transparent canvas. Not referenced by the manifest; uploaded to
+// the store listing form.
+{
+  const art = drawRGBA(96);
+  const canvas = Buffer.alloc(128 * 128 * 4);
+  for (let y = 0; y < 96; y++) {
+    art.copy(canvas, ((y + 16) * 128 + 16) * 4, y * 96 * 4, (y + 1) * 96 * 4);
+  }
+  writeFileSync(`${OUT}icon128-store.png`, png(128, 128, canvas));
+  console.log('icons/icon128-store.png');
 }

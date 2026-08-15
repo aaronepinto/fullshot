@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Screencappy - Full Page Screenshot",
   "version": "0.1.0",
-  "description": "One-click full page screenshots. Capture, annotate, and export as PNG, JPEG, WebP, or PDF - private by design: no account, no cloud, no host permissions.",
+  "description": "One-click full page screenshots. Annotate, redact and export as PNG, JPEG, WebP or PDF. Nothing leaves your device.",
   "minimum_chrome_version": "116",
   "homepage_url": "https://screencappy.smollet.app",
   "offline_enabled": true,
