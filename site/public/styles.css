@@ -586,6 +586,9 @@ footer a:hover { color: var(--text-primary); }
    shared stylesheet every page already loads. Browsers that do not implement
    it drop the whole at-rule and navigate normally, which is a complete and
    acceptable outcome, not a fallback to patch around. */
+/* view-transition-flash-guard: paint the root dark before first frame */
+html { background-color: #0a0a0c; }
+
 @view-transition {
   navigation: auto;
 }
