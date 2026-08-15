@@ -1,4 +1,4 @@
-export type CaptureMode = 'full' | 'visible' | 'selection';
+export type CaptureMode = 'full' | 'visible' | 'selection' | 'element';
 export type Engine = 'stitch' | 'turbo';
 
 export interface Rect {
@@ -82,7 +82,7 @@ export interface CaptureRecord {
 /** Messages the background sends to the capture content script. */
 export type CaptureContentMsg =
   | { type: 'fs:ping' }
-  | { type: 'fs:measure'; maxHeight: number }
+  | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean }
   | { type: 'fs:prepare'; hideSticky: boolean; freezeAnimations: boolean }
   | { type: 'fs:prescroll'; stepY: number; maxY: number }
   | { type: 'fs:scrollTo'; x: number; y: number; settleMs: number; hideFixed: boolean }
@@ -96,7 +96,9 @@ export interface ScrollResult {
 /** Messages content scripts send to the background. */
 export type RuntimeMsg =
   | { type: 'fs:selection'; rect: Rect }
-  | { type: 'fs:selection-cancel' };
+  | { type: 'fs:selection-cancel' }
+  | { type: 'fs:element'; rect: Rect; scrollable: boolean }
+  | { type: 'fs:element-cancel' };
 
 export const EDITOR_LIMITS = {
   /** Max safe canvas dimension we will ever allocate. */
