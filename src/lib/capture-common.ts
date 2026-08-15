@@ -13,6 +13,7 @@ export function makeRecord(opts: {
   tileCount: number;
   truncated: boolean;
   clip: Rect;
+  notice?: string;
 }): CaptureRecord {
   return {
     id: opts.id,
@@ -27,6 +28,7 @@ export function makeRecord(opts: {
     status: 'tiles',
     truncated: opts.truncated,
     clip: opts.clip,
+    ...(opts.notice ? { notice: opts.notice } : {}),
   };
 }
 
@@ -98,6 +100,80 @@ export function shouldContinueAutoLoad(
   );
 }
 
+/**
+ * Adaptive settle after each scroll stop. Virtualized feeds (LinkedIn, Twitter, Gemini)
+ * keep a correct scrollHeight through spacer elements but only render the rows near the
+ * viewport, on a timer, after the scroll event. Shooting on a fixed delay catches those
+ * pages mid-render and the tile comes out blank.
+ */
+export const SETTLE = {
+  /** Consecutive mutation-free animation frames that end the wait. */
+  quietFrames: 2,
+  /**
+   * Minimum window watched after each scroll, ms. A timer-driven renderer leaves the
+   * page quiet for a few frames before it repaints the whole viewport, so quiet frames
+   * alone are not proof the page is done. Kept under the ~550ms captureVisibleTab
+   * throttle gap: for every tile after the first this wait costs no wall-clock time,
+   * because the shot would have been waiting on the quota anyway.
+   */
+  minWatchMs: 400,
+  /** Hard cap, ms, so tickers and spinners that never go quiet still get shot. */
+  maxWaitMs: 900,
+  /** Mutation records inspected per batch when testing against the visible region. */
+  maxRecordsPerBatch: 30,
+} as const;
+
+/**
+ * Whether the adaptive settle should watch the page for another frame. Elapsed time is
+ * measured from the moment the scroll was commanded, so a generous captureDelayMs
+ * already counts towards the minimum watch window.
+ */
+export function shouldKeepSettling(quietFrames: number, elapsedMs: number): boolean {
+  if (elapsedMs >= SETTLE.maxWaitMs) return false;
+  return quietFrames < SETTLE.quietFrames || elapsedMs < SETTLE.minWatchMs;
+}
+
+/** Viewport-relative box, matching the fields of a DOMRect that we care about. */
+export interface Box {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+/** True when any part of the box is inside the viewport. */
+export function intersectsViewport(box: Box, vpW: number, vpH: number): boolean {
+  return box.bottom > 0 && box.top < vpH && box.right > 0 && box.left < vpW;
+}
+
+/** Limits for the hijacked-scrolling probe. */
+export const HIJACK = {
+  /** Page height over the viewport before a stuck scroll is worth reporting, CSS px. */
+  minOverflow: 200,
+  /** Fraction of the commanded offset that counts as the page really having moved. */
+  moveRatio: 0.5,
+  /**
+   * Viewport fractions hit-tested for content that has to move when the page scrolls.
+   * A grid rather than one point: a single sample down the middle would miss a page
+   * whose content sits in a side column.
+   */
+  anchorXs: [0.25, 0.5, 0.75],
+  anchorYs: [0.3, 0.5, 0.7],
+} as const;
+
+/** True when a commanded scroll of `commanded` px produced a real movement of `delta` px. */
+export function movedEnough(commanded: number, delta: number): boolean {
+  return commanded <= 0 || delta >= commanded * HIJACK.moveRatio;
+}
+
+/**
+ * Shown in the editor when a page drives its own scrolling (Lenis, locomotive-scroll)
+ * and neither the window nor any inner element can be moved: an honest viewport shot
+ * beats a stitch of the same frame repeated a dozen times.
+ */
+export const HIJACK_NOTICE =
+  'This page uses custom scrolling that blocks full-page capture; captured the visible area';
+
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;
 
@@ -157,18 +233,24 @@ export interface ScrollerCandidate {
  * Picks the element that really scrolls the page on SPAs where the window itself
  * barely moves (Gmail, Slack, Notion). A candidate must opt into vertical scrolling,
  * have meaningfully more content than viewport (>100px), and occupy at least 40% of
- * the window; the largest client area wins.
+ * the window; the largest client area wins. That area rule is what makes a mail app's
+ * reading pane win over the narrow folder list beside it.
+ *
+ * `ignoreOverflow` drops the opt-in requirement, for the hijack probe: an overflow
+ * hidden wrapper still scrolls when its scrollTop is set, and custom scroll libraries
+ * lock their container exactly that way.
  */
 export function pickDominantScroller<T extends ScrollerCandidate>(
   candidates: readonly T[],
   vpW: number,
-  vpH: number
+  vpH: number,
+  ignoreOverflow = false
 ): T | null {
   const minArea = vpW * vpH * 0.4;
   let best: T | null = null;
   let bestArea = 0;
   for (const c of candidates) {
-    if (c.overflowY !== 'auto' && c.overflowY !== 'scroll') continue;
+    if (!ignoreOverflow && c.overflowY !== 'auto' && c.overflowY !== 'scroll') continue;
     if (c.scrollHeight <= c.clientHeight + 100) continue;
     const area = c.clientWidth * c.clientHeight;
     if (area < minArea || area <= bestArea) continue;
