@@ -1,0 +1,90 @@
+name: 🖼️ Capture problem on a specific site
+description: A page captures with seams, gaps, repeated headers, wrong size, or missing content
+title: "[Capture]: "
+labels: ["bug", "capture", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These are the most valuable reports in the tracker, and the URL is the whole
+        report. Stitching bugs are site-specific and essentially impossible to guess at
+        without a page that reproduces them.
+
+  - type: input
+    id: url
+    attributes:
+      label: A real, public URL where this happens
+      description: >
+        It must be reachable without logging in. If the page you hit it on is private,
+        please find a public page that shows the same problem, or a public page built
+        with the same framework or theme. An issue without a working URL cannot be fixed
+        and will be closed.
+      placeholder: "https://example.com/some/long/page"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-is-wrong
+    attributes:
+      label: What is wrong with the capture
+      placeholder: |
+        The sticky nav is repeated about every 800px down the image.
+        The bottom third of the page is blank.
+        Images below the fold came out as grey placeholders.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: The bad capture
+      description: Drag the image in. Crop it to the interesting part if it is very tall.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Which engine did you use
+      options:
+        - Scroll and stitch (default)
+        - Turbo (DevTools Protocol)
+        - Both, and both are wrong
+        - Both, and Turbo is fine
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: FullShot version
+      placeholder: "0.3.1"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser, version, and OS
+      placeholder: "Chrome 141 on macOS 15.4"
+    validations:
+      required: true
+
+  - type: input
+    id: zoom
+    attributes:
+      label: Browser zoom and display scaling
+      description: Zoom level from the browser, and whether you are on a HiDPI or Retina display.
+      placeholder: "100% zoom, Retina 2x"
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I am on the latest release of FullShot.
+          required: true
+        - label: I can reproduce this with FullShot as the only enabled extension in a fresh browser profile.
+          required: true
+        - label: The URL above is public and reproduces the problem.
+          required: true

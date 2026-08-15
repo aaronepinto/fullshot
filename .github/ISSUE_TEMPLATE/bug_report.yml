@@ -1,0 +1,117 @@
+name: 🐛 Bug report
+description: Something in the extension is broken or behaves incorrectly
+title: "[Bug]: "
+labels: ["bug", "needs triage"]
+# NOTE: no `type:` key. GitHub issue types are organization-only and are not available
+# on user-owned repos, so the form would fail to render. Labels do the job here.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this.
+
+        **If a capture comes out wrong on a specific website**, please close this and use
+        the [Capture problem](https://github.com/aaronepinto/fullshot/issues/new?template=capture_problem.yml)
+        form instead. It asks for the one thing that makes those reports fixable: the URL.
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      options:
+        - label: I am on the latest release of FullShot.
+          required: true
+        - label: I searched [existing issues](https://github.com/aaronepinto/fullshot/issues?q=is%3Aissue) and this is not a duplicate.
+          required: true
+        - label: I can reproduce this with FullShot as the only enabled extension in a fresh browser profile.
+          required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what happened instead?
+      placeholder: |
+        I expected: ...
+        What actually happened: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Press Alt+Shift+P
+        3. In the editor, click ...
+        4. See the error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: capture-mode
+    attributes:
+      label: Capture mode
+      options:
+        - Full page (Alt+Shift+P)
+        - Visible area (Alt+Shift+V)
+        - Region select (Alt+Shift+S)
+        - Not related to capture (editor, export, settings, history)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: Capture engine
+      description: Settings shows which engine is active. Turbo is off unless you turned it on.
+      options:
+        - Scroll and stitch (default)
+        - Turbo (DevTools Protocol)
+        - Not sure
+        - Not applicable
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: FullShot version
+      description: Shown on the card in `chrome://extensions`.
+      placeholder: "0.3.1"
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      description: Copy the full string from `chrome://version`.
+      placeholder: "Chrome 141.0.7390.55 (Official Build) (arm64)"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.4, Windows 11 24H2, Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: >
+        Open `chrome://extensions`, click **service worker** on the FullShot card for
+        background errors, and use DevTools on the editor tab for editor errors.
+        Paste anything red. This is rendered as a code block, no backticks needed.
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images in. A picture of a wrong capture is worth a lot of prose.

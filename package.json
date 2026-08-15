@@ -11,7 +11,7 @@
     "icons": "node scripts/gen-icons.mjs",
     "zip": "npm run build && node build.mjs --zip",
     "e2e": "node tests/e2e.mjs",
-    "test": "bun test tests/unit"
+    "test": "bun test tests/unit --coverage"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
