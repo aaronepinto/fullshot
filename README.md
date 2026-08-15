@@ -13,6 +13,7 @@ FullShot is a modern, MIT-licensed alternative to GoFullPage, built for the deve
   - **Turbo** (opt-in): a one-shot, pixel-perfect capture via the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Requires the optional `debugger` permission, granted only if you enable it in Settings.
 - **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur/pixelate redaction - all vector-based and non-destructive with full undo/redo, zoom, and pan.
 - **Export anywhere.** PNG, JPEG, WebP, PDF (single tall page or A4/Letter pagination - the PDF writer is hand-rolled, zero dependencies), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
+- **Searchable PDF.** Right-click and "Save as searchable PDF" prints the live page via the DevTools Protocol (`Page.printToPDF`) into a real PDF with selectable, searchable text - unlike image-based PDFs - and downloads it directly. Uses the same optional `debugger` permission as Turbo, requested on first use.
 - **SPA scroll containers.** When the window itself barely scrolls (Gmail, Slack, Notion style apps), FullShot detects the inner container that holds the real content and captures all of it instead of a single viewport.
 - **Iframes, in depth.** Pick an iframe with the element picker and you get its *entire* content, not just the part visible in its box: same-origin frames are scrolled and stitched internally, cross-origin frames are deep-captured via the DevTools Protocol when the Turbo permission is granted, and anything else falls back to the frame's visible box.
 - **Huge pages just work.** The composed image is stored as strips, so pages taller than the browser's canvas limits render fine and exports auto-split into numbered files / extra PDF pages instead of failing.
@@ -59,7 +60,7 @@ src/
 
 ## Privacy
 
-FullShot requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` - no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine additionally uses `debugger`, and only if you grant it. There is no network code in this extension at all.
+FullShot requests `activeTab`, `scripting`, `storage`, `downloads`, `contextMenus`, and `unlimitedStorage` - no host permissions, so it cannot read any page until you invoke it. The optional Turbo engine and the searchable PDF export additionally use `debugger`, and only if you grant it. There is no network code in this extension at all.
 
 ## License
 

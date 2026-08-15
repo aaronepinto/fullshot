@@ -6,7 +6,8 @@
 import { getSettings } from './lib/settings';
 import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
 import { dataUrlToBlob, gridPositions, makeRecord, newCaptureId } from './lib/capture-common';
-import { captureCrossOriginFrame, hasDebuggerPermission, turboCapture } from './cdp';
+import { captureCrossOriginFrame, hasDebuggerPermission, printToPdf, turboCapture } from './cdp';
+import { pdfFilename } from './lib/filename';
 import type {
   CaptureContentMsg,
   CaptureMode,
@@ -59,6 +60,11 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Capture an element',
     contexts: ['page', 'action'],
   });
+  chrome.contextMenus.create({
+    id: 'fs-pdf',
+    title: 'Save as searchable PDF',
+    contexts: ['page', 'action'],
+  });
   chrome.contextMenus.create({ id: 'fs-history', title: 'Capture history', contexts: ['action'] });
 });
 
@@ -68,6 +74,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     return;
   }
   if (!tab) return;
+  if (info.menuItemId === 'fs-pdf') {
+    void savePdf(tab);
+    return;
+  }
   const mode: CaptureMode | null =
     info.menuItemId === 'fs-full'
       ? 'full'
@@ -172,6 +182,48 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     await badge.clear();
   } catch (err) {
     console.error('[fullshot] capture failed', err);
+    await badge.set('ERR', '#dc2626');
+    setTimeout(() => void badge.clear(), 4000);
+  } finally {
+    busyTabs.delete(tabId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Searchable PDF export (CDP Page.printToPDF, downloads directly)
+// ---------------------------------------------------------------------------
+
+/**
+ * Prints the tab to a real PDF with selectable text and downloads it straight to
+ * disk, skipping the editor. Requesting the debugger permission first, before any
+ * other await, keeps the context menu click's user gesture valid; when already
+ * granted the request resolves true without prompting.
+ */
+async function savePdf(tab: chrome.tabs.Tab): Promise<void> {
+  const tabId = tab.id;
+  if (tabId === undefined || busyTabs.has(tabId)) return;
+  busyTabs.add(tabId);
+  const badge = badgeFor(tabId);
+  try {
+    if (isRestrictedUrl(tab.url ?? '')) throw new Error('This page cannot be printed to PDF.');
+    const granted = await chrome.permissions.request({ permissions: ['debugger'] });
+    if (!granted) throw new Error('Searchable PDF needs the debugger permission.');
+    await badge.set('…');
+    const base64 = await printToPdf(tabId);
+    const settings = await getSettings();
+    // Service workers have no createObjectURL; downloads accept data: URLs.
+    await chrome.downloads.download({
+      url: `data:application/pdf;base64,${base64}`,
+      filename: pdfFilename(settings.filenameTemplate, {
+        title: tab.title ?? '',
+        url: tab.url ?? '',
+        mode: 'pdf',
+      }),
+      saveAs: settings.saveAs,
+    });
+    await badge.clear();
+  } catch (err) {
+    console.error('[fullshot] pdf export failed', err);
     await badge.set('ERR', '#dc2626');
     setTimeout(() => void badge.clear(), 4000);
   } finally {
