@@ -247,7 +247,13 @@ a:hover { color: var(--link-hover); }
   margin: 16px 0 0;
 }
 
-.cta { margin-top: 32px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.cta { margin-top: 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.cta-more { margin-top: 10px; max-width: 46ch; }
+.cta-more summary { cursor: pointer; color: var(--dim, #8a8781); font-size: 0.92em; }
+.cta-more summary:hover { color: inherit; }
+.cta-more ol { margin: 10px 0 6px; padding-left: 22px; }
+.cta-more li { margin: 4px 0; }
+.cta-more p { font-size: 0.92em; margin: 6px 0 0; }
 
 /* The line that sits beside the download button and explains why the button
    is not a store link yet. Sized to sit under it on narrow screens. */
