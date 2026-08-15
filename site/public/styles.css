@@ -217,7 +217,20 @@ a:hover { color: var(--link-hover); }
 
 /* ------------------------------------------------------------------ hero */
 
-.hero { padding: 56px 0 8px; }
+/* One column, one left edge. Every child is a flex item flush to the same
+   start line, so the wordmark, the tagline, the button and the browser row
+   share an edge instead of each inventing their own. Rhythm comes from the
+   gap plus per-child margin-top, never from a wrapper box: there are no
+   panels, cards or pills in the hero, which is what keeps it reading as one
+   masthead rather than four stacked widgets. */
+.hero {
+  padding: 56px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero > * { margin-left: 0; margin-right: 0; }
 
 .hero .lens { width: 64px; height: 64px; border-radius: var(--radius-md); display: block; }
 
@@ -234,7 +247,17 @@ a:hover { color: var(--link-hover); }
   margin: 16px 0 0;
 }
 
-.cta { margin-top: 32px; display: flex; gap: 10px; flex-wrap: wrap; }
+.cta { margin-top: 32px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+
+/* The line that sits beside the download button and explains why the button
+   is not a store link yet. Sized to sit under it on narrow screens. */
+.cta-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 30ch;
+}
 
 .btn {
   display: inline-block;
@@ -266,20 +289,18 @@ a:hover { color: var(--link-hover); }
 
 /* Project health badges. These are the only remote images on the site: they
    are pure decoration, so if shields.io is unreachable the alt text still
-   reads as a sentence and no page content depends on them. */
+   reads as a sentence and no page content depends on them. They live in the
+   developer strip in the footer, never in the hero, so they get no box of
+   their own: a bare row of images on the footer's own ground. */
 .health {
   list-style: none;
-  width: fit-content;
   max-width: 100%;
-  margin: 34px 0 0;
-  padding: 11px 14px;
+  margin: 14px 0 0;
+  padding: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  background: var(--surface-canvas-deep);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
+  gap: 10px 12px;
 }
 .health li { display: flex; }
 /* line-height 0 stops the inline image leaving a descender gap inside the link */
@@ -288,9 +309,11 @@ a:hover { color: var(--link-hover); }
 
 /* Browser support, set monochrome so it reads as a line of type, not a
    logo wall. Chrome and Edge are tested continuously; Opera and Brave run the
-   same Chromium build; Firefox is a separate build from the repository. */
-.works { margin-top: 26px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.works ul { list-style: none; display: flex; align-items: center; gap: 14px; margin: 0; padding: 0; }
+   same Chromium build; Firefox is a separate build attached to each release.
+   The icons are decorative and the sentence beside them carries the meaning,
+   so screen readers get the sentence only. */
+.works { margin-top: 30px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.works ul { list-style: none; display: flex; align-items: center; gap: 13px; margin: 0; padding: 0; }
 .works svg { display: block; width: 19px; height: 19px; fill: var(--text-tertiary); }
 .works p { margin: 0; font-size: 14px; color: var(--text-secondary); }
 
@@ -336,14 +359,59 @@ kbd {
   color: var(--text-primary);
 }
 
-.subnav {
-  margin-top: 56px;
-  padding-top: 22px;
-  border-top: 1px solid var(--border-hairline);
-  color: var(--text-secondary);
-  font-size: 15px;
+/* ------------------------------------------------------- install steps */
+
+/* Three steps, drawn rather than described. The art is inline SVG on
+   currentColor so it inherits the shell's ink and needs no second file and no
+   dark mode variant. Numbering comes from the ordered list itself, so the
+   sequence survives with styles off. */
+.install { margin-top: 64px; }
+.install h2 { font: 500 30px/1.22 var(--font-serif); margin: 0 0 14px; }
+.install > p { margin: 0 0 8px; max-width: 62ch; font-size: 16.5px; color: var(--text-secondary); }
+
+.steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 34px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--border-hairline);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
-.subnav a { margin: 0 3px; }
+
+.steps li {
+  counter-increment: step;
+  background: var(--surface-card);
+  padding: 24px 24px 26px;
+  transition: background-color var(--duration-fast) var(--ease-soft-out);
+}
+.steps li:hover { background: var(--surface-card-hover); }
+
+.step-art { display: block; width: 72px; height: 72px; color: var(--text-tertiary); }
+.step-art svg { display: block; width: 100%; height: 100%; }
+
+.steps h3 {
+  margin: 16px 0 6px;
+  font: 600 17px/1.35 var(--font-serif);
+  display: flex;
+  gap: 9px;
+  align-items: baseline;
+}
+/* The step number is generated, so it reads as ornament to a screen reader
+   walking the list rather than being announced twice. */
+.steps h3::before {
+  content: counter(step);
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: var(--label-tracking);
+  color: var(--text-tertiary);
+}
+.steps p { margin: 0; color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; }
+
+.install > p.install-foot { margin: 22px 0 0; font-size: 15px; color: var(--text-secondary); max-width: 62ch; }
 
 /* ------------------------------------------------------------- long form */
 
@@ -428,6 +496,9 @@ tbody th { color: var(--text-primary); font-weight: 600; }
 
 /* ---------------------------------------------------------------- footer */
 
+/* One footer, byte for byte identical on every page: site nav, then the quiet
+   developer strip, then the byline. Nothing else on any page carries a link
+   row, so a page ends exactly once. */
 footer {
   margin-top: 72px;
   padding-top: 26px;
@@ -439,8 +510,41 @@ footer p, .prose footer p { margin: 0 0 6px; font: inherit; color: inherit; max-
 footer a { color: var(--text-secondary); }
 footer a:hover { color: var(--text-primary); }
 
+.footer-nav { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 15px; }
+.footer-nav a { color: var(--text-primary); }
+.footer-nav a:hover { color: var(--link-hover); }
+
+/* The developer strip. Everything aimed at people who want the source lives
+   here and only here: it is deliberately set below the reader-facing nav, in
+   smaller type, so it is findable without being the first thing anyone meets. */
+.dev-strip {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border-hairline);
+}
+.dev-label {
+  font: 500 11px/1.4 var(--font-mono);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 0 8px;
+}
+.dev-strip p, .prose footer .dev-strip p { font-size: 14px; max-width: 62ch; }
+.dev-strip p a { text-decoration-thickness: 1px; }
+
+/* Trademark and affiliation notices belong to the page that makes the
+   comparison, not to the shared footer, so they sit at the end of the article
+   above it and the footer stays identical everywhere. */
+.trademark {
+  margin: 40px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+}
+.prose .trademark { font: 400 13.5px/1.6 var(--font-ui); color: var(--text-tertiary); }
+
 .colophon, .prose footer .colophon {
-  margin: 16px 0 0;
+  margin: 26px 0 0;
   font: 500 11px/1.5 var(--font-mono);
   letter-spacing: var(--label-tracking);
   text-transform: uppercase;
@@ -468,6 +572,10 @@ footer a:hover { color: var(--text-primary); }
   }
 }
 
+@media (max-width: 860px) {
+  .steps { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   main { padding: 0 20px 72px; }
   .site-header { padding: 22px 20px 0; }
@@ -476,4 +584,5 @@ footer a:hover { color: var(--text-primary); }
   .hero .tag { max-width: none; font-size: 18px; }
   .grid { grid-template-columns: 1fr; }
   .prose p, .prose li { font-size: 17px; }
+  .cta-note { max-width: none; }
 }

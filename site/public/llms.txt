@@ -20,7 +20,9 @@ History: recent captures, with their annotations, are kept locally in IndexedDB 
 
 Permissions: activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage. No host permissions. The optional Turbo engine, the mobile width capture and the searchable PDF export add debugger, only if you grant it.
 
-Browsers: Chrome, Edge, Opera and Brave run the same build with every feature available. A Firefox build is in the repository and runs the scroll and stitch engine only, because Firefox has no debugger API. Store listings are not live yet, so the install path today is the packaged build attached to each GitHub release.
+Browsers: Screencappy works with Chrome, Edge, Opera and Brave, which run the same build with every feature available. It is also available for Firefox; that build runs the scroll and stitch engine only, because Firefox has no debugger API.
+
+Installing: store listings are not live yet. Screencappy is on its way to the Chrome Web Store, and until it lands the install path is the packaged build attached to each GitHub release, offered on the site as clearly labelled early access. Download screencappy.zip (or screencappy-firefox.zip for Firefox) from the latest release, unzip it, open chrome://extensions, switch on Developer mode, click Load unpacked, and choose the unzipped folder. It takes about a minute.
 
 Licence and author: Apache-2.0, built and maintained by Aaron Pinto, developed in the open.
 

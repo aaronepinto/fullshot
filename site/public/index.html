@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Free Full Page Screenshot Chrome Extension | Screencappy</title>
-  <meta name="description" content="Capture any web page in one click, annotate it, and export PNG, JPEG, WebP or PDF. Free, open source, no account, and nothing ever leaves your device." />
+  <meta name="description" content="Save a picture of a whole web page in one click. Draw on it, blur anything private, and keep it as a PNG, JPEG, WebP or PDF. Free, no account, and nothing ever leaves your computer." />
   <link rel="canonical" href="https://screencappy.smollet.app/" />
 
   <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
@@ -17,12 +17,12 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Screencappy" />
   <meta property="og:url" content="https://screencappy.smollet.app/" />
-  <meta property="og:title" content="Screencappy: free open source full page screenshots for Chrome" />
-  <meta property="og:description" content="One-click full page screenshots with a real editor built in. Export PNG, JPEG, WebP or PDF. Free, open source, and private by design." />
+  <meta property="og:title" content="Screencappy: free full page screenshots for your browser" />
+  <meta property="og:description" content="Save a picture of a whole web page in one click, then draw on it and blur anything private. Free, with nothing leaving your computer." />
   <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:image:alt" content="Screencappy, free full page screenshots for your browser" />
   <meta property="og:locale" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
 
@@ -36,14 +36,14 @@
         "name": "Screencappy",
         "alternateName": "Screencappy full page screenshot extension",
         "url": "https://screencappy.smollet.app/",
-        "description": "Screencappy is a free, open source Chrome extension that captures full page screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF. It runs entirely on your device with no account, no cloud upload, no analytics and no host permissions by default.",
+        "description": "Screencappy is a free browser extension that saves a picture of an entire web page in one click. It captures the whole page, not just the part you can see on screen. You can then draw on the picture, blur out anything private, and save it as a PNG, JPEG, WebP or PDF. Everything happens on your own computer: there is no account to make, no cloud service behind it, and no way for it to send your pictures anywhere.",
         "applicationCategory": "UtilitiesApplication",
         "applicationSubCategory": "Screenshot",
-        "operatingSystem": "Chrome, Microsoft Edge, Opera, Brave",
-        "browserRequirements": "Requires a Chromium based browser such as Google Chrome, Microsoft Edge, Opera or Brave. A Firefox build is available from source.",
+        "operatingSystem": "Chrome, Microsoft Edge, Opera, Brave, Firefox",
+        "browserRequirements": "Works with Chrome, Edge, Opera and Brave. A separate Firefox version is attached to each release.",
         "isAccessibleForFree": true,
         "license": "https://www.apache.org/licenses/LICENSE-2.0",
-        "downloadUrl": "https://github.com/aaronepinto/smollet-screencappy/releases/latest",
+        "downloadUrl": "https://github.com/aaronepinto/smollet-screencappy/releases/latest/download/screencappy.zip",
         "installUrl": "https://github.com/aaronepinto/smollet-screencappy/releases/latest",
         "softwareHelp": "https://screencappy.smollet.app/faq",
         "privacyPolicy": "https://screencappy.smollet.app/privacy",
@@ -51,21 +51,22 @@
         "programmingLanguage": "TypeScript",
         "permissions": "activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage. No host permissions. The optional Turbo capture engine additionally uses the debugger permission, only if you enable it.",
         "featureList": [
-          "One-click full page screenshot, including content below the fold and off to the right",
-          "Visible area capture, drag select region capture, and DevTools style element capture",
-          "Captures pages that scroll inside an inner container, such as Gmail style web apps",
-          "Captures the entire content of an iframe rather than just its visible box",
-          "Sticky headers appear exactly once in the stitched image",
-          "Free annotation editor with crop, arrows, shapes, pen, highlighter, text, emoji and blur redaction",
-          "Full undo and redo on every annotation",
-          "Export to PNG, JPEG, WebP, single page PDF or paginated PDF",
-          "Searchable text PDF export through the optional Turbo engine",
-          "Delayed capture for menus and hover states",
-          "Mobile width capture through device emulation",
-          "Automatic loading of infinite scroll pages before capture",
-          "Local capture history stored in the browser",
-          "Strip based compositing so very tall pages split instead of failing",
-          "No account, no cloud upload, no analytics and no network code"
+          "Saves a picture of the whole page in one click, including everything below and to the side of what is on screen",
+          "Headers that stay put as you scroll appear only once in the finished picture",
+          "Capture just what is on screen, drag a box around one part, or point at a single item and click",
+          "Panels with their own scrollbars are captured in full, not just the part showing",
+          "Free drawing tools: crop, arrows, boxes, pen, highlighter, text and emoji",
+          "Blur out anything private before you save",
+          "Every step can be undone and redone",
+          "Save as PNG, JPEG, WebP, or PDF as one long page or split into pages",
+          "Copy straight to the clipboard, ready to paste",
+          "Set how your files get named",
+          "Handles pages that keep loading as you scroll",
+          "Hold a capture back so a menu can be opened first",
+          "Optional extras you switch on: capture a page in its phone layout, and save PDFs whose text you can search",
+          "Keeps your recent captures on your own computer so you can reopen them",
+          "Very long pages split neatly across files instead of failing",
+          "No account, no cloud, no tracking, and no way to send anything anywhere"
         ],
         "offers": {
           "@type": "Offer",
@@ -93,7 +94,7 @@
         "@id": "https://screencappy.smollet.app/#website",
         "url": "https://screencappy.smollet.app/",
         "name": "Screencappy",
-        "description": "Free and open source full page screenshot extension for Chrome.",
+        "description": "A free browser extension that saves a picture of a whole web page in one click.",
         "inLanguage": "en",
         "publisher": { "@id": "https://screencappy.smollet.app/#author" },
         "about": { "@id": "https://screencappy.smollet.app/#software" }
@@ -117,10 +118,11 @@
       <img class="lens" src="/icon.png" alt="Screencappy full page screenshot extension icon" width="96" height="96" />
       <h1>Screencappy</h1>
       <p class="byline imprint">by <a href="https://smollet.app">Smollet</a></p>
-      <p class="tag">One-click full page screenshots for Chrome. Capture, annotate, and export. Free, open source, and private by design.</p>
+      <p class="tag">Save a picture of a whole web page in one click. Draw on it, hide anything private, and keep it wherever you like. Free, and nothing you capture ever leaves your computer.</p>
+
       <div class="cta">
-        <a class="btn primary" href="https://github.com/aaronepinto/smollet-screencappy/releases/latest">Download for Chrome</a>
-        <a class="btn" href="https://github.com/aaronepinto/smollet-screencappy">View source on GitHub</a>
+        <a class="btn primary" href="https://github.com/aaronepinto/smollet-screencappy/releases/latest/download/screencappy.zip">Download for Chrome</a>
+        <p class="cta-note">Early access. Screencappy is on its way to the Chrome Web Store. Until it lands, you add it yourself in about a minute.</p>
       </div>
 
       <div class="works">
@@ -131,64 +133,95 @@
           <li><svg viewBox="0 0 24 24" focusable="false"><path d="M15.68 0l2.096 2.38s1.84-.512 2.709.358c.868.87 1.584 1.638 1.584 1.638l-.562 1.381.715 2.047s-2.104 7.98-2.35 8.955c-.486 1.919-.818 2.66-2.198 3.633-1.38.972-3.884 2.66-4.293 2.916-.409.256-.92.692-1.38.692-.46 0-.97-.436-1.38-.692a185.796 185.796 0 01-4.293-2.916c-1.38-.973-1.712-1.714-2.197-3.633-.247-.975-2.351-8.955-2.351-8.955l.715-2.047-.562-1.381s.716-.768 1.585-1.638c.868-.87 2.708-.358 2.708-.358L8.321 0h7.36zm-3.679 14.936c-.14 0-1.038.317-1.758.69-.72.373-1.242.637-1.409.742-.167.104-.065.301.087.409.152.107 2.194 1.69 2.393 1.866.198.175.489.464.687.464.198 0 .49-.29.688-.464.198-.175 2.24-1.759 2.392-1.866.152-.108.254-.305.087-.41-.167-.104-.689-.368-1.41-.741-.72-.373-1.617-.69-1.757-.69zm0-11.278s-.409.001-1.022.206-1.278.46-1.584.46c-.307 0-2.581-.434-2.581-.434S4.119 7.152 4.119 7.849c0 .697.339.881.68 1.243l2.02 2.149c.192.203.59.511.356 1.066-.235.555-.58 1.26-.196 1.977.384.716 1.042 1.194 1.464 1.115.421-.08 1.412-.598 1.776-.834.364-.237 1.518-1.19 1.518-1.554 0-.365-1.193-1.02-1.413-1.168-.22-.15-1.226-.725-1.247-.95-.02-.227-.012-.293.284-.851.297-.559.831-1.304.742-1.8-.089-.495-.95-.753-1.565-.986-.615-.232-1.799-.671-1.947-.74-.148-.068-.11-.133.339-.175.448-.043 1.719-.212 2.292-.052.573.16 1.552.403 1.632.532.079.13.149.134.067.579-.081.445-.5 2.581-.541 2.96-.04.38-.12.63.288.724.409.094 1.097.256 1.333.256s.924-.162 1.333-.256c.408-.093.329-.344.288-.723-.04-.38-.46-2.516-.541-2.961-.082-.445-.012-.45.067-.579.08-.129 1.059-.372 1.632-.532.573-.16 1.845.009 2.292.052.449.042.487.107.339.175-.148.069-1.332.508-1.947.74-.615.233-1.476.49-1.565.986-.09.496.445 1.241.742 1.8.297.558.304.624.284.85-.02.226-1.026.802-1.247.95-.22.15-1.413.804-1.413 1.169 0 .364 1.154 1.317 1.518 1.554.364.236 1.355.755 1.776.834.422.079 1.08-.4 1.464-1.115.384-.716.039-1.422-.195-1.977-.235-.555.163-.863.355-1.066l2.02-2.149c.341-.362.68-.546.68-1.243 0-.697-2.695-3.96-2.695-3.96s-2.274.436-2.58.436c-.307 0-.972-.256-1.585-.461-.613-.205-1.022-.206-1.022-.206z"/></svg></li>
           <li><svg viewBox="0 0 24 24" focusable="false"><path d="M8.824 7.287c.008 0 .004 0 0 0zm-2.8-1.4c.006 0 .003 0 0 0zm16.754 2.161c-.505-1.215-1.53-2.528-2.333-2.943.654 1.283 1.033 2.57 1.177 3.53l.002.02c-1.314-3.278-3.544-4.6-5.366-7.477-.091-.147-.184-.292-.273-.446a3.545 3.545 0 01-.13-.24 2.118 2.118 0 01-.172-.46.03.03 0 00-.027-.03.038.038 0 00-.021 0l-.006.001a.037.037 0 00-.01.005L15.624 0c-2.585 1.515-3.657 4.168-3.932 5.856a6.197 6.197 0 00-2.305.587.297.297 0 00-.147.37c.057.162.24.24.396.17a5.622 5.622 0 012.008-.523l.067-.005a5.847 5.847 0 011.957.222l.095.03a5.816 5.816 0 01.616.228c.08.036.16.073.238.112l.107.055a5.835 5.835 0 01.368.211 5.953 5.953 0 012.034 2.104c-.62-.437-1.733-.868-2.803-.681 4.183 2.09 3.06 9.292-2.737 9.02a5.164 5.164 0 01-1.513-.292 4.42 4.42 0 01-.538-.232c-1.42-.735-2.593-2.121-2.74-3.806 0 0 .537-2 3.845-2 .357 0 1.38-.998 1.398-1.287-.005-.095-2.029-.9-2.817-1.677-.422-.416-.622-.616-.8-.767a3.47 3.47 0 00-.301-.227 5.388 5.388 0 01-.032-2.842c-1.195.544-2.124 1.403-2.8 2.163h-.006c-.46-.584-.428-2.51-.402-2.913-.006-.025-.343.176-.389.206-.406.29-.787.616-1.136.974-.397.403-.76.839-1.085 1.303a9.816 9.816 0 00-1.562 3.52c-.003.013-.11.487-.19 1.073-.013.09-.026.181-.037.272a7.8 7.8 0 00-.069.667l-.002.034-.023.387-.001.06C.386 18.795 5.593 24 12.016 24c5.752 0 10.527-4.176 11.463-9.661.02-.149.035-.298.052-.448.232-1.994-.025-4.09-.753-5.844z"/></svg></li>
         </ul>
-        <p>Works in Chrome, Edge, Opera and Brave; Firefox build available</p>
+        <p>Works with Chrome, Edge, Opera and Brave. Also available for Firefox.</p>
       </div>
-
-      <ul class="health" aria-label="Project health">
-        <li>
-          <a href="https://github.com/aaronepinto/smollet-screencappy" title="Screencappy on GitHub">
-            <img src="https://img.shields.io/github/stars/aaronepinto/smollet-screencappy?style=flat-square&amp;logo=github&amp;logoColor=e2e8f0&amp;label=stars&amp;labelColor=1e293b&amp;color=0ea5e9"
-                 alt="GitHub star count for the Screencappy repository" height="20" loading="lazy" decoding="async" />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml?query=branch%3Amain" title="Continuous integration runs on the main branch">
-            <img src="https://img.shields.io/github/actions/workflow/status/aaronepinto/smollet-screencappy/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;labelColor=1e293b"
-                 alt="Continuous integration build status for the main branch" height="20" loading="lazy" decoding="async" />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/aaronepinto/smollet-screencappy/releases" title="Screencappy releases">
-            <img src="https://img.shields.io/github/v/release/aaronepinto/smollet-screencappy?style=flat-square&amp;display_name=tag&amp;label=release&amp;labelColor=1e293b&amp;color=0ea5e9"
-                 alt="Latest Screencappy release version" height="20" loading="lazy" decoding="async" />
-          </a>
-        </li>
-        <li>
-          <a href="https://github.com/aaronepinto/smollet-screencappy/blob/main/LICENSE" title="Apache-2.0 license text">
-            <img src="https://img.shields.io/github/license/aaronepinto/smollet-screencappy?style=flat-square&amp;label=license&amp;labelColor=1e293b&amp;color=0ea5e9"
-                 alt="Screencappy is released under the Apache-2.0 license" height="20" loading="lazy" decoding="async" />
-          </a>
-        </li>
-      </ul>
     </section>
 
     <section class="answer">
       <h2>What is Screencappy?</h2>
 
-      <p><strong>Screencappy is a free, open source Chrome extension that captures full page
-      screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF.</strong>
-      It is Apache-2.0 licensed, and the complete source is public on GitHub.</p>
+      <p><strong>Screencappy is a free browser extension that saves a picture of an entire web page
+      in one click.</strong> It captures the whole page, not just the part you can see on screen.
+      You can then draw on the picture, blur out anything private, and save it as a PNG, JPEG, WebP
+      or PDF.</p>
 
-      <p>Everything happens on your own device. Screencappy has no account, no cloud service, no
-      analytics and no network code at all, so captures cannot leave your machine. By default it
-      requests no host permissions, which means it has no standing ability to read any page: access
-      is granted by your click, for one tab, at that moment.</p>
+      <p>Everything happens on your own computer. There is no account to make and no cloud service
+      behind it. Screencappy does not track you and has no way to send your pictures anywhere. It
+      cannot see the page you are on until you ask it to.</p>
 
-      <p>There is no paid tier. The annotation editor, blur and pixelate redaction, emoji stamps and
-      PDF export are all included at no cost. Screencappy runs on Chrome, Edge, Opera and Brave, and
-      a Firefox build is in the repository. Install it from the latest release: unzip it, open
-      <code>chrome://extensions</code>, turn on Developer mode, and click Load unpacked.</p>
+      <p>Screencappy is completely free. There is no paid version and nothing is held back: drawing,
+      blurring, emoji stamps and saving as PDF are all included. It works with Chrome, Edge, Opera
+      and Brave, and there is a Firefox version too. The code is open for anyone to read, under the
+      Apache-2.0 licence.</p>
+    </section>
+
+    <section class="install" id="install">
+      <h2>Adding it to your browser</h2>
+
+      <p>Screencappy is on its way to the Chrome Web Store. It is not there yet, so for now you add
+      it yourself. This is early access: it takes about a minute, and these three steps are all
+      of it.</p>
+
+      <ol class="steps">
+        <li>
+          <span class="step-art" aria-hidden="true">
+            <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path d="M36 13v27" />
+              <path d="M26 31l10 10 10-10" />
+              <path d="M15 44v9a5 5 0 0 0 5 5h32a5 5 0 0 0 5-5v-9" />
+            </svg>
+          </span>
+          <h3>Download and unzip</h3>
+          <p>Download <a href="https://github.com/aaronepinto/smollet-screencappy/releases/latest/download/screencappy.zip">screencappy.zip</a>
+          and unzip it. You will be left with a folder. Remember where you put it.</p>
+        </li>
+        <li>
+          <span class="step-art" aria-hidden="true">
+            <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <rect x="11" y="15" width="50" height="42" rx="5" />
+              <path d="M11 26h50" />
+              <circle cx="18" cy="20.5" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="24" cy="20.5" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="30" cy="20.5" r="1.5" fill="currentColor" stroke="none" />
+              <path d="M19 38h8" />
+              <path d="M19 45h5" />
+              <rect x="32" y="35" width="23" height="13" rx="6.5" />
+              <circle cx="48.5" cy="41.5" r="3.6" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          <h3>Switch on Developer mode</h3>
+          <p>In Chrome, go to <code>chrome://extensions</code>. Turn on the <strong>Developer
+          mode</strong> switch in the top right corner.</p>
+        </li>
+        <li>
+          <span class="step-art" aria-hidden="true">
+            <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+              <path d="M11 24a4 4 0 0 1 4-4h11.5l5 6H57a4 4 0 0 1 4 4v22a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4z" />
+              <path d="M33 34l17 6.5-7.2 2.5-2.6 7.4z" fill="currentColor" stroke="none" />
+              <path d="M33 34l17 6.5-7.2 2.5-2.6 7.4z" />
+            </svg>
+          </span>
+          <h3>Click Load unpacked</h3>
+          <p>Click the <strong>Load unpacked</strong> button and choose the folder you unzipped.
+          That is it, Screencappy is in your browser.</p>
+        </li>
+      </ol>
+
+      <p class="install-foot">The same file works in Edge, Opera and Brave. On Firefox, download
+      <a href="https://github.com/aaronepinto/smollet-screencappy/releases/latest/download/screencappy-firefox.zip">screencappy-firefox.zip</a>
+      instead. Once Screencappy reaches the Chrome Web Store, installing will be one click and
+      updates will arrive on their own.</p>
     </section>
 
     <section class="grid">
-      <div class="card"><h3>Whole page, one click</h3><p>Everything below the fold and off to the right, stitched pixel-perfectly. Sticky headers appear exactly once.</p></div>
-      <div class="card"><h3>Private by design</h3><p>No account, no cloud, no analytics, no host permissions, and zero network code. Captures never leave your device.</p></div>
-      <div class="card"><h3>A real editor, free</h3><p>Crop, arrows, shapes, pen, highlighter, text, emoji, and blur redaction with full undo and redo.</p></div>
-      <div class="card"><h3>Export anywhere</h3><p>PNG, JPEG, WebP, PDF (single page or paginated), or straight to your clipboard. Custom filename templates.</p></div>
-      <div class="card"><h3>Pick any element</h3><p>Hover to highlight, click to capture. Scrollable containers and iframes are captured in full, not just their visible box.</p></div>
-      <div class="card"><h3>Awkward pages handled</h3><p>Inner scroll containers, infinite scroll, mobile widths, and delayed captures for menus and hover states.</p></div>
-      <div class="card"><h3>Turbo engine</h3><p>Optional one-shot capture through the DevTools protocol: faster, seamless, and it can save a searchable text PDF.</p></div>
-      <div class="card"><h3>Huge pages just work</h3><p>Strip-based compositing sidesteps canvas limits; giant captures split automatically instead of failing.</p></div>
+      <div class="card"><h3>The whole page, one click</h3><p>Not just the part on your screen. Everything further down the page and off to the side, joined into one clean picture, with headers that stay put appearing only once.</p></div>
+      <div class="card"><h3>Your pictures stay yours</h3><p>No account, no cloud, no tracking. Screencappy has no way to send anything anywhere, so what you capture stays on your computer.</p></div>
+      <div class="card"><h3>Mark it up, free</h3><p>Crop it, add arrows, boxes, a highlighter, text or emoji, and blur out anything private. Change your mind as often as you like: every step can be undone.</p></div>
+      <div class="card"><h3>Save it your way</h3><p>PNG, JPEG, WebP or PDF, one long page or split into pages, or copied straight to your clipboard ready to paste. You can set how files get named.</p></div>
+      <div class="card"><h3>Capture just one part</h3><p>Point at what you want and click, or drag a box around it. Boxes with their own scrollbars get captured in full, not just the bit showing.</p></div>
+      <div class="card"><h3>Tricky pages handled</h3><p>Pages that keep loading as you scroll, pages that scroll inside a panel, and shots that need a menu held open. Screencappy waits for the page to settle.</p></div>
+      <div class="card"><h3>See it as a phone would</h3><p>An optional extra you can switch on: capture a page in its phone layout without resizing your window, and save PDFs whose text you can still search.</p></div>
+      <div class="card"><h3>Very long pages work</h3><p>Enormous pages defeat most screenshot tools. Screencappy builds these in pieces, so a huge capture splits neatly across files instead of failing.</p></div>
     </section>
 
     <p class="keys">
@@ -197,17 +230,47 @@
       Select a region <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
     </p>
 
-    <nav class="subnav">
-      <a href="/alternatives">Alternatives compared</a> ·
-      <a href="/gofullpage-alternative">GoFullPage alternative</a> ·
-      <a href="/faq">FAQ</a> ·
-      <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a> ·
-      <a href="/privacy">Privacy</a>
-    </nav>
-
     <footer>
-      <p>Apache-2.0 licensed. Built for the developer community.</p>
-      <p><a href="/alternatives">Alternatives</a> · <a href="/privacy">Privacy policy</a> · <a href="https://github.com/aaronepinto/smollet-screencappy">GitHub</a></p>
+      <nav class="footer-nav" aria-label="Site">
+        <a href="/alternatives">Alternatives</a>
+        <a href="/faq">FAQ</a>
+        <a href="/how-to-take-a-full-page-screenshot-in-chrome">How-to</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
+      <div class="dev-strip">
+        <p class="dev-label">For developers</p>
+        <p>Screencappy is free and open source under the Apache-2.0 licence. Read the code,
+        report a problem, or send a change on
+        <a href="https://github.com/aaronepinto/smollet-screencappy">GitHub</a>, where
+        <a href="https://github.com/aaronepinto/smollet-screencappy/blob/main/CONTRIBUTING.md">CONTRIBUTING</a>
+        explains how to build it and how changes are reviewed.</p>
+        <ul class="health" aria-label="Project status">
+          <li>
+            <a href="https://github.com/aaronepinto/smollet-screencappy" title="Screencappy on GitHub">
+              <img src="https://img.shields.io/github/stars/aaronepinto/smollet-screencappy?style=flat-square&amp;logo=github&amp;logoColor=e2e8f0&amp;label=stars&amp;labelColor=1e293b&amp;color=0ea5e9"
+                   alt="GitHub star count for the Screencappy repository" height="20" loading="lazy" decoding="async" />
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml?query=branch%3Amain" title="Continuous integration runs on the main branch">
+              <img src="https://img.shields.io/github/actions/workflow/status/aaronepinto/smollet-screencappy/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;labelColor=1e293b"
+                   alt="Continuous integration build status for the main branch" height="20" loading="lazy" decoding="async" />
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/aaronepinto/smollet-screencappy/releases" title="Screencappy releases">
+              <img src="https://img.shields.io/github/v/release/aaronepinto/smollet-screencappy?style=flat-square&amp;display_name=tag&amp;label=release&amp;labelColor=1e293b&amp;color=0ea5e9"
+                   alt="Latest Screencappy release version" height="20" loading="lazy" decoding="async" />
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/aaronepinto/smollet-screencappy/blob/main/LICENSE" title="Apache-2.0 license text">
+              <img src="https://img.shields.io/github/license/aaronepinto/smollet-screencappy?style=flat-square&amp;label=license&amp;labelColor=1e293b&amp;color=0ea5e9"
+                   alt="Screencappy is released under the Apache-2.0 license" height="20" loading="lazy" decoding="async" />
+            </a>
+          </li>
+        </ul>
+      </div>
       <p class="colophon">Screencappy, by <a href="https://smollet.app">Smollet</a></p>
     </footer>
   </main>
