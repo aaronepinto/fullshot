@@ -189,6 +189,7 @@ function resizeCanvas() {
 function render() {
   resizeCanvas();
   syncTextOverlay();
+  syncStyleBar();
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-canvas');
@@ -331,9 +332,13 @@ let drag: Drag = { kind: 'none' };
 let spaceDown = false;
 
 canvas.addEventListener('pointerdown', (e) => {
+  // The text tool reopens the editor itself; every other gesture closes it first.
+  if (state.editing && state.tool !== 'text') closeTextEditor('blur');
   const wantsPan =
     e.button === 1 ||
-    (e.button === 0 && (spaceDown || (state.tool === 'select' && !topHit(e) && !handleHit(e))));
+    // topHit returns an index, and index 0 is a hit: testing it for truthiness made
+    // the very first annotation unselectable.
+    (e.button === 0 && (spaceDown || (state.tool === 'select' && topHit(e) < 0 && !handleHit(e))));
   if (wantsPan) {
     drag = { kind: 'pan', startX: e.clientX, startY: e.clientY, panX: state.pan.x, panY: state.pan.y };
     canvas.setPointerCapture(e.pointerId);
@@ -695,7 +700,12 @@ textArea.addEventListener('input', () => {
   if (state.editing) state.editing.draft = textArea.value;
   autosizeText();
 });
-textArea.addEventListener('blur', () => closeTextEditor('blur'));
+textArea.addEventListener('blur', (e) => {
+  // Focus landing on a chrome control means the user is restyling text they are
+  // still typing; that control's handler hands focus straight back.
+  if ((e.relatedTarget as Element | null)?.closest('#tools, #stylebar, .actions, .zoomctl')) return;
+  closeTextEditor('blur');
+});
 textArea.addEventListener('keydown', (e) => {
   // Only the keys the editor owns are intercepted. Everything else, Cmd+Z and
   // Cmd+C included, is left to the textarea and to the browser.
@@ -752,19 +762,70 @@ $('#btnCropReset').addEventListener('click', () => {
 // Toolbar / style bar
 // ---------------------------------------------------------------------------
 
+/** Kinds and tools each style control is relevant to. */
+const WIDTH_SUBJECTS = ['arrow', 'line', 'rect', 'ellipse', 'pen'];
+const FONT_SUBJECTS = ['text', 'emoji'];
+const FILL_SUBJECTS = ['rect', 'ellipse'];
+
 function setTool(tool: Tool) {
+  // Switching tools resolves an open editor rather than leaving it orphaned.
+  closeTextEditor('tool-change');
   state.tool = tool;
   document.querySelectorAll<HTMLButtonElement>('.tool').forEach((b) => {
-    b.classList.toggle('active', b.dataset.tool === tool);
+    const active = b.dataset.tool === tool;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
   });
-  $('#ctlFont').hidden = tool !== 'text' && tool !== 'emoji';
-  $('#ctlWidth').hidden = !['arrow', 'line', 'rect', 'ellipse', 'pen'].includes(tool);
-  $('#ctlFill').hidden = tool !== 'rect' && tool !== 'ellipse';
-  $('#emojiCurrent').hidden = tool !== 'emoji';
   if (tool !== 'crop') {
     state.cropDraft = null;
     hideCropBar();
   }
+  requestRender();
+}
+
+/**
+ * Shows the controls relevant to what is being worked on, and fills them from that
+ * annotation's own style rather than from the global defaults, so the bar is never
+ * a lie about what a change is going to affect.
+ */
+function syncStyleBar() {
+  const sel = state.annos[selectedIndex()];
+  const subject = sel ? sel.kind : state.tool;
+  $('#ctlWidth').hidden = !WIDTH_SUBJECTS.includes(subject);
+  $('#ctlFont').hidden = !FONT_SUBJECTS.includes(subject);
+  $('#ctlFill').hidden = !FILL_SUBJECTS.includes(subject);
+  $('#emojiCurrent').hidden = state.tool !== 'emoji';
+
+  const color = sel && 'color' in sel ? sel.color : (state.editing?.color ?? state.style.color);
+  swatches.querySelectorAll<HTMLElement>('.swatch').forEach((b) => {
+    b.classList.toggle('active', b.title === color);
+  });
+  setSelectValue('#strokeWidth', sel && 'width' in sel ? sel.width : state.style.strokeWidth);
+  const size =
+    sel?.kind === 'text' ? sel.size
+    : sel?.kind === 'emoji' ? sel.size / 2
+    : (state.editing?.size ?? state.style.fontSize);
+  setSelectValue('#fontSize', size);
+  const fill = sel && 'fill' in sel ? sel.fill : state.style.fill;
+  const fillBox = $<HTMLInputElement>('#fillShape');
+  if (fillBox.checked !== fill) fillBox.checked = fill;
+}
+
+function setSelectValue(sel: string, value: number) {
+  const el = $<HTMLSelectElement>(sel);
+  const next = String(value);
+  if (el.value !== next && [...el.options].some((o) => o.value === next)) el.value = next;
+}
+
+/** Applies a style change to every selected annotation it fits, in one undo entry. */
+function styleSelection(fits: (a: Anno) => boolean, apply: (a: Anno) => void) {
+  const targets = state.selection
+    .map((i) => state.annos[i])
+    .filter((a): a is Anno => a !== undefined && fits(a));
+  if (!targets.length) return;
+  pushUndo();
+  for (const a of targets) apply(a);
+  persistAnnos();
   requestRender();
 }
 
@@ -780,28 +841,54 @@ for (const color of COLORS) {
   b.title = color;
   b.addEventListener('click', () => {
     state.style.color = color;
-    swatches.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active'));
-    b.classList.add('active');
-    const sel = state.annos[selectedIndex()];
-    if (sel && 'color' in sel) {
-      pushUndo();
-      sel.color = color;
-      persistAnnos();
+    // While text is being typed the change belongs to that draft, not to whatever
+    // happens to be selected behind it.
+    if (state.editing) {
+      state.editing.color = color;
+      syncTextOverlay();
+      textArea.focus();
       requestRender();
+      return;
     }
+    styleSelection((a) => 'color' in a, (a) => {
+      if ('color' in a) a.color = color;
+    });
+    requestRender();
   });
   swatches.appendChild(b);
 }
-swatches.querySelector('.swatch')?.classList.add('active');
 
 $<HTMLSelectElement>('#strokeWidth').addEventListener('change', (e) => {
-  state.style.strokeWidth = Number((e.target as HTMLSelectElement).value);
+  const width = Number((e.target as HTMLSelectElement).value);
+  state.style.strokeWidth = width;
+  styleSelection((a) => 'width' in a, (a) => {
+    if ('width' in a) a.width = width;
+  });
 });
 $<HTMLSelectElement>('#fontSize').addEventListener('change', (e) => {
-  state.style.fontSize = Number((e.target as HTMLSelectElement).value);
+  const size = Number((e.target as HTMLSelectElement).value);
+  state.style.fontSize = size;
+  if (state.editing) {
+    state.editing.size = size;
+    syncTextOverlay();
+    textArea.focus();
+    requestRender();
+    return;
+  }
+  styleSelection(
+    (a) => a.kind === 'text' || a.kind === 'emoji',
+    (a) => {
+      if (a.kind === 'text') a.size = size;
+      if (a.kind === 'emoji') a.size = size * 2;
+    }
+  );
 });
 $<HTMLInputElement>('#fillShape').addEventListener('change', (e) => {
-  state.style.fill = (e.target as HTMLInputElement).checked;
+  const fill = (e.target as HTMLInputElement).checked;
+  state.style.fill = fill;
+  styleSelection((a) => 'fill' in a, (a) => {
+    if ('fill' in a) a.fill = fill;
+  });
 });
 
 const emojiPicker = $('#emojiPicker');
