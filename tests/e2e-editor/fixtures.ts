@@ -281,6 +281,34 @@ export class Editor {
     return this.page.locator('#toast');
   }
 
+  /**
+   * True when any painted pixel in an image-space box is close to the given colour.
+   * Sampling one pixel would land between glyph strokes as often as on one.
+   */
+  async paints(box: { x: number; y: number; w: number; h: number }, hex: string): Promise<boolean> {
+    const a = await this.at(box.x, box.y);
+    const b = await this.at(box.x + box.w, box.y + box.h);
+    return this.page.evaluate(
+      (arg) => {
+        const c = document.querySelector('canvas')!;
+        const r = c.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const x = Math.round((arg.a.x - r.left) * dpr);
+        const y = Math.round((arg.a.y - r.top) * dpr);
+        const w = Math.max(1, Math.round((arg.b.x - arg.a.x) * dpr));
+        const h = Math.max(1, Math.round((arg.b.y - arg.a.y) * dpr));
+        const data = c.getContext('2d')!.getImageData(x, y, w, h).data;
+        const n = parseInt(arg.hex.slice(1), 16);
+        const want = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        for (let i = 0; i < data.length; i += 4) {
+          if (want.every((v, k) => Math.abs(data[i + k]! - v) < 40)) return true;
+        }
+        return false;
+      },
+      { a, b, hex }
+    );
+  }
+
   activeTestId(): Promise<string | null> {
     return this.page.evaluate(() => document.activeElement?.getAttribute('data-testid') ?? null);
   }

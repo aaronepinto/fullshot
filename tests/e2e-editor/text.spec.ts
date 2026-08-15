@@ -240,3 +240,108 @@ test.describe('Item 2: style capture and toolbar focus safety', () => {
     expect(state.undoDepth).toBe(before + 1);
   });
 });
+
+test.describe('Item 3: text re-edit', () => {
+  test('double-click replaces the text in place', async ({ editor, page }) => {
+    await editor.writeText(200, 200, 'before');
+    await editor.tool('select');
+    await editor.dblclick(210, 210);
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('after');
+    await page.keyboard.press('Enter');
+
+    const annos = await editor.annos();
+    expect(annos).toHaveLength(1);
+    expect(annos[0]?.text).toBe('after');
+    expect(annos[0]?.x).toBeCloseTo(200, 0);
+    expect(annos[0]?.y).toBeCloseTo(200, 0);
+  });
+
+  test('a re-edit is one undo entry that restores the old text', async ({ editor, page }) => {
+    await editor.writeText(200, 200, 'before');
+    const afterCreate = (await editor.state()).undoDepth;
+
+    await editor.tool('select');
+    await editor.dblclick(210, 210);
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.type('after');
+    await page.keyboard.press('Enter');
+    expect((await editor.state()).undoDepth).toBe(afterCreate + 1);
+
+    await page.click('#btnUndo');
+    const annos = await editor.annos();
+    expect(annos).toHaveLength(1);
+    expect(annos[0]?.text).toBe('before');
+  });
+
+  test('re-editing to the same string is not a change', async ({ editor, page }) => {
+    await editor.writeText(200, 200, 'same');
+    const before = (await editor.state()).undoDepth;
+
+    await editor.tool('select');
+    await editor.dblclick(210, 210);
+    await page.keyboard.press('Enter');
+
+    const state = await editor.state();
+    expect(state.undoDepth).toBe(before);
+    expect(state.annos[0]?.text).toBe('same');
+  });
+
+  test('emptying a label deletes it, and undo brings it back', async ({ editor, page }) => {
+    await editor.writeText(200, 200, 'doomed');
+    await editor.tool('select');
+    await editor.dblclick(210, 210);
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Delete');
+    await page.keyboard.press('Enter');
+
+    expect(await editor.annos()).toEqual([]);
+    await page.click('#btnUndo');
+    const annos = await editor.annos();
+    expect(annos).toHaveLength(1);
+    expect(annos[0]?.text).toBe('doomed');
+  });
+
+  test('the canvas stops painting the text being re-edited', async ({ editor, page }) => {
+    await editor.tool('text');
+    await page.selectOption('#fontSize', '84');
+    await editor.click(200, 200);
+    await page.keyboard.type('MMMM');
+    await page.keyboard.press('Enter');
+
+    // Polled: the canvas repaints on the next frame, not on the interaction.
+    const box = { x: 200, y: 200, w: 240, h: 100 };
+    await expect.poll(() => editor.paints(box, '#ef4444')).toBe(true);
+
+    await editor.tool('select');
+    await editor.dblclick(210, 230);
+    expect((await editor.state()).editing?.mode).toBe('edit');
+    await expect.poll(() => editor.paints(box, '#ef4444')).toBe(false);
+  });
+
+  test('Enter on a selected label opens it for editing', async ({ editor, page }) => {
+    await editor.writeText(200, 200, 'selected');
+    await editor.tool('select');
+    await editor.click(210, 210);
+    expect((await editor.state()).selection).toEqual([0]);
+
+    await page.keyboard.press('Enter');
+    const editing = (await editor.state()).editing;
+    expect(editing?.mode).toBe('edit');
+    expect(editing?.index).toBe(0);
+    expect(editing?.draft).toBe('selected');
+  });
+
+  test('the text tool reopens an existing label rather than stacking a new one', async ({
+    editor,
+    page,
+  }) => {
+    await editor.writeText(200, 200, 'existing');
+    await editor.click(210, 210);
+    expect((await editor.state()).editing?.mode).toBe('edit');
+
+    await page.keyboard.press('Escape');
+    expect(await editor.annos()).toHaveLength(1);
+  });
+});
+
