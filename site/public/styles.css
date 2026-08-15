@@ -572,6 +572,51 @@ footer a:hover { color: var(--text-primary); }
   }
 }
 
+/* ------------------------------------------------- cross-document motion */
+
+/* Page to page navigation, without a single line of JavaScript.
+   `navigation: auto` is the only opt-in there is; both the page being left and
+   the page being entered have to declare it, which is why this lives in the
+   shared stylesheet every page already loads. Browsers that do not implement
+   it drop the whole at-rule and navigate normally, which is a complete and
+   acceptable outcome, not a fallback to patch around. */
+@view-transition {
+  navigation: auto;
+}
+
+/* Timing goes on the group, which the image pair and the old and new
+   snapshots inherit, so the fade cannot drift out of step with the morph.
+   Kept short: this should register as continuity, not as an animation. */
+::view-transition-group(root) {
+  animation-duration: 0.24s;
+  animation-timing-function: var(--ease-soft-out);
+}
+
+/* The masthead is the one thing common to every inner page, so naming it lets
+   it hold still while the article underneath it changes. The name is a bare
+   identifier, must be unique in the document, and has to match on both sides
+   of the navigation, which a shared stylesheet guarantees. The home page
+   masthead is its hero rather than this header, so on that one leg the header
+   animates in on its own, which is the correct graceful outcome. */
+.site-header { view-transition-name: site-header; }
+
+::view-transition-group(site-header) {
+  animation-duration: 0.24s;
+  animation-timing-function: var(--ease-soft-out);
+}
+
+/* The blanket reduced-motion rule above cannot reach these: `*` does not match
+   view transition pseudo-elements. Cutting the animation leaves the transition
+   mechanism in place and simply swaps instantly, which is what the reduced
+   motion request actually asks for. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 860px) {
   .steps { grid-template-columns: 1fr; }
 }
