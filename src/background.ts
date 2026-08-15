@@ -6,6 +6,8 @@
 import { getSettings } from './lib/settings';
 import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
 import {
+  HIJACK,
+  HIJACK_NOTICE,
   countdownSteps,
   dataUrlToBlob,
   gridPositions,
@@ -28,6 +30,7 @@ import type {
   PageMetrics,
   Rect,
   RuntimeMsg,
+  ScrollProbe,
   ScrollResult,
 } from './lib/types';
 
@@ -203,6 +206,7 @@ async function startCapture(
     let clip: Rect;
     let tileCount: number;
     let truncated = false;
+    let notice: string | undefined;
     let engine = settings.engine;
     let title = tab.title ?? '';
     let url = tab.url ?? '';
@@ -249,12 +253,22 @@ async function startCapture(
       const result = await stitchCapture(tab, capId, selection, pickedScroller, settings, (done, total) =>
         badge.set(`${Math.round((done / total) * 100)}%`)
       );
-      ({ clip, tileCount, truncated } = result);
+      ({ clip, tileCount, truncated, notice } = result);
       title = result.title || title;
       url = result.url || url;
     }
 
-    const record = makeRecord({ id: capId, mode, engine, title, url, tileCount, truncated, clip });
+    const record = makeRecord({
+      id: capId,
+      mode,
+      engine,
+      title,
+      url,
+      tileCount,
+      truncated,
+      clip,
+      ...(notice ? { notice } : {}),
+    });
     await putCapture(record);
     await pruneHistory(settings.historyLimit);
 
@@ -360,6 +374,7 @@ interface StitchResult {
   truncated: boolean;
   title: string;
   url: string;
+  notice?: string;
 }
 
 async function stitchCapture(
@@ -402,8 +417,38 @@ async function stitchCapture(
     freezeAnimations: settings.freezeAnimations,
   });
 
+  const remeasure = async () => {
+    metrics = await sendToTab<PageMetrics>(tabId, {
+      type: 'fs:measure',
+      maxHeight: settings.maxCaptureHeight,
+      usePicked: pickedScroller,
+    });
+    clip = clipFor(metrics);
+  };
+
   try {
+    // Pages that drive their own scrolling report a tall page but never move, which
+    // would stitch the same frame into every tile. The probe tries to get them moving
+    // and, failing that, keeps the capture honest: the visible area plus a note.
+    let notice: string | undefined;
     if (
+      !pickedScroller &&
+      !metrics.containerRect &&
+      clip.h > metrics.vpH + HIJACK.minOverflow
+    ) {
+      const probe = await sendToTab<ScrollProbe>(tabId, {
+        type: 'fs:probeScroll',
+        maxY: clip.y + clip.h,
+      });
+      if (probe.recovered) await remeasure();
+      else if (probe.blocked) {
+        notice = HIJACK_NOTICE;
+        clip = intersect(clip, { x: 0, y: 0, w: metrics.vpW, h: metrics.vpH });
+      }
+    }
+
+    if (
+      !notice &&
       (settings.prescroll || settings.autoLoadMore) &&
       clip.h > (metrics.containerRect?.h ?? metrics.vpH)
     ) {
@@ -414,12 +459,7 @@ async function stitchCapture(
         ...(settings.autoLoadMore ? { autoLoadMaxHeight: settings.maxCaptureHeight } : {}),
       });
       // Lazy-loaded content can grow the page; re-measure so the grid covers it.
-      metrics = await sendToTab<PageMetrics>(tabId, {
-        type: 'fs:measure',
-        maxHeight: settings.maxCaptureHeight,
-        usePicked: pickedScroller,
-      });
-      clip = clipFor(metrics);
+      await remeasure();
     }
 
     // Build the scroll grid. Positions are clamped by the page itself; we record
@@ -465,6 +505,7 @@ async function stitchCapture(
       truncated: metrics.truncated,
       title: metrics.title,
       url: metrics.url,
+      ...(notice ? { notice } : {}),
     };
   } finally {
     await sendToTab(tabId, { type: 'fs:restore' }).catch(() => undefined);
