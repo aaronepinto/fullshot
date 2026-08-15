@@ -8,6 +8,16 @@ import { createServer } from 'node:http';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
+/**
+ * @typedef {object} Scenario
+ * @property {string} name Label used in log lines and screenshot filenames.
+ * @property {string} path Path to request from the fixture server.
+ * @property {number} minW Narrowest composed width that still counts as a pass.
+ * @property {number} minH Shortest composed height that still counts as a pass.
+ * @property {number} [maxH] Tallest composed height, where overshooting is itself a bug.
+ */
+
+/** @type {Scenario[]} */
 export const SCENARIOS = [
   // 60px sticky header + 8 × 500px sections = 4060 CSS px, at any DPR ≥ 1.
   { name: 'full-page', path: '/', minW: 1100, minH: 4000 },
@@ -18,22 +28,33 @@ export const SCENARIOS = [
 ];
 
 export async function startFixtureServer() {
+  /** @type {Record<string, Buffer>} */
   const pages = {
     '/': await readFile(`${ROOT}tests/fixture.html`),
     '/container': await readFile(`${ROOT}tests/fixture-container.html`),
   };
   const server = createServer((req, res) => {
     res.setHeader('content-type', 'text/html');
-    res.end(pages[req.url] ?? pages['/']);
+    res.end(pages[req.url ?? '/'] ?? pages['/']);
   });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
+
+  const address = server.address();
+  if (address === null || typeof address === 'string') {
+    throw new Error('The fixture server did not bind to a TCP port');
+  }
   return {
-    base: `http://127.0.0.1:${server.address().port}`,
+    base: `http://127.0.0.1:${address.port}`,
     close: () => server.close(),
   };
 }
 
-/** Parses the editor's "W × H" stat and checks it against a scenario's bounds. */
+/**
+ * Parses the editor's "W × H" stat and checks it against a scenario's bounds.
+ * @param {string} label Browser and scenario, for the error message.
+ * @param {string | null} text The editor's #statDims text.
+ * @param {Scenario} scenario
+ */
 export function assertComposed(label, text, { minW, minH, maxH }) {
   const m = /(\d+)\s*×\s*(\d+)/.exec(text ?? '');
   if (!m) throw new Error(`[${label}] Could not parse dimensions from "${text}"`);
