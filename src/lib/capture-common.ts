@@ -100,6 +100,32 @@ export function isScrollableTarget(
   );
 }
 
+/** Debug-target row as returned by CDP Target.getTargets. */
+export interface FrameTargetInfo {
+  targetId: string;
+  type: string;
+  url: string;
+}
+
+/**
+ * Locates the CDP target for a cross-origin iframe by URL. Exact match wins, then a
+ * match ignoring the fragment (frames often self-navigate to anchors), then the only
+ * iframe target there is (covers redirects on single-embed pages).
+ */
+export function pickFrameTarget<T extends FrameTargetInfo>(
+  targets: readonly T[],
+  frameUrl: string
+): T | null {
+  const frames = targets.filter((t) => t.type === 'iframe');
+  const exact = frames.find((t) => t.url === frameUrl);
+  if (exact) return exact;
+  const noHash = (u: string) => u.split('#', 1)[0] ?? u;
+  const want = noHash(frameUrl);
+  const loose = frames.find((t) => noHash(t.url) === want);
+  if (loose) return loose;
+  return frames.length === 1 ? frames[0]! : null;
+}
+
 /** Chip text for the element picker: tag name plus rounded CSS pixel size. */
 export function elementLabel(tagName: string, w: number, h: number): string {
   return `${tagName.toLowerCase()} · ${Math.round(w)} × ${Math.round(h)}`;
