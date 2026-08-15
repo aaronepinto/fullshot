@@ -15,7 +15,8 @@
     "e2e": "node tests/e2e.mjs",
     "e2e:firefox": "node tests/e2e-firefox.mjs",
     "lint:firefox": "web-ext lint --source-dir dist-firefox",
-    "test": "bun test tests/unit --coverage"
+    "test": "bun test tests/unit --coverage",
+    "build:store-fallback": "node scripts/gen-icons.mjs && node build.mjs --target=store-fallback"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

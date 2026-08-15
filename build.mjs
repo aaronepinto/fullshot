@@ -7,12 +7,18 @@ const watch = process.argv.includes('--watch');
 const zip = process.argv.includes('--zip');
 const targetArg = process.argv.find((a) => a.startsWith('--target='));
 const buildTarget = targetArg ? targetArg.slice('--target='.length) : 'chrome';
-if (buildTarget !== 'chrome' && buildTarget !== 'firefox') {
-  console.error(`Unknown --target=${buildTarget}, expected chrome or firefox`);
+if (buildTarget !== 'chrome' && buildTarget !== 'firefox' && buildTarget !== 'store-fallback') {
+  console.error(`Unknown --target=${buildTarget}, expected chrome, firefox, or store-fallback`);
   process.exit(1);
 }
-const outdir = buildTarget === 'firefox' ? 'dist-firefox' : 'dist';
-const zipName = buildTarget === 'firefox' ? 'screencappy-firefox.zip' : 'screencappy.zip';
+const outdir =
+  buildTarget === 'firefox' ? 'dist-firefox' : buildTarget === 'store-fallback' ? 'dist-store-fallback' : 'dist';
+const zipName =
+  buildTarget === 'firefox'
+    ? 'screencappy-firefox.zip'
+    : buildTarget === 'store-fallback'
+      ? 'screencappy-store-fallback.zip'
+      : 'screencappy.zip';
 
 const entries = {
   background: 'src/background.ts',
@@ -45,6 +51,11 @@ async function copyStatic() {
   let manifest = JSON.parse(await readFile('src/manifest.json', 'utf8'));
   manifest.version = pkg.version;
   if (buildTarget === 'firefox') manifest = toFirefoxManifest(manifest);
+  // The store-fallback build drops the debugger permission entirely; the code
+  // feature-detects chrome.debugger and hides the captures that need it.
+  if (buildTarget === 'store-fallback') {
+    manifest.permissions = manifest.permissions.filter((p) => p !== 'debugger');
+  }
   await writeFile(`${outdir}/manifest.json`, JSON.stringify(manifest, null, 2));
   await cp('src/editor/editor.html', `${outdir}/editor.html`);
   await cp('src/editor/editor.css', `${outdir}/editor.css`);

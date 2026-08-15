@@ -22,7 +22,7 @@ import {
   turboCapture,
   turboMobileCapture,
 } from './cdp';
-import { requestDebuggerPermission } from './lib/debugger-permission';
+import { debuggerAvailable, requestDebuggerPermission } from './lib/debugger-permission';
 import { pdfFilename } from './lib/filename';
 import type {
   CaptureContentMsg,
@@ -82,12 +82,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Capture full page in 5s',
     contexts: ['page', 'action'],
   });
-  chrome.contextMenus.create({
+  if (debuggerAvailable()) chrome.contextMenus.create({
     id: 'fs-mobile',
     title: 'Capture as mobile (390px)',
     contexts: ['page', 'action'],
   });
-  chrome.contextMenus.create({
+  if (debuggerAvailable()) chrome.contextMenus.create({
     id: 'fs-pdf',
     title: 'Save as searchable PDF',
     contexts: ['page', 'action'],
