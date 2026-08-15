@@ -1,0 +1,39 @@
+# Caching rules for the static assets. Workers Assets reads this file from the
+# assets directory and never serves it.
+#
+# Without it every asset is served `max-age=0, must-revalidate`, which is the
+# platform default. That is correct for HTML and wrong for everything else: it
+# put a conditional request on the stylesheet, both icons and all three
+# preloaded fonts on *every* navigation. The stylesheet one is the expensive
+# one, because it is render blocking and cannot even be discovered until the
+# document has arrived, so each click cost two serialised round trips before
+# anything appeared. With `@view-transition` in play the old page stays frozen
+# on screen for that whole time, which is what read as janky navigation.
+#
+# Rules are matched in order and later matches win, so the catch-all below is
+# the default and everything after it is a deliberate exception. The catch-all
+# has to carry the pages: they are served from clean paths like /faq, which no
+# extension pattern matches.
+
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/fonts/*
+  # The filename identifies the cut, so a different font is a different file
+  # rather than a new version of this one. Nothing here can change in place.
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  # Immediately stale, but usable while it revalidates in the background, so the
+  # stylesheet never blocks a navigation on the network. The cost is that the
+  # first view after a deploy can paint with the previous stylesheet; it repairs
+  # itself on the next navigation. Worth it here because the two are only loosely
+  # coupled: old rules against new markup lose a refinement, they do not break a
+  # page. Deliberately not extended to the HTML, where a stale view is the content.
+  Cache-Control: public, max-age=0, stale-while-revalidate=86400
+
+/*.png
+  Cache-Control: public, max-age=604800
+
+/*.svg
+  Cache-Control: public, max-age=604800

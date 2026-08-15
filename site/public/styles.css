@@ -77,7 +77,7 @@
   --ease-soft-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-instant: 0.15s;
   --duration-fast: 0.25s;
-  --duration-view: 0.9s;
+  --duration-view: 0.42s;
 
   --content-max-width: 960px;
   --content-max-width-reading: 700px;
@@ -562,13 +562,20 @@ footer a:hover { color: var(--text-primary); }
 
 /* ---------------------------------------------------------------- motion */
 
+/* The home page hero's entrance. It replays on every arrival, which includes
+   navigating back from any inner page, so it has to be short enough to sit
+   inside the page transition rather than continuing for most of a second after
+   it: at 0.9s the hero was still resolving long after the navigation had
+   finished, which read as the page arriving twice. The blur went with it. It
+   was the most visible part of the smear, and animating a filter over a hero
+   this size re-rasterizes the whole layer every frame for the privilege. */
 .rise { animation: rise-in var(--duration-view) var(--ease-soft-out) both; }
 .rise-2 { animation-delay: 0.08s; }
 .rise-3 { animation-delay: 0.16s; }
 
 @keyframes rise-in {
-  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -587,20 +594,35 @@ footer a:hover { color: var(--text-primary); }
    shared stylesheet every page already loads. Browsers that do not implement
    it drop the whole at-rule and navigate normally, which is a complete and
    acceptable outcome, not a fallback to patch around. */
-/* view-transition-flash-guard: paint the root dark before first frame */
-html { background-color: #0a0a0c; }
+/* The root needs its own background rather than inheriting the body's, because
+   during a navigation the body's snapshot is mid-fade and whatever the root is
+   painted with shows through the gap. It has to be the themed canvas: a fixed
+   ink value flashed black through every transition on the cream shell, and sat
+   behind the overscroll area there too. */
+html { background-color: var(--surface-canvas); }
 
 @view-transition {
   navigation: auto;
 }
 
-/* Timing goes on the group, which the image pair and the old and new
-   snapshots inherit, so the fade cannot drift out of step with the morph.
-   Kept short: this should register as continuity, not as an animation. */
-::view-transition-group(root) {
-  animation-duration: 0.24s;
-  animation-timing-function: var(--ease-soft-out);
+/* The default root animation cross-fades the two pages at equal opacity, which
+   on pages that are wall-to-wall prose means several hundred milliseconds of
+   two different sets of paragraphs legible at once. That double exposure is the
+   part that read as jank; it is not motion, it is unreadable text.
+   Sequencing the pair fixes it: the outgoing page is gone before the incoming
+   one is worth reading, so there is never a frame with two paragraphs in it.
+   Timing goes on the old and new snapshots rather than the group, since the two
+   halves are deliberately no longer in step. */
+::view-transition-old(root) {
+  animation: vt-fade-out 0.09s var(--ease-soft-out) both;
 }
+
+::view-transition-new(root) {
+  animation: vt-fade-in 0.16s 0.07s var(--ease-soft-out) both;
+}
+
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
 
 /* The masthead is the one thing common to every inner page, so naming it lets
    it hold still while the article underneath it changes. The name is a bare
@@ -611,7 +633,7 @@ html { background-color: #0a0a0c; }
 .site-header { view-transition-name: site-header; }
 
 ::view-transition-group(site-header) {
-  animation-duration: 0.24s;
+  animation-duration: 0.23s;
   animation-timing-function: var(--ease-soft-out);
 }
 
