@@ -10,6 +10,7 @@ export interface Settings {
   hideSticky: boolean;
   freezeAnimations: boolean;
   prescroll: boolean;
+  autoLoadMore: boolean; // keep scrolling to the bottom so infinite-scroll pages load first
   afterCapture: 'editor' | 'download' | 'both';
   pdfPageMode: 'single' | 'a4' | 'letter';
   saveAs: boolean;
@@ -28,6 +29,7 @@ export const DEFAULTS: Settings = {
   hideSticky: true,
   freezeAnimations: true,
   prescroll: true,
+  autoLoadMore: false,
   afterCapture: 'editor',
   pdfPageMode: 'single',
   saveAs: false,

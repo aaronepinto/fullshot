@@ -402,11 +402,15 @@ async function stitchCapture(
   });
 
   try {
-    if (settings.prescroll && clip.h > (metrics.containerRect?.h ?? metrics.vpH)) {
+    if (
+      (settings.prescroll || settings.autoLoadMore) &&
+      clip.h > (metrics.containerRect?.h ?? metrics.vpH)
+    ) {
       await sendToTab(tabId, {
         type: 'fs:prescroll',
         stepY: metrics.containerRect?.h ?? metrics.vpH,
         maxY: clip.y + clip.h,
+        ...(settings.autoLoadMore ? { autoLoadMaxHeight: settings.maxCaptureHeight } : {}),
       });
       // Lazy-loaded content can grow the page; re-measure so the grid covers it.
       metrics = await sendToTab<PageMetrics>(tabId, {
