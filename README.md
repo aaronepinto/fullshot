@@ -10,7 +10,7 @@ Free, open source, and private by design.
 
 [![CI](https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/aaronepinto/smollet-screencappy?labelColor=0f172a&color=0ea5e9)](https://github.com/aaronepinto/smollet-screencappy/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?labelColor=0f172a&color=0ea5e9)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue?labelColor=0f172a&color=0ea5e9)](LICENSE)
 
 [Website](https://screencappy.smollet.app) &nbsp;·&nbsp;
 [Download](https://github.com/aaronepinto/smollet-screencappy/releases/latest) &nbsp;·&nbsp;
@@ -20,7 +20,7 @@ Free, open source, and private by design.
 
 </div>
 
-Screencappy is a free, MIT licensed Chrome extension that captures full page screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF. Everything that sits behind a paywall elsewhere, annotation, blur and redaction, emoji stamps, PDF export, is free here. Nothing ever leaves your machine: no account, no cloud, no analytics, and no host permissions, so the extension cannot read a page until you ask it to.
+Screencappy is a free, Apache-2.0 licensed Chrome extension that captures full page screenshots in one click, annotates them, and exports them as PNG, JPEG, WebP or PDF. Everything that sits behind a paywall elsewhere, annotation, blur and redaction, emoji stamps, PDF export, is free here. Nothing ever leaves your machine: no account, no cloud, no analytics, and no host permissions, so the extension cannot read a page until you ask it to.
 
 ## 📦 Install
 
@@ -161,4 +161,4 @@ Security reports go through [GitHub's private advisory flow](https://github.com/
 
 ## 📄 License
 
-[MIT](LICENSE) © Screencappy contributors
+[Apache-2.0](LICENSE) © Screencappy contributors

@@ -67,7 +67,7 @@ The order the best 2026 READMEs converge on:
 ```markdown
 [![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/OWNER/REPO?labelColor=0f172a&color=0ea5e9)](https://github.com/OWNER/REPO/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?labelColor=0f172a&color=0ea5e9)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue?labelColor=0f172a&color=0ea5e9)](LICENSE)
 ```
 
 **Do not:** exceed about 6 badges, use `for-the-badge` style, add a coverage badge, add a `## Table of Contents`, use `<details>` collapsibles, build a competitor comparison table, use `#gh-dark-mode-only` image hacks, or duplicate your docs site.
