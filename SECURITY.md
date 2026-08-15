@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Screencappy ships as a browser extension, so there is only ever one supported version: the latest release. Store installs update automatically. If you loaded an unpacked build, pull the [latest release](https://github.com/aaronepinto/smollet-screencappy/releases/latest) before reporting anything.
+Screencappy ships as a browser extension, so there is only ever one supported version: the latest release. Store installs update automatically. If you loaded an unpacked build, pull the [latest release](https://github.com/smollet-app/screencappy/releases/latest) before reporting anything.
 
 | Version | Supported |
 | :-- | :-- |
@@ -13,7 +13,7 @@ Screencappy ships as a browser extension, so there is only ever one supported ve
 
 **Please do not open a public issue for a security report.**
 
-Report it privately through GitHub: [Report a vulnerability](https://github.com/aaronepinto/smollet-screencappy/security/advisories/new). This opens a draft advisory visible only to you and the maintainers, with a private fork to develop the fix in.
+Report it privately through GitHub: [Report a vulnerability](https://github.com/smollet-app/screencappy/security/advisories/new). This opens a draft advisory visible only to you and the maintainers, with a private fork to develop the fix in.
 
 If you cannot use GitHub advisories, email `security@smollet.app` instead.
 <!-- TODO: confirm this mailbox exists and is monitored, or swap it for the address

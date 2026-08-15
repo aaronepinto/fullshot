@@ -8,15 +8,15 @@
 <br>
 Free, open source, and private by design.
 
-[![CI](https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aaronepinto/smollet-screencappy/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/aaronepinto/smollet-screencappy?labelColor=0f172a&color=0ea5e9)](https://github.com/aaronepinto/smollet-screencappy/releases/latest)
+[![CI](https://github.com/smollet-app/screencappy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/smollet-app/screencappy/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/smollet-app/screencappy?labelColor=0f172a&color=0ea5e9)](https://github.com/smollet-app/screencappy/releases/latest)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue?labelColor=0f172a&color=0ea5e9)](LICENSE)
 
 [Website](https://screencappy.smollet.app) &nbsp;·&nbsp;
-[Download](https://github.com/aaronepinto/smollet-screencappy/releases/latest) &nbsp;·&nbsp;
+[Download](https://github.com/smollet-app/screencappy/releases/latest) &nbsp;·&nbsp;
 [FAQ](https://screencappy.smollet.app/faq) &nbsp;·&nbsp;
 [Privacy](https://screencappy.smollet.app/privacy) &nbsp;·&nbsp;
-[Report a bug](https://github.com/aaronepinto/smollet-screencappy/issues/new/choose)
+[Report a bug](https://github.com/smollet-app/screencappy/issues/new/choose)
 
 </div>
 
@@ -28,7 +28,7 @@ Store listings are not live yet, so the release build is the distribution channe
 
 **From a release:**
 
-1. Download `screencappy.zip` from the [latest release](https://github.com/aaronepinto/smollet-screencappy/releases/latest) and unzip it.
+1. Download `screencappy.zip` from the [latest release](https://github.com/smollet-app/screencappy/releases/latest) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode**.
 3. Click **Load unpacked** and pick the unzipped folder.
 
@@ -170,9 +170,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full loop, commit conventions, an
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Found a page Screencappy captures badly? That is the most useful bug report you can file, and there is [a dedicated form](https://github.com/aaronepinto/smollet-screencappy/issues/new/choose) for it. Include the URL.
+Found a page Screencappy captures badly? That is the most useful bug report you can file, and there is [a dedicated form](https://github.com/smollet-app/screencappy/issues/new/choose) for it. Include the URL.
 
-Security reports go through [GitHub's private advisory flow](https://github.com/aaronepinto/smollet-screencappy/security/advisories/new), not the public issue tracker. See [SECURITY.md](SECURITY.md).
+Security reports go through [GitHub's private advisory flow](https://github.com/smollet-app/screencappy/security/advisories/new), not the public issue tracker. See [SECURITY.md](SECURITY.md).
 
 ## 📄 License
 

@@ -8,14 +8,14 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 A **real, public URL where a capture comes out wrong**. Screenshot stitching breaks in site-specific ways: an unusual sticky header, a virtualized list, a canvas that repaints on scroll, a lazy-loader that needs two passes. Those bugs are almost impossible to guess at and trivial to fix once someone hands over a page that reproduces them.
 
-Use the [capture problem form](https://github.com/aaronepinto/smollet-screencappy/issues/new/choose) and include the URL, even if the page looks boring.
+Use the [capture problem form](https://github.com/smollet-app/screencappy/issues/new/choose) and include the URL, even if the page looks boring.
 
 ## Setup
 
 You need [Bun](https://bun.com) and a Chromium browser. Node also works if you prefer it, but the lockfile and CI are Bun.
 
 ```sh
-git clone https://github.com/aaronepinto/smollet-screencappy.git
+git clone https://github.com/smollet-app/screencappy.git
 cd screencappy
 bun install
 bun run build
@@ -118,4 +118,4 @@ You do not need to do anything to cut a release. release-please keeps an open re
 
 ## Questions
 
-Open an [issue](https://github.com/aaronepinto/smollet-screencappy/issues/new/choose) for bugs, questions, and ideas. For anything security related, see [SECURITY.md](SECURITY.md).
+Open an [issue](https://github.com/smollet-app/screencappy/issues/new/choose) for bugs, questions, and ideas. For anything security related, see [SECURITY.md](SECURITY.md).

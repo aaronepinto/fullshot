@@ -49,7 +49,7 @@ Every figure on these pages was read from the vendor's own site or Chrome Web St
 
 ## Source
 
-- [GitHub repository](https://github.com/aaronepinto/smollet-screencappy): Full source, Apache-2.0 licensed, TypeScript, Manifest V3, zero runtime dependencies
-- [README](https://github.com/aaronepinto/smollet-screencappy#readme): Feature list, architecture notes, and how a stitch capture flows end to end
-- [Releases](https://github.com/aaronepinto/smollet-screencappy/releases/latest): Packaged extension builds
-- [Apache-2.0 licence](https://github.com/aaronepinto/smollet-screencappy/blob/main/LICENSE): Full licence text
+- [GitHub repository](https://github.com/smollet-app/screencappy): Full source, Apache-2.0 licensed, TypeScript, Manifest V3, zero runtime dependencies
+- [README](https://github.com/smollet-app/screencappy#readme): Feature list, architecture notes, and how a stitch capture flows end to end
+- [Releases](https://github.com/smollet-app/screencappy/releases/latest): Packaged extension builds
+- [Apache-2.0 licence](https://github.com/smollet-app/screencappy/blob/main/LICENSE): Full licence text
