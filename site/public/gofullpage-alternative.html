@@ -56,6 +56,12 @@
           {
             "@type": "ListItem",
             "position": 2,
+            "name": "Alternatives",
+            "item": "https://screencappy.smollet.app/alternatives"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
             "name": "GoFullPage alternative"
           }
         ]
@@ -70,7 +76,7 @@
     <span class="byline">by <a href="https://smollet.app">Smollet</a></span>
   </header>
   <main class="prose">
-    <nav class="crumbs"><a href="/">Screencappy</a> / GoFullPage alternative</nav>
+    <nav class="crumbs"><a href="/">Screencappy</a> / <a href="/alternatives">Alternatives</a> / GoFullPage alternative</nav>
 
     <h1>A free, open source GoFullPage alternative</h1>
     <p class="verified">Last verified: August 15, 2026</p>
@@ -84,6 +90,14 @@
     <p>If you want a full page screenshot tool whose source you can read, that costs nothing, and
     that cannot send your captures anywhere, Screencappy is the direct answer. If you want a long
     established product with a large existing user base behind it, GoFullPage is the incumbent.</p>
+
+    <h2>What does GoFullPage do well?</h2>
+
+    <p>It is fast, it is simple, and it handles hard pages. Reviewers repeatedly describe capturing
+    very long pages to PDF without fuss, and many have used it daily for years.</p>
+
+    <p>Its scroll capture is genuinely good, including on pages with inner scrollable regions. If
+    one click capture is all you need, the free tier covers it and always has.</p>
 
     <h2>How the two compare</h2>
 
@@ -106,24 +120,85 @@
           <tr>
             <th scope="row">Cost</th>
             <td>Free, with no paid tier</td>
-            <td>Free tier, with a paid Premium upgrade</td>
+            <td>Free tier, Premium $12 USD per year</td>
           </tr>
           <tr>
-            <th scope="row">Annotation tools</th>
+            <th scope="row">Annotation and cropping</th>
             <td>Included at no cost</td>
             <td>Part of the paid Premium upgrade</td>
+          </tr>
+          <tr>
+            <th scope="row">Account required</th>
+            <td>Never</td>
+            <td>Not for free use, yes for Premium</td>
+          </tr>
+          <tr>
+            <th scope="row">Captures uploaded to a server</th>
+            <td>No</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <th scope="row">Host permissions at install</th>
+            <td>None requested</td>
+            <td>Not stated in a readable manifest</td>
+          </tr>
+          <tr>
+            <th scope="row">Export formats</th>
+            <td>PNG, JPEG, WebP, PDF</td>
+            <td>PNG, JPG, PDF, clipboard</td>
+          </tr>
+          <tr>
+            <th scope="row">Browsers</th>
+            <td>Chrome</td>
+            <td>Chrome and Edge</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="note">
-      <p>This table is deliberately short. Every cell in the GoFullPage column is a fact published
-      by the vendor themselves, on their own site or store listing, and checkable on the date above.</p>
+      <p>Every cell in the GoFullPage column is a fact published by the vendor themselves, on their
+      own site or store listing, and checkable on the date above.</p>
       <p>Screencappy makes no claim about another vendor's permissions, data handling or source
-      code, because those are not things we can verify from the outside. For anything not listed
-      here, check GoFullPage's own site.</p>
+      code, because those are not things we can verify from the outside. The permissions row says
+      what it says because GoFullPage's shipped manifest could not be read on the date above, not
+      because anything is being implied about it. For anything not listed here, check GoFullPage's
+      own site.</p>
     </div>
+
+    <h2>What does GoFullPage cost?</h2>
+
+    <p>The capture itself is free and unlimited. The editor is not.</p>
+
+    <p>GoFullPage Premium costs $12 USD per year, described on the site as "$1 a month", auto
+    renewing, with a seven day free trial. An Enterprise tier exists with no published price.</p>
+
+    <h2>Which GoFullPage features are behind the paywall?</h2>
+
+    <p>Cropping, annotation (blur, text, highlight), URL and timestamp stamping, and smart PDF page
+    splitting. GoFullPage's own comparison table marks all of these as Premium only.</p>
+
+    <p>Its FAQ is explicit that if you crop, edit, or annotate a screenshot, you need a premium
+    trial to download the edited version. In Screencappy the annotation tools are simply part of the
+    extension.</p>
+
+    <h2>Is GoFullPage open source?</h2>
+
+    <p>Not any more. It was, and its own FAQ says so plainly.</p>
+
+    <p>The project was maintained as an open source repository for years, and in 2018 the developer
+    moved to a private fork for further development. The shipping product today is proprietary, and
+    the Terms of Use prohibit reverse engineering. Screencappy's full source is public under
+    Apache-2.0.</p>
+
+    <h2>Does GoFullPage upload my screenshots?</h2>
+
+    <p>No, and this is a point in its favour. Its FAQ states that captures are held in browser
+    storage on your own computer and are not on any server.</p>
+
+    <p>One caveat worth knowing: GoFullPage's privacy policy is dated March 2019 and does not
+    mention screenshots or capture data at all, so that assurance lives in an FAQ rather than in the
+    policy document.</p>
 
     <h2>What does Screencappy include that is usually a paid upgrade?</h2>
 
@@ -179,17 +254,26 @@
       a menu or hold a hover state before the shot is taken.</li>
     </ul>
 
-    <h2>What happened to GoFullPage on the Chrome Web Store?</h2>
+    <h2>Which one should you use?</h2>
 
-    <p>According to GoFullPage's own blog posts dated 11 and 14 August 2026, their extension was
-    removed from the Chrome Web Store on about 10 August 2026 over a copyright claim that the vendor
-    disputes, and they state they are working with Google to have it restored. The vendor also says
-    this was not a security issue with their extension.</p>
+    <p>If you only ever take a screenshot and download it, GoFullPage's free tier is a solid choice
+    and you will not miss anything.</p>
 
-    <p>Screencappy is an unrelated, independently written project and has nothing to do with that
-    claim. It is mentioned here only because people looking for an alternative during that period
-    reasonably want to know what happened. For the current status, check GoFullPage's own site
-    rather than this page, which was last verified on the date above.</p>
+    <p>If you annotate, crop, or blur before sharing, that is where the two diverge: GoFullPage
+    charges for it and Screencappy does not. And if you want to read the code that touches your
+    pages, only one of them lets you.</p>
+
+    <h2>Where do I install GoFullPage right now?</h2>
+
+    <p>Check GoFullPage's own site. As of the date above, their homepage carries notices dated 11
+    and 14 August 2026 describing a temporary Chrome Web Store availability issue and pointing
+    people to a separately installable BETA extension, which is live and was last updated on 14
+    August 2026.</p>
+
+    <p>Screencappy is an unrelated, independently written project and has nothing to do with any of
+    that. It is mentioned here only because people comparing the two during that period reasonably
+    want to know where to find the other one. This is a live situation, so the vendor's own site is
+    the authority on it, not this page, which was last verified on the date above.</p>
 
     <h2>How do I install Screencappy?</h2>
 
@@ -208,7 +292,8 @@
     an area taller than the viewport.</p>
 
     <footer>
-      <p><a href="/">Screencappy home</a> · <a href="/faq">FAQ</a> ·
+      <p><a href="/alternatives">All comparisons</a> · <a href="/">Screencappy home</a> ·
+      <a href="/faq">FAQ</a> ·
       <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a> ·
       <a href="/privacy">Privacy policy</a> ·
       <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
