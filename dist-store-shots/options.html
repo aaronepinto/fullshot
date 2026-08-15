@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>screencappy settings</title>
+  <title>Screencappy Settings</title>
   <link rel="icon" href="icons/icon32.png" />
   <link rel="stylesheet" href="options.css" />
 </head>
@@ -12,7 +12,7 @@
     <header>
       <img src="icons/icon48.png" alt="" width="36" height="36" />
       <div>
-        <h1>screencappy</h1>
+        <h1>Screencappy</h1>
         <p>All settings sync with your browser profile. Captures never leave your device.</p>
       </div>
     </header>
@@ -24,8 +24,8 @@
         <label for="engine">Engine</label>
         <div class="control">
           <select id="engine">
-            <option value="stitch">Scroll &amp; stitch · no extra permissions (default)</option>
-            <option value="turbo">Turbo · one-shot capture via DevTools protocol</option>
+            <option value="stitch">Scroll &amp; stitch - no extra permissions (default)</option>
+            <option value="turbo">Turbo - one-shot capture via DevTools protocol</option>
           </select>
           <p class="hint" id="turboHint">
             Turbo captures the whole page in a single pass: faster, immune to sticky headers and
@@ -41,10 +41,10 @@
         <label for="captureDelayMs">Settle delay per step</label>
         <div class="control">
           <select id="captureDelayMs">
-            <option value="0">None · fastest</option>
+            <option value="0">None - fastest</option>
             <option value="150">150 ms (default)</option>
-            <option value="350">350 ms · slow pages</option>
-            <option value="800">800 ms · heavy animations</option>
+            <option value="350">350 ms - slow pages</option>
+            <option value="800">800 ms - heavy animations</option>
           </select>
           <p class="hint">How long to wait after each scroll before shooting (stitch engine).</p>
         </div>
@@ -85,7 +85,7 @@
           <select id="maxCaptureHeight">
             <option value="20000">20,000 px</option>
             <option value="40000">40,000 px (default)</option>
-            <option value="100000">100,000 px · I know what I'm doing</option>
+            <option value="100000">100,000 px - I know what I'm doing</option>
           </select>
         </div>
       </div>
@@ -94,11 +94,11 @@
         <label for="mobileCaptureWidth">Mobile capture width</label>
         <div class="control">
           <select id="mobileCaptureWidth">
-            <option value="320">320 px · small phones</option>
-            <option value="375">375 px · iPhone SE</option>
+            <option value="320">320 px - small phones</option>
+            <option value="375">375 px - iPhone SE</option>
             <option value="390">390 px (default)</option>
-            <option value="414">414 px · large phones</option>
-            <option value="430">430 px · iPhone Pro Max</option>
+            <option value="414">414 px - large phones</option>
+            <option value="430">430 px - iPhone Pro Max</option>
           </select>
           <p class="hint">
             Viewport width for the "Capture as mobile" context menu item, which reflows the page to a
@@ -115,9 +115,9 @@
         <label for="format">Default format</label>
         <div class="control">
           <select id="format">
-            <option value="png">PNG · lossless</option>
-            <option value="jpeg">JPEG · smaller files</option>
-            <option value="webp">WebP · modern &amp; small</option>
+            <option value="png">PNG - lossless</option>
+            <option value="jpeg">JPEG - smaller files</option>
+            <option value="webp">WebP - modern &amp; small</option>
           </select>
         </div>
       </div>
