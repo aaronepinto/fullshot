@@ -6,6 +6,7 @@ export interface Settings {
   quality: number; // 0..1, used for jpeg/webp
   filenameTemplate: string;
   captureDelayMs: number;
+  captureStartDelaySeconds: number; // countdown before every capture starts
   hideSticky: boolean;
   freezeAnimations: boolean;
   prescroll: boolean;
@@ -22,6 +23,7 @@ export const DEFAULTS: Settings = {
   quality: 0.92,
   filenameTemplate: '{domain} {date} {time}',
   captureDelayMs: 150,
+  captureStartDelaySeconds: 0,
   hideSticky: true,
   freezeAnimations: true,
   prescroll: true,

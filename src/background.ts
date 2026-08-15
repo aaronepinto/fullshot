@@ -5,7 +5,13 @@
  */
 import { getSettings } from './lib/settings';
 import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
-import { dataUrlToBlob, gridPositions, makeRecord, newCaptureId } from './lib/capture-common';
+import {
+  countdownSteps,
+  dataUrlToBlob,
+  gridPositions,
+  makeRecord,
+  newCaptureId,
+} from './lib/capture-common';
 import { captureCrossOriginFrame, hasDebuggerPermission, printToPdf, turboCapture } from './cdp';
 import { pdfFilename } from './lib/filename';
 import type {
@@ -61,6 +67,11 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['page', 'action'],
   });
   chrome.contextMenus.create({
+    id: 'fs-full-delayed',
+    title: 'Capture full page in 5s',
+    contexts: ['page', 'action'],
+  });
+  chrome.contextMenus.create({
     id: 'fs-pdf',
     title: 'Save as searchable PDF',
     contexts: ['page', 'action'],
@@ -76,6 +87,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!tab) return;
   if (info.menuItemId === 'fs-pdf') {
     void savePdf(tab);
+    return;
+  }
+  if (info.menuItemId === 'fs-full-delayed') {
+    void startCapture(tab, 'full', 5);
     return;
   }
   const mode: CaptureMode | null =
@@ -95,13 +110,25 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Capture orchestration
 // ---------------------------------------------------------------------------
 
-async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<void> {
+async function startCapture(
+  tab: chrome.tabs.Tab,
+  mode: CaptureMode,
+  startDelayOverrideS?: number
+): Promise<void> {
   const tabId = tab.id;
   if (tabId === undefined || busyTabs.has(tabId)) return;
   busyTabs.add(tabId);
   const badge = badgeFor(tabId);
   try {
     const settings = await getSettings();
+
+    // Countdown on the badge before touching the page, so the user can open
+    // menus or hover states first. The tab stays in busyTabs the whole time.
+    for (const s of countdownSteps(startDelayOverrideS ?? settings.captureStartDelaySeconds)) {
+      await badge.set(String(s));
+      await sleep(1000);
+    }
+
     const capId = newCaptureId();
     const injectable = !isRestrictedUrl(tab.url ?? '');
 
@@ -112,11 +139,17 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     if (mode === 'selection') {
       if (!injectable) throw new Error('This page does not allow region selection.');
       selection = await pickRegion(tabId);
-      if (!selection) return; // user cancelled
+      if (!selection) {
+        await badge.clear();
+        return; // user cancelled
+      }
     } else if (mode === 'element') {
       if (!injectable) throw new Error('This page does not allow element picking.');
       const pick = await pickElement(tabId);
-      if (!pick) return; // user cancelled
+      if (!pick) {
+        await badge.clear();
+        return; // user cancelled
+      }
       // Scrollable containers (including same-origin iframes) get their full content
       // via the inner-scroll machinery; everything else is just a clip over the page.
       // A cross-origin iframe additionally carries its URL for a CDP deep capture.

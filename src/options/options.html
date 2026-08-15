@@ -50,6 +50,22 @@
         </div>
       </div>
 
+      <div class="field">
+        <label for="captureStartDelaySeconds">Start delay</label>
+        <div class="control">
+          <select id="captureStartDelaySeconds">
+            <option value="0">None (default)</option>
+            <option value="3">3 seconds</option>
+            <option value="5">5 seconds</option>
+            <option value="10">10 seconds</option>
+          </select>
+          <p class="hint">
+            Countdown before every capture starts, so you can open menus or hover states first.
+            The toolbar badge shows the remaining seconds.
+          </p>
+        </div>
+      </div>
+
       <div class="field checkbox"><label><input type="checkbox" id="prescroll" /> Pre-scroll page first to trigger lazy-loaded images</label></div>
       <div class="field checkbox"><label><input type="checkbox" id="hideSticky" /> Pin sticky headers &amp; hide floating bars after the first frame</label></div>
       <div class="field checkbox"><label><input type="checkbox" id="freezeAnimations" /> Pause CSS animations during capture</label></div>
