@@ -54,7 +54,12 @@ async function main() {
     executablePath: findChrome(),
     pipe: true,
     enableExtensions: true,
-    args: ['--no-first-run', '--window-size=1200,800'],
+    args: [
+      '--no-first-run',
+      '--window-size=1200,800',
+      // Hosted CI runners need these to launch Chrome at all.
+      ...(process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
+    ],
   });
   await browser.installExtension(DIST_E2E);
 
