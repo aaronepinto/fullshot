@@ -133,6 +133,47 @@ export function drawAnno(ctx: Ctx, a: Anno, image: BigImage): void {
   ctx.restore();
 }
 
+/**
+ * Text metrics measured with the real font, cached on the annotation object and
+ * keyed by the text and size that produced them. The old monospace estimate made
+ * the selection rectangle and the hit region visibly wrong for wide or narrow
+ * strings, so clicking on visible glyphs could miss.
+ */
+const textMetrics = new WeakMap<object, { key: string; w: number; h: number }>();
+let sharedMeasurer: Ctx | null | undefined;
+
+function measurer(): Ctx | null {
+  if (sharedMeasurer === undefined) {
+    sharedMeasurer =
+      typeof OffscreenCanvas === 'function' ? new OffscreenCanvas(8, 8).getContext('2d') : null;
+  }
+  return sharedMeasurer;
+}
+
+/**
+ * Size of a rendered text run. Takes the measuring context so it stays testable;
+ * without one it falls back to a monospace estimate rather than throwing.
+ */
+export function measureText(text: string, size: number, ctx: Ctx | null = measurer()): {
+  w: number;
+  h: number;
+} {
+  const lines = text.split('\n');
+  const h = lines.length * size * 1.25;
+  if (!ctx) return { w: Math.max(...lines.map((l) => l.length), 1) * size * 0.62, h };
+  ctx.font = TEXT_FONT(size);
+  return { w: Math.max(...lines.map((l) => ctx.measureText(l).width), 1), h };
+}
+
+function textSize(a: Extract<Anno, { kind: 'text' }>): { w: number; h: number } {
+  const key = `${a.size}\u0000${a.text}`;
+  const cached = textMetrics.get(a);
+  if (cached?.key === key) return cached;
+  const m = measureText(a.text, a.size);
+  textMetrics.set(a, { key, ...m });
+  return m;
+}
+
 export function bounds(a: Anno): Rect {
   switch (a.kind) {
     case 'line':
@@ -165,18 +206,73 @@ export function bounds(a: Anno): Rect {
       return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
     }
     case 'text': {
-      const lines = a.text.split('\n');
-      const w = Math.max(...lines.map((l) => l.length), 1) * a.size * 0.62;
-      return { x: a.x, y: a.y, w, h: lines.length * a.size * 1.25 };
+      const m = textSize(a);
+      return { x: a.x, y: a.y, w: m.w, h: m.h };
     }
     case 'emoji':
       return { x: a.x - a.size / 2, y: a.y - a.size / 2, w: a.size, h: a.size };
   }
 }
 
+/**
+ * Whether a point lands on the annotation itself, not merely inside its bounding
+ * box. A bounding-box test let a large unfilled rectangle swallow every click in
+ * its empty interior and let a diagonal line claim its whole box, which is why
+ * picking one of several overlapping annotations used to feel random.
+ *
+ * `tol` is a screen-constant slop already converted to image units by the caller.
+ */
 export function hitTest(a: Anno, x: number, y: number, tol: number): boolean {
-  const b = bounds(a);
-  return x >= b.x - tol && x <= b.x + b.w + tol && y >= b.y - tol && y <= b.y + b.h + tol;
+  switch (a.kind) {
+    case 'line':
+    case 'arrow':
+      return distToSegment(x, y, a.x1, a.y1, a.x2, a.y2) <= Math.max(a.width / 2, tol);
+    case 'pen': {
+      const reach = Math.max(a.width / 2, tol);
+      if (a.points.length === 2) return Math.hypot(x - a.points[0]!, y - a.points[1]!) <= reach;
+      for (let i = 0; i + 3 < a.points.length; i += 2) {
+        const d = distToSegment(x, y, a.points[i]!, a.points[i + 1]!, a.points[i + 2]!, a.points[i + 3]!);
+        if (d <= reach) return true;
+      }
+      return false;
+    }
+    case 'rect': {
+      const r = norm(a);
+      const band = Math.max(a.width / 2, tol);
+      if (a.fill) return inRect(r, x, y, band);
+      // The stroke band only: outside the outer edge or inside the inner one misses.
+      return inRect(r, x, y, band) && !inRect(r, x, y, -band);
+    }
+    case 'ellipse': {
+      const r = norm(a);
+      const rx = Math.max(r.w / 2, 0.01);
+      const ry = Math.max(r.h / 2, 0.01);
+      const d = Math.hypot((x - (r.x + rx)) / rx, (y - (r.y + ry)) / ry);
+      // The band is in pixels and d is normalised, so convert with the tighter
+      // radius: that errs towards a slightly generous target rather than a mean one.
+      const band = Math.max(a.width / 2, tol) / Math.min(rx, ry);
+      return a.fill ? d <= 1 + band : Math.abs(d - 1) <= band;
+    }
+    case 'highlight':
+    case 'blur':
+      // Opaque regions: the whole interior is the annotation.
+      return inRect(norm(a), x, y, tol);
+    case 'text':
+    case 'emoji':
+      return inRect(bounds(a), x, y, tol);
+  }
+}
+
+function inRect(r: Rect, x: number, y: number, pad: number): boolean {
+  return x >= r.x - pad && x <= r.x + r.w + pad && y >= r.y - pad && y <= r.y + r.h + pad;
+}
+
+function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = dx * dx + dy * dy;
+  const t = len === 0 ? 0 : Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
 
 export function translateAnno(a: Anno, dx: number, dy: number): void {

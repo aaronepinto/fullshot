@@ -263,6 +263,28 @@ export class Editor {
     await this.page.keyboard.press('Enter');
   }
 
+  /**
+   * Zooms about an image-space point, so that point stays where it was on screen.
+   * Clicking the zoom buttons anchors the viewport centre instead, which puts most
+   * of the image off screen at high magnification.
+   */
+  async zoomAt(x: number, y: number, percent: number): Promise<void> {
+    await this.page.click('#zoom100');
+    const p = await this.at(x, y);
+    await this.page.mouse.move(p.x, p.y);
+    await this.page.keyboard.down('ControlOrMeta');
+    try {
+      const target = percent / 100;
+      for (let i = 0; i < 40; i++) {
+        const zoom = (await this.state()).zoom;
+        if (Math.abs(zoom - target) < 0.02) break;
+        await this.page.mouse.wheel(0, zoom < target ? -60 : 60);
+      }
+    } finally {
+      await this.page.keyboard.up('ControlOrMeta');
+    }
+  }
+
   async setZoom(percent: number): Promise<void> {
     await this.page.click('#zoom100');
     while ((await this.state()).zoom < percent / 100 - 0.001) await this.page.click('#zoomIn');
