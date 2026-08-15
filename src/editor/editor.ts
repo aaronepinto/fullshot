@@ -243,6 +243,18 @@ function render() {
     ctx.restore();
   }
 
+  if (drag.kind === 'marquee') {
+    const r = normRect({ x: drag.x0, y: drag.y0, w: drag.x1 - drag.x0, h: drag.y1 - drag.y0 });
+    ctx.save();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5 / s;
+    ctx.setLineDash([5 / s, 4 / s]);
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.restore();
+  }
+
   // Selection outline + handles, drawn crisp in screen space.
   for (const i of state.selection) {
     const sel = state.annos[i];
@@ -349,7 +361,8 @@ type Drag =
   | { kind: 'pan'; startX: number; startY: number; panX: number; panY: number; moved: boolean }
   | { kind: 'draw'; anno: Anno; ox: number; oy: number }
   | { kind: 'crop' }
-  | { kind: 'move'; index: number; lastX: number; lastY: number; moved: boolean }
+  | { kind: 'move'; indices: number[]; lastX: number; lastY: number; moved: boolean }
+  | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; additive: boolean }
   | { kind: 'handle'; index: number; id: string; start: Anno; pressX: number; pressY: number; moved: boolean };
 
 let drag: Drag = { kind: 'none' };
@@ -358,11 +371,9 @@ let spaceDown = false;
 canvas.addEventListener('pointerdown', (e) => {
   // The text tool reopens the editor itself; every other gesture closes it first.
   if (state.editing && state.tool !== 'text') closeTextEditor('blur');
-  const wantsPan =
-    e.button === 1 ||
-    // topHit returns an index, and index 0 is a hit: testing it for truthiness made
-    // the very first annotation unselectable.
-    (e.button === 0 && (spaceDown || (state.tool === 'select' && topHit(e) < 0 && !handleHit(e))));
+  // Dragging empty canvas with the select tool draws a marquee, so panning is
+  // space-drag, middle-drag and the wheel.
+  const wantsPan = e.button === 1 || (e.button === 0 && spaceDown);
   if (wantsPan) {
     drag = { kind: 'pan', startX: e.clientX, startY: e.clientY, panX: state.pan.x, panY: state.pan.y, moved: false };
     canvas.setPointerCapture(e.pointerId);
@@ -394,12 +405,22 @@ canvas.addEventListener('pointerdown', (e) => {
         return;
       }
       const hit = topHit(e);
-      if (hit >= 0) {
+      if (hit < 0) {
         capture();
-        selectOnly(hit);
-        drag = { kind: 'move', index: hit, lastX: p.x, lastY: p.y, moved: false };
-        requestRender();
+        drag = { kind: 'marquee', x0: p.x, y0: p.y, x1: p.x, y1: p.y, additive: e.shiftKey };
+        return;
       }
+      capture();
+      if (e.shiftKey) {
+        state.selection = state.selection.includes(hit)
+          ? state.selection.filter((i) => i !== hit)
+          : [...state.selection, hit];
+      } else if (!state.selection.includes(hit)) {
+        // Pressing inside an existing multi-selection keeps it, so the group drags.
+        selectOnly(hit);
+      }
+      drag = { kind: 'move', indices: [...state.selection], lastX: p.x, lastY: p.y, moved: false };
+      requestRender();
       return;
     }
     case 'crop':
@@ -511,19 +532,25 @@ canvas.addEventListener('pointermove', (e) => {
       return;
     }
     case 'move': {
-      const a = state.annos[drag.index];
-      if (!a) return;
       if (!drag.moved) {
         pushUndo();
         drag.moved = true;
       }
-      translateAnno(a, p.x - drag.lastX, p.y - drag.lastY);
+      for (const i of drag.indices) {
+        const a = state.annos[i];
+        if (a) translateAnno(a, p.x - drag.lastX, p.y - drag.lastY);
+      }
       drag.lastX = p.x;
       drag.lastY = p.y;
       persistAnnos();
       requestRender();
       return;
     }
+    case 'marquee':
+      drag.x1 = p.x;
+      drag.y1 = p.y;
+      requestRender();
+      return;
     case 'handle': {
       const a = state.annos[drag.index];
       if (!a) return;
@@ -544,9 +571,12 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 canvas.addEventListener('pointerup', () => {
-  if (drag.kind === 'pan' && !drag.moved && state.tool === 'select') {
-    // A click on empty canvas is a deselect, not a zero-length pan.
-    clearSelection();
+  if (drag.kind === 'marquee') {
+    const r = normRect({ x: drag.x0, y: drag.y0, w: drag.x1 - drag.x0, h: drag.y1 - drag.y0 });
+    // A press that never travelled is a deselect, not an empty marquee.
+    const swept = r.w > 2 || r.h > 2;
+    const caught = swept ? state.annos.flatMap((a, i) => (overlaps(bounds(a), r) ? [i] : [])) : [];
+    state.selection = drag.additive ? [...new Set([...state.selection, ...caught])] : caught;
     requestRender();
   } else if (drag.kind === 'draw') {
     const a = drag.anno;
@@ -587,6 +617,9 @@ canvas.addEventListener('pointerup', () => {
   }
   drag = { kind: 'none' };
 });
+
+const overlaps = (a: Rect, b: Rect) =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 function topHit(e: MouseEvent): number {
   const p = toImage(e.clientX, e.clientY);
@@ -1296,6 +1329,33 @@ function cycleSelection(step: number) {
   requestRender();
 }
 
+/**
+ * Paint order is array order, so z-order is a splice. Identity rather than index
+ * tracks the selection across the move, since the indices are what changes.
+ */
+function reorderSelection(mode: 'forward' | 'backward' | 'front' | 'back') {
+  if (!state.selection.length) return;
+  pushUndo();
+  const picked = new Set(state.selection.map((i) => state.annos[i]!));
+  const arr = state.annos;
+  if (mode === 'front' || mode === 'back') {
+    const rest = arr.filter((a) => !picked.has(a));
+    const moved = arr.filter((a) => picked.has(a));
+    state.annos = mode === 'front' ? [...rest, ...moved] : [...moved, ...rest];
+  } else if (mode === 'forward') {
+    for (let i = arr.length - 2; i >= 0; i--) {
+      if (picked.has(arr[i]!) && !picked.has(arr[i + 1]!)) [arr[i], arr[i + 1]] = [arr[i + 1]!, arr[i]!];
+    }
+  } else {
+    for (let i = 1; i < arr.length; i++) {
+      if (picked.has(arr[i]!) && !picked.has(arr[i - 1]!)) [arr[i], arr[i - 1]] = [arr[i - 1]!, arr[i]!];
+    }
+  }
+  state.selection = state.annos.flatMap((a, i) => (picked.has(a) ? [i] : []));
+  persistAnnos();
+  requestRender();
+}
+
 function duplicateSelection() {
   if (!state.selection.length) return;
   pushUndo();
@@ -1334,6 +1394,10 @@ document.addEventListener('keydown', (e) => {
   } else if (arrow && state.selection.length) {
     e.preventDefault();
     nudgeSelection(arrow[0], arrow[1], e.shiftKey, e.altKey);
+  } else if ((e.code === 'BracketRight' || e.code === 'BracketLeft') && state.selection.length) {
+    e.preventDefault();
+    const forward = e.code === 'BracketRight';
+    reorderSelection(e.shiftKey ? (forward ? 'front' : 'back') : forward ? 'forward' : 'backward');
   } else if (e.key === 'Tab' && state.annos.length) {
     e.preventDefault();
     cycleSelection(e.shiftKey ? -1 : 1);

@@ -257,6 +257,7 @@ kbd {
 .statusbar a { color: var(--text-dim); text-decoration: none; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .statusbar a:hover { color: var(--accent); }
 .note { color: #f59e0b; }
+.statusbar .hint { color: var(--text-dim); opacity: 0.75; }
 .chip {
   border: 1px solid var(--border);
   border-radius: 999px;
