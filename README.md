@@ -7,7 +7,7 @@ FullShot is a modern, MIT-licensed alternative to GoFullPage, built for the deve
 ## Features
 
 - **One click → full page.** Click the toolbar icon (or `Alt+Shift+P`) and the whole page is captured, including everything below the fold and off to the right.
-- **Three capture modes.** Full page, visible area (`Alt+Shift+V`), or drag-select a region (`Alt+Shift+S`) - you can even scroll mid-selection to grab a region taller than the viewport.
+- **Four capture modes.** Full page, visible area (`Alt+Shift+V`), drag-select a region (`Alt+Shift+S`) - you can even scroll mid-selection to grab a region taller than the viewport - or pick an element DevTools-style: hover highlights the node under the cursor, click captures exactly it, and scrollable containers are captured with their entire scrollable content.
 - **Two capture engines.**
   - **Scroll & stitch** (default): uses only the `activeTab` gesture - the extension requests *zero* host permissions. Handles sticky headers, fixed overlays, lazy-loaded images, scrollbar removal, CSS animations, high-DPI screens, and browser zoom.
   - **Turbo** (opt-in): a one-shot, pixel-perfect capture via the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Requires the optional `debugger` permission, granted only if you enable it in Settings.
@@ -39,6 +39,7 @@ src/
   content/capture.ts     Injected on demand: measures, neutralizes sticky/fixed/animations,
                          drives the scroll loop, restores the page afterwards
   content/select.ts      Region-selection overlay (shadow DOM, scroll-through)
+  content/element.ts     Element picker overlay (DevTools-style hover highlight)
   editor/                The capture tab: stitching, annotation tools, export, history
     stitch.ts            Tiles → strip-backed BigImage (no canvas-size ceilings)
     annotations.ts       Vector annotation model: draw, hit-test, handles

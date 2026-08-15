@@ -32,7 +32,9 @@ chrome.commands.onCommand.addListener((command, tab) => {
         ? 'visible'
         : command === 'capture-selection'
           ? 'selection'
-          : null;
+          : command === 'capture-element'
+            ? 'element'
+            : null;
   if (mode && tab) void startCapture(tab, mode);
 });
 
@@ -52,6 +54,11 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Capture a region…',
     contexts: ['page', 'action'],
   });
+  chrome.contextMenus.create({
+    id: 'fs-element',
+    title: 'Capture an element',
+    contexts: ['page', 'action'],
+  });
   chrome.contextMenus.create({ id: 'fs-history', title: 'Capture history', contexts: ['action'] });
 });
 
@@ -68,7 +75,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         ? 'visible'
         : info.menuItemId === 'fs-selection'
           ? 'selection'
-          : null;
+          : info.menuItemId === 'fs-element'
+            ? 'element'
+            : null;
   if (mode) void startCapture(tab, mode);
 });
 
@@ -86,12 +95,21 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
     const capId = newCaptureId();
     const injectable = !isRestrictedUrl(tab.url ?? '');
 
-    // Region selection happens first, in-page, regardless of engine.
+    // Region/element selection happens first, in-page, regardless of engine.
     let selection: Rect | null = null;
+    let pickedScroller = false;
     if (mode === 'selection') {
       if (!injectable) throw new Error('This page does not allow region selection.');
       selection = await pickRegion(tabId);
       if (!selection) return; // user cancelled
+    } else if (mode === 'element') {
+      if (!injectable) throw new Error('This page does not allow element picking.');
+      const pick = await pickElement(tabId);
+      if (!pick) return; // user cancelled
+      // Scrollable containers get their full content via the inner-scroll machinery;
+      // everything else is just a clip over the page.
+      if (pick.scrollable) pickedScroller = true;
+      else selection = pick.rect;
     }
 
     await badge.set('…');
@@ -108,7 +126,7 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
       ({ clip, tileCount } = await captureVisibleSingle(tab, capId));
       engine = 'stitch';
       mode = mode === 'selection' ? mode : 'visible';
-    } else if (engine === 'turbo' && (await hasDebuggerPermission())) {
+    } else if (engine === 'turbo' && !pickedScroller && (await hasDebuggerPermission())) {
       const result = await turboCapture(
         tabId,
         capId,
@@ -119,7 +137,7 @@ async function startCapture(tab: chrome.tabs.Tab, mode: CaptureMode): Promise<vo
       ({ clip, tileCount, truncated } = result);
     } else {
       engine = 'stitch';
-      const result = await stitchCapture(tab, capId, selection, settings, (done, total) =>
+      const result = await stitchCapture(tab, capId, selection, pickedScroller, settings, (done, total) =>
         badge.set(`${Math.round((done / total) * 100)}%`)
       );
       ({ clip, tileCount, truncated } = result);
@@ -164,6 +182,7 @@ async function stitchCapture(
   tab: chrome.tabs.Tab,
   capId: string,
   selection: Rect | null,
+  pickedScroller: boolean,
   settings: Awaited<ReturnType<typeof getSettings>>,
   onProgress: (done: number, total: number) => void
 ): Promise<StitchResult> {
@@ -172,6 +191,7 @@ async function stitchCapture(
   let metrics = await sendToTab<PageMetrics>(tabId, {
     type: 'fs:measure',
     maxHeight: settings.maxCaptureHeight,
+    usePicked: pickedScroller,
   });
 
   const clipFor = (m: PageMetrics): Rect => {
@@ -209,6 +229,7 @@ async function stitchCapture(
       metrics = await sendToTab<PageMetrics>(tabId, {
         type: 'fs:measure',
         maxHeight: settings.maxCaptureHeight,
+        usePicked: pickedScroller,
       });
       clip = clipFor(metrics);
     }
@@ -329,6 +350,45 @@ function pickRegion(tabId: number): Promise<Rect | null> {
     chrome.runtime.onMessage.addListener(onMessage);
     chrome.scripting
       .executeScript({ target: { tabId }, files: ['content-select.js'] })
+      .catch((err) => {
+        cleanup();
+        reject(err);
+      });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Element picking
+// ---------------------------------------------------------------------------
+
+interface ElementPick {
+  rect: Rect;
+  scrollable: boolean;
+}
+
+function pickElement(tabId: number): Promise<ElementPick | null> {
+  return new Promise<ElementPick | null>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve(null);
+    }, 180_000);
+    const onMessage = (msg: RuntimeMsg, sender: chrome.runtime.MessageSender) => {
+      if (sender.tab?.id !== tabId) return;
+      if (msg.type === 'fs:element') {
+        cleanup();
+        resolve({ rect: msg.rect, scrollable: msg.scrollable });
+      } else if (msg.type === 'fs:element-cancel') {
+        cleanup();
+        resolve(null);
+      }
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      chrome.runtime.onMessage.removeListener(onMessage);
+    };
+    chrome.runtime.onMessage.addListener(onMessage);
+    chrome.scripting
+      .executeScript({ target: { tabId }, files: ['content-element.js'] })
       .catch((err) => {
         cleanup();
         reject(err);
