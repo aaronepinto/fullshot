@@ -19,7 +19,7 @@ body:
     attributes:
       label: Prerequisites
       options:
-        - label: I searched [existing issues and discussions](https://github.com/aaronepinto/screencappy/issues?q=is%3Aissue) and this is not a duplicate.
+        - label: I searched [existing issues and discussions](https://github.com/aaronepinto/smollet-screencappy/issues?q=is%3Aissue) and this is not a duplicate.
           required: true
         - label: This does not require network access or a runtime dependency.
           required: true
