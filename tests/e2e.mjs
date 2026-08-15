@@ -1,7 +1,10 @@
 /**
- * End-to-end test: loads the built extension into real Chrome (new headless),
- * captures a 4000px-tall fixture page with a sticky header and a fixed badge,
- * and asserts the editor composes a full-height image.
+ * End-to-end test: loads the built extension into real Chrome (new headless) and
+ * runs two capture scenarios:
+ *  1. a 4000px-tall window-scrolled fixture with a sticky header and a fixed badge,
+ *  2. a Gmail-style fixture where the window never scrolls and an inner container
+ *     holds 3000px of content.
+ * Each asserts the editor composes the expected image dimensions.
  *
  * Usage: bun run e2e   (requires `bun run build` output in dist/ and Chrome installed;
  * override the binary with CHROME=/path/to/chrome)
@@ -29,6 +32,47 @@ function findChrome() {
   return found;
 }
 
+async function runScenario(browser, url, { name, minW, minH, maxH }) {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1200, height: 800 });
+  await page.goto(url, { waitUntil: 'load' });
+
+  const swTarget = await browser.waitForTarget(
+    (t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
+    { timeout: 15000 }
+  );
+  const worker = await swTarget.worker();
+
+  await worker.evaluate(async () => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    await globalThis.__fullshotStart(tab, 'full');
+  });
+
+  const editorTarget = await browser.waitForTarget(
+    (t) => t.url().includes('editor.html'),
+    { timeout: 60000 }
+  );
+  const editor = await editorTarget.page();
+  await editor.waitForSelector('#loading[hidden]', { timeout: 60000 });
+
+  const dims = await editor.$eval('#statDims', (el) => el.textContent);
+  console.log(`[${name}] editor reports:`, dims);
+  const m = /(\d+)\s*×\s*(\d+)/.exec(dims ?? '');
+  if (!m) throw new Error(`[${name}] Could not parse dimensions from "${dims}"`);
+  const [w, h] = [Number(m[1]), Number(m[2])];
+  if (w < minW) throw new Error(`[${name}] Composed width ${w} < expected ${minW}`);
+  if (h < minH) throw new Error(`[${name}] Composed height ${h} < expected ${minH} - stitching incomplete`);
+  if (maxH && h > maxH) throw new Error(`[${name}] Composed height ${h} > expected max ${maxH}`);
+
+  await mkdir(`${ROOT}.scratch`, { recursive: true });
+  await editor.screenshot({ path: `${ROOT}.scratch/e2e-${name}.png` });
+  console.log(`✓ [${name}] stitched to ${w}×${h}`);
+
+  // Close both tabs so the next scenario's editor is the only editor.html target.
+  await editor.close();
+  await page.close();
+}
+
 async function main() {
   if (!existsSync(`${DIST}/manifest.json`)) throw new Error('Run `bun run build` first.');
 
@@ -40,13 +84,16 @@ async function main() {
   manifest.host_permissions = ['<all_urls>'];
   await writeFile(`${DIST_E2E}/manifest.json`, JSON.stringify(manifest));
 
-  const fixture = await readFile(`${ROOT}tests/fixture.html`);
-  const server = createServer((_req, res) => {
+  const fixtures = {
+    '/': await readFile(`${ROOT}tests/fixture.html`),
+    '/container': await readFile(`${ROOT}tests/fixture-container.html`),
+  };
+  const server = createServer((req, res) => {
     res.setHeader('content-type', 'text/html');
-    res.end(fixture);
+    res.end(fixtures[req.url] ?? fixtures['/']);
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${server.address().port}/`;
+  const base = `http://127.0.0.1:${server.address().port}`;
 
   // Chrome 137+ dropped --load-extension in branded builds; the supported path is
   // the CDP Extensions domain via Puppeteer's enableExtensions/installExtension.
@@ -65,40 +112,17 @@ async function main() {
 
   let failed = false;
   try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 800 });
-    await page.goto(url, { waitUntil: 'load' });
-
-    const swTarget = await browser.waitForTarget(
-      (t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
-      { timeout: 15000 }
-    );
-    const worker = await swTarget.worker();
-
-    await worker.evaluate(async () => {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      await globalThis.__fullshotStart(tab, 'full');
-    });
-
-    const editorTarget = await browser.waitForTarget(
-      (t) => t.url().includes('editor.html'),
-      { timeout: 60000 }
-    );
-    const editor = await editorTarget.page();
-    await editor.waitForSelector('#loading[hidden]', { timeout: 60000 });
-
-    const dims = await editor.$eval('#statDims', (el) => el.textContent);
-    console.log('editor reports:', dims);
-    const m = /(\d+)\s*×\s*(\d+)/.exec(dims ?? '');
-    if (!m) throw new Error(`Could not parse dimensions from "${dims}"`);
-    const [w, h] = [Number(m[1]), Number(m[2])];
     // Fixture: 60px sticky header + 8 × 500px sections = 4060 CSS px, any DPR ≥ 1.
-    if (w < 1100) throw new Error(`Composed width ${w} < expected ~1200`);
-    if (h < 4000) throw new Error(`Composed height ${h} < expected ~4060 - stitching incomplete`);
-
-    await mkdir(`${ROOT}.scratch`, { recursive: true });
-    await editor.screenshot({ path: `${ROOT}.scratch/e2e-editor.png` });
-    console.log('✓ e2e passed - full page stitched to', `${w}×${h}`);
+    await runScenario(browser, `${base}/`, { name: 'full-page', minW: 1100, minH: 4000 });
+    // Container fixture: window scroll is disabled, inner div holds 6 × 500px sections.
+    // The composed height must match the container content (3000px), not the viewport.
+    await runScenario(browser, `${base}/container`, {
+      name: 'container',
+      minW: 1000,
+      minH: 2950,
+      maxH: 3100,
+    });
+    console.log('✓ e2e passed');
   } catch (err) {
     failed = true;
     console.error('✗ e2e failed:', err);

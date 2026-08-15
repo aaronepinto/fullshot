@@ -176,7 +176,18 @@ async function stitchCapture(
 
   const clipFor = (m: PageMetrics): Rect => {
     const page: Rect = { x: 0, y: 0, w: m.pageW, h: m.pageH };
-    return selection ? intersect(selection, page) : page;
+    if (!selection) return page;
+    // Selections are in document coords; container content coords differ by the
+    // container's on-screen origin and its scroll position at measure time.
+    const sel = m.containerRect
+      ? {
+          x: selection.x - m.containerRect.x + m.scrollX,
+          y: selection.y - m.containerRect.y + m.scrollY,
+          w: selection.w,
+          h: selection.h,
+        }
+      : selection;
+    return intersect(sel, page);
   };
   let clip = clipFor(metrics);
   if (clip.w < 1 || clip.h < 1) throw new Error('Empty capture region');
@@ -188,10 +199,10 @@ async function stitchCapture(
   });
 
   try {
-    if (settings.prescroll && clip.h > metrics.vpH) {
+    if (settings.prescroll && clip.h > (metrics.containerRect?.h ?? metrics.vpH)) {
       await sendToTab(tabId, {
         type: 'fs:prescroll',
-        stepY: metrics.vpH,
+        stepY: metrics.containerRect?.h ?? metrics.vpH,
         maxY: clip.y + clip.h,
       });
       // Lazy-loaded content can grow the page; re-measure so the grid covers it.
@@ -204,8 +215,12 @@ async function stitchCapture(
 
     // Build the scroll grid. Positions are clamped by the page itself; we record
     // the actual scroll offsets so stitching never depends on the plan being honored.
-    const cols = gridPositions(clip.x, clip.w, metrics.vpW, metrics.pageW - metrics.vpW);
-    const rows = gridPositions(clip.y, clip.h, metrics.vpH, metrics.pageH - metrics.vpH);
+    // A scroll container caps each step at its visible client area, not the window.
+    const crop = metrics.containerRect;
+    const stepW = crop?.w ?? metrics.vpW;
+    const stepH = crop?.h ?? metrics.vpH;
+    const cols = gridPositions(clip.x, clip.w, stepW, metrics.pageW - stepW);
+    const rows = gridPositions(clip.y, clip.h, stepH, metrics.pageH - stepH);
     const total = cols.length * rows.length;
     if (total > 600) throw new Error(`Page needs ${total} tiles - beyond the safety limit.`);
 
@@ -228,6 +243,7 @@ async function stitchCapture(
           y: pos.y,
           cssW: metrics.vpW,
           cssH: metrics.vpH,
+          ...(crop ? { crop } : {}),
           blob: await dataUrlToBlob(dataUrl),
         });
         index++;

@@ -13,6 +13,7 @@ FullShot is a modern, MIT-licensed alternative to GoFullPage, built for the deve
   - **Turbo** (opt-in): a one-shot, pixel-perfect capture via the DevTools Protocol (`Page.captureScreenshot` with `captureBeyondViewport`). No scrolling, no stitching seams, immune to sticky headers. Requires the optional `debugger` permission, granted only if you enable it in Settings.
 - **A real editor, free.** Crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur/pixelate redaction - all vector-based and non-destructive with full undo/redo, zoom, and pan.
 - **Export anywhere.** PNG, JPEG, WebP, PDF (single tall page or A4/Letter pagination - the PDF writer is hand-rolled, zero dependencies), or straight to the clipboard. Filename templates like `{domain} {date} {time}`.
+- **SPA scroll containers.** When the window itself barely scrolls (Gmail, Slack, Notion style apps), FullShot detects the inner container that holds the real content and captures all of it instead of a single viewport.
 - **Huge pages just work.** The composed image is stored as strips, so pages taller than the browser's canvas limits render fine and exports auto-split into numbered files / extra PDF pages instead of failing.
 - **Local capture history.** Recent captures (with annotations) live in IndexedDB with thumbnails; prune limits are configurable. Nothing syncs anywhere.
 - **Restricted pages degrade gracefully.** `chrome://` pages and the Web Store can't be scripted, so FullShot falls back to a visible-area capture instead of erroring.

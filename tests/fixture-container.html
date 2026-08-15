@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>FullShot e2e container fixture</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; font: 24px/1 system-ui, sans-serif; }
+    #app { height: 100%; display: flex; flex-direction: column; }
+    header {
+      flex: none; height: 48px; background: #0ea5e9; color: #fff;
+      display: flex; align-items: center; padding: 0 20px;
+    }
+    #scroller { flex: 1; overflow-y: auto; }
+    section { height: 500px; display: flex; align-items: center; padding: 0 20px; box-sizing: border-box; }
+    section:nth-child(odd) { background: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>App chrome - the window itself never scrolls</header>
+    <div id="scroller"></div>
+  </div>
+  <script>
+    const wrap = document.getElementById('scroller');
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement('section');
+      s.textContent = 'Container section ' + i + ' - y=' + i * 500;
+      wrap.appendChild(s);
+    }
+  </script>
+</body>
+</html>

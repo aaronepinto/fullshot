@@ -55,6 +55,39 @@ export function gridPositions(
   return positions.length ? positions : [0];
 }
 
+/** Plain-data description of a possible inner scroll container. */
+export interface ScrollerCandidate {
+  overflowY: string;
+  scrollHeight: number;
+  clientWidth: number;
+  clientHeight: number;
+}
+
+/**
+ * Picks the element that really scrolls the page on SPAs where the window itself
+ * barely moves (Gmail, Slack, Notion). A candidate must opt into vertical scrolling,
+ * have meaningfully more content than viewport (>100px), and occupy at least 40% of
+ * the window; the largest client area wins.
+ */
+export function pickDominantScroller<T extends ScrollerCandidate>(
+  candidates: readonly T[],
+  vpW: number,
+  vpH: number
+): T | null {
+  const minArea = vpW * vpH * 0.4;
+  let best: T | null = null;
+  let bestArea = 0;
+  for (const c of candidates) {
+    if (c.overflowY !== 'auto' && c.overflowY !== 'scroll') continue;
+    if (c.scrollHeight <= c.clientHeight + 100) continue;
+    const area = c.clientWidth * c.clientHeight;
+    if (area < minArea || area <= bestArea) continue;
+    best = c;
+    bestArea = area;
+  }
+  return best;
+}
+
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);
