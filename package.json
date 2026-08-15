@@ -19,5 +19,10 @@
     "esbuild": "latest",
     "puppeteer-core": "^25.7.0",
     "typescript": "latest"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aaronepinto/fullshot.git"
+  },
+  "homepage": "https://fullshot.smollet.app"
 }
