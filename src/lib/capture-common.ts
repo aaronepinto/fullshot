@@ -101,6 +101,16 @@ export function shouldContinueAutoLoad(
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;
 
+/**
+ * True when a computed background-attachment keeps any layer glued to the viewport.
+ * Multi-background values are comma lists ("scroll, fixed"), so each layer is checked.
+ * Such parallax backgrounds repeat identically in every stitched tile, so prepare()
+ * pins them to scroll for the capture.
+ */
+export function hasFixedBackground(backgroundAttachment: string): boolean {
+  return backgroundAttachment.split(',').some((layer) => layer.trim() === 'fixed');
+}
+
 /** Minimal element shape for walkShadowTree, structural so plain objects test it. */
 export interface ShadowWalkNode<T> {
   readonly children: ArrayLike<T>;
