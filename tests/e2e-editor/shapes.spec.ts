@@ -106,10 +106,12 @@ test.describe('Item 5: handles, cursors and resize modifiers', () => {
     expect((await editor.state()).selection).toEqual([0]);
   }
 
-  test('a selected box exposes eight handles at its edges and corners', async ({ editor }) => {
+  test('a selected box exposes eight resize handles plus a rotation knob', async ({ editor }) => {
     await selectedRect(editor);
     const handles = await editor.handles(0);
-    expect(handles.map((h) => h.id).sort()).toEqual(['e', 'n', 'ne', 'nw', 's', 'se', 'sw', 'w']);
+    expect(handles.map((h) => h.id).sort()).toEqual([
+      'e', 'n', 'ne', 'nw', 'rot', 's', 'se', 'sw', 'w',
+    ]);
 
     const at = (id: string) => handles.find((h) => h.id === id)!;
     expect(at('nw').x).toBeCloseTo(100, 0);
@@ -118,6 +120,9 @@ test.describe('Item 5: handles, cursors and resize modifiers', () => {
     expect(at('se').y).toBeCloseTo(400, 0);
     expect(at('n').x).toBeCloseTo(300, 0);
     expect(at('e').y).toBeCloseTo(250, 0);
+    // The knob floats above the top edge midpoint, on the same vertical.
+    expect(at('rot').x).toBeCloseTo(300, 0);
+    expect(at('rot').y).toBeLessThan(at('n').y);
   });
 
   test('an edge handle resizes one axis only', async ({ editor }) => {

@@ -9,11 +9,15 @@ import type { CaptureRecord, Rect } from '../lib/types';
 import {
   applyHandle,
   bounds,
+  centerOf,
   drawAnno,
   handles,
   hitTest,
   isBoxKind,
+  localBounds,
   normalizeAnno,
+  rotateStem,
+  rotationOf,
   translateAnno,
   TEXT_FONT,
   type Anno,
@@ -263,15 +267,38 @@ function render() {
   for (const i of state.selection) {
     const sel = state.annos[i];
     if (!sel) continue;
-    const b = bounds(sel);
     ctx.save();
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 1.5 / s;
     ctx.setLineDash([5 / s, 4 / s]);
+    // The outline hugs the shape rather than its upright bounding box, so a turned
+    // annotation reads as turned instead of as a bigger untidy rectangle.
+    const rot = rotationOf(sel);
+    const b = localBounds(sel);
+    if (rot) {
+      const c = centerOf(sel);
+      ctx.translate(c.x, c.y);
+      ctx.rotate(rot);
+      ctx.translate(-c.x, -c.y);
+    }
     ctx.strokeRect(b.x, b.y, b.w, b.h);
+    ctx.restore();
+
+    ctx.save();
     ctx.setLineDash([]);
-    for (const h of handles(sel)) {
-      const hot = h.id === hoverHandle && drag.kind !== 'handle';
+    const list = selHandles(sel);
+    const stem = rotateStem(sel);
+    const knob = list.find((h) => h.id === 'rot');
+    if (stem && knob) {
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.lineWidth = 1.5 / s;
+      ctx.beginPath();
+      ctx.moveTo(stem.x, stem.y);
+      ctx.lineTo(knob.x, knob.y);
+      ctx.stroke();
+    }
+    for (const h of list) {
+      const hot = h.id === hoverHandle && drag.kind !== 'handle' && drag.kind !== 'rotate';
       ctx.fillStyle = hot ? '#38bdf8' : '#fff';
       ctx.strokeStyle = '#0ea5e9';
       ctx.lineWidth = 2 / s;
@@ -373,7 +400,8 @@ type Drag =
   | { kind: 'crop' }
   | { kind: 'move'; indices: number[]; startAnnos: Anno[]; lastX: number; lastY: number; moved: boolean }
   | { kind: 'marquee'; x0: number; y0: number; x1: number; y1: number; additive: boolean }
-  | { kind: 'handle'; index: number; id: string; start: Anno; pressX: number; pressY: number; moved: boolean };
+  | { kind: 'handle'; index: number; id: string; start: Anno; pressX: number; pressY: number; moved: boolean }
+  | { kind: 'rotate'; index: number; start: Anno; moved: boolean };
 
 let drag: Drag = { kind: 'none' };
 let spaceDown = false;
@@ -403,15 +431,18 @@ canvas.addEventListener('pointerdown', (e) => {
         const index = selectedIndex();
         // Undo is deferred to the first actual movement: pressing a handle and
         // letting go must not leave a no-op entry behind.
-        drag = {
-          kind: 'handle',
-          index,
-          id: h.id,
-          start: structuredClone(state.annos[index]!),
-          pressX: p.x,
-          pressY: p.y,
-          moved: false,
-        };
+        drag =
+          h.id === 'rot'
+            ? { kind: 'rotate', index, start: structuredClone(state.annos[index]!), moved: false }
+            : {
+                kind: 'handle',
+                index,
+                id: h.id,
+                start: structuredClone(state.annos[index]!),
+                pressX: p.x,
+                pressY: p.y,
+                moved: false,
+              };
         return;
       }
       const hit = topHit(e);
@@ -451,11 +482,24 @@ canvas.addEventListener('pointerdown', (e) => {
       // fires against the editor we are about to open.
       e.preventDefault();
       const hit = topHit(e);
-      if (state.annos[hit]?.kind === 'text') editTextAnno(hit);
-      else openTextEditor(p.x, p.y);
+      if (state.annos[hit]?.kind === 'text') {
+        editTextAnno(hit);
+        return;
+      }
+      // A label dropped outside the artwork is invisible the moment it exports, so
+      // the click is refused with a reason rather than silently swallowed.
+      if (!onArtwork(p.x, p.y)) {
+        toast('That is outside the image, so no label was placed.');
+        return;
+      }
+      openTextEditor(p.x, p.y);
       return;
     }
     case 'emoji': {
+      if (!onArtwork(p.x, p.y)) {
+        toast('That is outside the image, so no emoji was placed.');
+        return;
+      }
       pushUndo();
       state.annos.push({ kind: 'emoji', x: p.x, y: p.y, char: st.emoji, size: st.fontSize * 2 });
       selectOnly(state.annos.length - 1);
@@ -582,6 +626,18 @@ canvas.addEventListener('pointermove', (e) => {
       requestRender();
       return;
     }
+    case 'rotate': {
+      const a = state.annos[drag.index];
+      if (!a) return;
+      if (!drag.moved) {
+        pushUndo();
+        drag.moved = true;
+      }
+      applyHandle(a, drag.start, 'rot', p.x, p.y, { shift: e.shiftKey });
+      persistAnnos();
+      requestRender();
+      return;
+    }
     case 'none':
       updateCursor(e);
   }
@@ -613,7 +669,7 @@ canvas.addEventListener('pointerup', () => {
     const a = state.annos[drag.index];
     if (a) {
       normalizeAnno(a);
-      const b = bounds(a);
+      const b = localBounds(a);
       if (b.w < MIN_SIZE || b.h < MIN_SIZE) {
         // Nothing usable came of the gesture, so leave neither the shape nor the
         // history changed by it.
@@ -667,6 +723,7 @@ function cancelGesture(): boolean {
       persistAnnos();
       break;
     case 'handle':
+    case 'rotate':
       state.annos[drag.index] = drag.start;
       if (drag.moved) popUndo();
       persistAnnos();
@@ -710,39 +767,115 @@ const HANDLE_CURSORS: Record<string, string> = {
   w: 'ew-resize',
   p1: 'crosshair',
   p2: 'crosshair',
+  rot: 'grab',
 };
 
 /** Handle currently under the pointer, drawn highlighted so the target is visible. */
 let hoverHandle: string | null = null;
 
+/**
+ * Handles for a selection, with the rotation arm converted from screen px to image
+ * px at the current zoom. Every caller has to agree on that length or the knob is
+ * drawn in one place and grabbed in another.
+ */
+const selHandles = (a: Anno) => handles(a, 1 / state.zoom);
+
 function handleHit(e: MouseEvent): { id: string } | null {
   const sel = state.annos[selectedIndex()];
   if (!sel) return null;
-  for (const h of handles(sel)) {
+  for (const h of selHandles(sel)) {
     const s = toScreen(h.x, h.y);
     if (Math.hypot(e.clientX - s.x, e.clientY - s.y) < HANDLE_HIT) return { id: h.id };
   }
   return null;
 }
 
+/** Whether a point in image space is somewhere a stamp or label would survive export. */
+function onArtwork(x: number, y: number): boolean {
+  const img = state.image;
+  if (!img) return false;
+  const r = state.crop ?? { x: 0, y: 0, w: img.width, h: img.height };
+  return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+}
+
+/**
+ * Cursors describe what the next click will actually do.
+ *
+ * The emoji tool used to claim a text caret, which is what made clicking around
+ * feel wrong: nothing about stamping a glyph involves typing. It gets a crosshair
+ * plus a live ghost of the emoji instead, and the text caret is now reserved for
+ * places a caret really will appear, including an existing label under the select
+ * tool, where it is the only hint that the label can be reopened.
+ */
 function updateCursor(e: MouseEvent) {
   const hovered = state.tool === 'select' ? (handleHit(e)?.id ?? null) : null;
   if (hovered !== hoverHandle) {
     hoverHandle = hovered;
     requestRender();
   }
+  const p = toImage(e.clientX, e.clientY);
   if (state.tool === 'select') {
+    const hit = topHit(e);
     canvas.style.cursor = hovered
       ? (HANDLE_CURSORS[hovered] ?? 'nwse-resize')
-      : topHit(e) >= 0
-        ? 'move'
-        : 'grab';
-  } else if (state.tool === 'text' || state.tool === 'emoji') {
-    canvas.style.cursor = 'text';
+      : hit < 0
+        ? 'grab'
+        : state.annos[hit]?.kind === 'text'
+          ? 'text'
+          : 'move';
+  } else if (state.tool === 'text') {
+    canvas.style.cursor = onArtwork(p.x, p.y) ? 'text' : 'not-allowed';
+  } else if (state.tool === 'emoji') {
+    canvas.style.cursor = onArtwork(p.x, p.y) ? 'crosshair' : 'not-allowed';
   } else {
     canvas.style.cursor = 'crosshair';
   }
+  syncToolGhost(e);
 }
+
+// ---------------------------------------------------------------------------
+// Placement preview
+// ---------------------------------------------------------------------------
+
+const toolGhost = $('#toolGhost');
+
+/**
+ * A preview of what the next click places, following the pointer: the emoji at the
+ * size and zoom it will land at, or a caret bar at the height of the label about to
+ * be typed. Seeing the thing before committing it is what makes a stamp feel aimed
+ * rather than guessed at.
+ */
+function syncToolGhost(e?: MouseEvent) {
+  const stamping = state.tool === 'emoji';
+  const typing = state.tool === 'text' && !state.editing;
+  if (!e || (!stamping && !typing) || !state.image) {
+    toolGhost.hidden = true;
+    return;
+  }
+  const p = toImage(e.clientX, e.clientY);
+  if (!onArtwork(p.x, p.y)) {
+    toolGhost.hidden = true;
+    return;
+  }
+  const rect = viewport.getBoundingClientRect();
+  toolGhost.hidden = false;
+  toolGhost.classList.toggle('caret', typing);
+  toolGhost.style.left = `${e.clientX - rect.left}px`;
+  toolGhost.style.top = `${e.clientY - rect.top}px`;
+  if (stamping) {
+    toolGhost.textContent = state.style.emoji;
+    toolGhost.style.font = `${state.style.fontSize * 2 * state.zoom}px system-ui`;
+    toolGhost.style.height = '';
+  } else {
+    toolGhost.textContent = '';
+    toolGhost.style.font = '';
+    toolGhost.style.height = `${state.style.fontSize * 1.25 * state.zoom}px`;
+  }
+}
+
+canvas.addEventListener('pointerleave', () => {
+  toolGhost.hidden = true;
+});
 
 function snapAngle(a: Extract<Anno, { kind: 'line' | 'arrow' }>) {
   const dx = a.x2 - a.x1;
@@ -760,18 +893,48 @@ canvas.addEventListener('dblclick', (e) => {
   editTextAnno(hit);
 });
 
-viewport.addEventListener(
+/**
+ * A wheel notch is not always a pixel. Chrome on macOS and every trackpad report
+ * DOM_DELTA_PIXEL, but Firefox and most Windows and Linux mice report whole lines,
+ * and a few report pages. Reading a three-line notch as three pixels is what made
+ * the wheel appear to do nothing at all: ctrl+wheel moved the zoom by 0.7 percent
+ * per notch, and a plain wheel panned three image pixels.
+ */
+const WHEEL_LINE = 16;
+
+function wheelPixels(e: WheelEvent): { x: number; y: number } {
+  const f =
+    e.deltaMode === WheelEvent.DOM_DELTA_LINE
+      ? WHEEL_LINE
+      : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+        ? Math.max(1, viewport.clientHeight)
+        : 1;
+  return { x: e.deltaX * f, y: e.deltaY * f };
+}
+
+/**
+ * Bound on the window rather than the viewport so a pinch or ctrl+wheel started
+ * over the toolbar or the status bar still zooms the artwork. Left unclaimed there,
+ * the browser zooms its own page instead, which moves every control under the
+ * pointer and reads as the editor's zoom being broken.
+ */
+window.addEventListener(
   'wheel',
   (e) => {
-    e.preventDefault();
+    const d = wheelPixels(e);
     if (e.ctrlKey || e.metaKey) {
-      setZoom(state.zoom * Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY);
-    } else {
-      state.pan.x += (e.shiftKey ? e.deltaY : e.deltaX) / state.zoom;
-      state.pan.y += (e.shiftKey ? 0 : e.deltaY) / state.zoom;
-      clampView();
-      requestRender();
+      e.preventDefault();
+      setZoom(state.zoom * Math.exp(-d.y * 0.0022), e.clientX, e.clientY);
+      return;
     }
+    // A plain wheel over a drawer scrolls that drawer, as any list should; only the
+    // bare canvas pans.
+    if (e.target !== canvas && e.target !== viewport) return;
+    e.preventDefault();
+    state.pan.x += (e.shiftKey ? d.y : d.x) / state.zoom;
+    state.pan.y += (e.shiftKey ? 0 : d.y) / state.zoom;
+    clampView();
+    requestRender();
   },
   { passive: false }
 );
@@ -810,6 +973,8 @@ function openTextEditor(x: number, y: number, opts: OpenTextOptions = {}) {
     cancelled: false,
   };
   state.editing = editing;
+  // The caret preview has done its job the moment the real caret appears.
+  toolGhost.hidden = true;
   textEditor.hidden = false;
   textArea.value = editing.draft;
   syncTextOverlay();
@@ -963,13 +1128,7 @@ $('#cropCancel').addEventListener('click', () => {
   hideCropBar();
   requestRender();
 });
-$('#btnCropReset').addEventListener('click', () => {
-  pushUndo();
-  state.crop = null;
-  persistAnnos();
-  fitWidth();
-  updateStatus();
-});
+$('#btnCropReset').addEventListener('click', () => resetCrop());
 
 // ---------------------------------------------------------------------------
 // Toolbar / style bar
@@ -993,6 +1152,8 @@ function setTool(tool: Tool) {
     state.cropDraft = null;
     hideCropBar();
   }
+  // The preview belongs to the pointer, and the pointer has not moved yet.
+  toolGhost.hidden = true;
   requestRender();
 }
 
@@ -1150,7 +1311,7 @@ async function doDownload(format: ImageFormat | `pdf-${PdfPageMode}`) {
       const blobs = await exportImages(exportSource(), fmt, state.settings.quality);
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
       await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
-      if (blobs.length > 1) toast(`Image exceeded canvas limits - saved as ${blobs.length} numbered files.`);
+      if (blobs.length > 1) toast(`Image exceeded canvas limits, so it was saved as ${blobs.length} numbered files.`);
     }
     toast('Saved ✓');
   } catch (err) {
@@ -1248,7 +1409,8 @@ function annoSummary(a: Anno): string {
     case 'arrow':
       return `${Math.round(Math.hypot(a.x2 - a.x1, a.y2 - a.y1))} px long`;
     default: {
-      const r = bounds(a);
+      // The annotation's own size, so turning it does not appear to resize it.
+      const r = localBounds(a);
       return `${Math.round(r.w)} × ${Math.round(r.h)}`;
     }
   }
@@ -1256,14 +1418,64 @@ function annoSummary(a: Anno): string {
 
 const annoColor = (a: Anno) => ('color' in a ? a.color : 'transparent');
 
+/**
+ * The crop is an edit like any other, so it gets a row of its own. Leaving it out
+ * meant cropping an image changed the picture but left this list looking untouched,
+ * and undoing the crop looked like undoing nothing.
+ */
+function cropRow(): HTMLLIElement {
+  const r = state.crop!;
+  const li = document.createElement('li');
+  li.dataset.testid = 'crop-row';
+  li.className = 'crop-row';
+
+  const chip = document.createElement('span');
+  chip.className = 'chip-icon';
+  chip.innerHTML =
+    '<svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>';
+  const kind = document.createElement('span');
+  kind.className = 'kind';
+  kind.textContent = 'Crop';
+  const summary = document.createElement('span');
+  summary.className = 'summary';
+  summary.textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`;
+
+  const reset = document.createElement('button');
+  reset.className = 'del';
+  reset.dataset.testid = 'crop-reset';
+  reset.title = 'Reset crop';
+  reset.textContent = '✕';
+  reset.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resetCrop();
+  });
+
+  li.append(chip, kind, summary, reset);
+  li.addEventListener('click', () => fitWidth());
+  return li;
+}
+
+function resetCrop() {
+  if (!state.crop) return;
+  pushUndo();
+  state.crop = null;
+  persistAnnos();
+  fitWidth();
+  updateStatus();
+}
+
 function syncAnnoPanel() {
   if (annoPanel.hidden) return;
-  const key = state.annos
-    .map((a) => `${a.kind}:${annoColor(a)}:${annoSummary(a)}`)
-    .join('|') + `#${state.selection.join(',')}`;
+  const crop = state.crop;
+  const key =
+    (crop ? `crop:${Math.round(crop.w)}x${Math.round(crop.h)}` : 'uncropped') +
+    '|' +
+    state.annos.map((a) => `${a.kind}:${annoColor(a)}:${annoSummary(a)}`).join('|') +
+    `#${state.selection.join(',')}`;
   if (key === annoListKey) return;
   annoListKey = key;
   annoList.textContent = '';
+  if (crop) annoList.appendChild(cropRow());
 
   if (!state.annos.length) {
     const li = document.createElement('li');
@@ -1441,8 +1653,11 @@ function toast(msg: string, isError = false) {
   }, 3200);
 }
 
-$('#zoomIn').addEventListener('click', () => setZoom(state.zoom * 1.25));
-$('#zoomOut').addEventListener('click', () => setZoom(state.zoom / 1.25));
+/** One press of a zoom button, or one keyboard step. */
+const ZOOM_STEP = 1.25;
+
+$('#zoomIn').addEventListener('click', () => setZoom(state.zoom * ZOOM_STEP));
+$('#zoomOut').addEventListener('click', () => setZoom(state.zoom / ZOOM_STEP));
 $('#zoom100').addEventListener('click', () => setZoom(1));
 $('#zoomFit').addEventListener('click', fitWidth);
 $('#btnUndo').addEventListener('click', undo);
@@ -1594,6 +1809,20 @@ document.addEventListener('keydown', (e) => {
   } else if (meta && e.key.toLowerCase() === 'd') {
     e.preventDefault();
     duplicateSelection();
+  } else if (meta && (e.key === '=' || e.key === '+')) {
+    // Claimed from the browser's own page zoom, which would scale the toolbars too
+    // and leave the artwork exactly the same size relative to them.
+    e.preventDefault();
+    setZoom(state.zoom * ZOOM_STEP);
+  } else if (meta && (e.key === '-' || e.key === '_')) {
+    e.preventDefault();
+    setZoom(state.zoom / ZOOM_STEP);
+  } else if (meta && e.key === '0') {
+    e.preventDefault();
+    setZoom(1);
+  } else if (meta && e.key === '9') {
+    e.preventDefault();
+    fitWidth();
   } else if (arrow && state.selection.length) {
     e.preventDefault();
     nudgeSelection(arrow[0], arrow[1], e.shiftKey, e.altKey);
@@ -1673,7 +1902,7 @@ async function boot() {
 
   try {
     const record = await getCapture(id);
-    if (!record) throw new Error('Capture not found - it may have been pruned from history.');
+    if (!record) throw new Error('Capture not found. It may have been pruned from history.');
     state.record = record;
     document.title = `screencappy | ${record.title || record.url}`;
     const stored = record as CaptureRecord & { annos?: Anno[]; cropRect?: Rect | null };
@@ -1748,6 +1977,8 @@ interface TestApi {
   clientToImage(x: number, y: number): { x: number; y: number };
   handlesOf(index: number): { id: string; x: number; y: number }[];
   boundsOf(index: number): Rect | null;
+  localBoundsOf(index: number): Rect | null;
+  centerOf(index: number): { x: number; y: number } | null;
 }
 
 const testApi: TestApi = {
@@ -1766,11 +1997,20 @@ const testApi: TestApi = {
   clientToImage: (x, y) => toImage(x, y),
   handlesOf: (index) => {
     const a = state.annos[index];
-    return a ? handles(a).map((h) => ({ ...h })) : [];
+    // The same zoom-aware arm the editor hit-tests, so a spec can aim at the knob.
+    return a ? selHandles(a).map((h) => ({ ...h })) : [];
   },
   boundsOf: (index) => {
     const a = state.annos[index];
     return a ? bounds(a) : null;
+  },
+  localBoundsOf: (index) => {
+    const a = state.annos[index];
+    return a ? localBounds(a) : null;
+  },
+  centerOf: (index) => {
+    const a = state.annos[index];
+    return a ? centerOf(a) : null;
   },
 };
 (window as unknown as { __screencappyTest: TestApi }).__screencappyTest = testApi;

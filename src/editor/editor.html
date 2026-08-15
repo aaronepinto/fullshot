@@ -44,8 +44,10 @@
       <button data-tool="text" class="tool" title="Text (T)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg>
       </button>
-      <button data-tool="blur" class="tool" title="Redact / pixelate (B)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M3 12h18"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      <!-- lucide/eye-off: the clearest "hide this" of the family. droplets reads as
+           water and scan-face as face detection, but the tool redacts any region. -->
+      <button data-tool="blur" class="tool" title="Blur / redact (B)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
       </button>
       <button data-tool="emoji" class="tool" title="Emoji stamp (E)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10V9"/><path d="M16.472 15a6 6 0 01-8.943 0"/><path d="M9 10V9"/><circle cx="12" cy="12" r="10"/></svg>
@@ -129,6 +131,8 @@
       </div>
     </div>
     <div id="annoFlash" data-testid="anno-flash" hidden></div>
+    <!-- Follows the pointer to preview what the next click places. -->
+    <div id="toolGhost" data-testid="tool-ghost" hidden></div>
     <div id="cropBar" class="floatbar" hidden>
       <span id="cropDims"></span>
       <button id="cropApply" class="primary">Apply crop</button>
@@ -146,6 +150,14 @@
       <p class="drawer-hint">Newest first. Click one to jump to it.</p>
       <ul id="annoList"></ul>
     </aside>
+    <aside id="history" data-testid="history-panel" hidden>
+      <header>
+        <h2>History</h2>
+        <button id="historyClose" class="icon" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </header>
+      <p class="drawer-hint">Captures are stored locally on this device only.</p>
+      <ul id="historyList"></ul>
+    </aside>
     <div id="emptyState" class="empty" hidden>
       <img src="icons/icon128.png" alt="" width="72" />
       <h2>No capture selected</h2>
@@ -157,27 +169,18 @@
     <span id="statDims"></span>
     <button id="btnCropReset" class="chip" hidden>Reset crop</button>
     <span id="statNote" class="note"></span>
-    <span class="hint">Drag to select · Space or middle-drag to pan · [ ] to reorder</span>
+    <span class="hint">Drag to select · Space to pan · ⌘ or Ctrl scroll to zoom · [ ] to reorder</span>
     <span class="spacer"></span>
     <a id="statUrl" target="_blank" rel="noreferrer"></a>
     <span class="sep"></span>
     <div class="zoomctl">
-      <button id="zoomOut" title="Zoom out">−</button>
-      <button id="zoomFit" title="Fit width">Fit</button>
-      <button id="zoom100" title="Actual size">100%</button>
-      <button id="zoomIn" title="Zoom in">+</button>
-      <span id="statZoom"></span>
+      <button id="zoomOut" title="Zoom out (⌘−)">−</button>
+      <button id="zoomFit" title="Fit width (⌘9)">Fit</button>
+      <button id="zoom100" title="Actual size (⌘0)">100%</button>
+      <button id="zoomIn" title="Zoom in (⌘+)">+</button>
+      <span id="statZoom" data-testid="stat-zoom"></span>
     </div>
   </footer>
-
-  <aside id="history" hidden>
-    <header>
-      <h2>History</h2>
-      <button id="historyClose" class="icon" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    </header>
-    <p class="drawer-hint">Captures are stored locally on this device only.</p>
-    <ul id="historyList"></ul>
-  </aside>
 
   <div id="toast" class="toast" hidden></div>
 

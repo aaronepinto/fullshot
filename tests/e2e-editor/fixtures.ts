@@ -26,6 +26,7 @@ export interface Anno {
   fill?: boolean;
   char?: string;
   points?: number[];
+  rotation?: number;
 }
 
 export interface EditorState {
@@ -173,6 +174,16 @@ export class Editor {
     );
   }
 
+  /** The image-space point currently under a screen position. */
+  imageAt(clientX: number, clientY: number): Promise<{ x: number; y: number }> {
+    return this.page.evaluate(
+      (p) =>
+        (window as unknown as { __screencappyTest: { clientToImage(x: number, y: number): { x: number; y: number } } })
+          .__screencappyTest.clientToImage(p.x, p.y),
+      { x: clientX, y: clientY }
+    );
+  }
+
   handles(index: number): Promise<{ id: string; x: number; y: number }[]> {
     return this.page.evaluate(
       (i) =>
@@ -194,8 +205,76 @@ export class Editor {
     );
   }
 
+  localBounds(index: number): Promise<{ x: number; y: number; w: number; h: number } | null> {
+    return this.page.evaluate(
+      (i) =>
+        (
+          window as unknown as {
+            __screencappyTest: { localBoundsOf(i: number): { x: number; y: number; w: number; h: number } | null };
+          }
+        ).__screencappyTest.localBoundsOf(i),
+      index
+    );
+  }
+
+  center(index: number): Promise<{ x: number; y: number } | null> {
+    return this.page.evaluate(
+      (i) =>
+        (window as unknown as { __screencappyTest: { centerOf(i: number): { x: number; y: number } | null } })
+          .__screencappyTest.centerOf(i),
+      index
+    );
+  }
+
   async tool(name: string): Promise<void> {
     await this.page.click(`[data-tool="${name}"]`);
+  }
+
+  /**
+   * A synthetic wheel notch at an image-space point. Playwright's mouse.wheel only
+   * ever reports pixels, so the line and page units that real mice and Firefox send
+   * can only be exercised by constructing the event.
+   */
+  async wheel(
+    x: number,
+    y: number,
+    deltaY: number,
+    opts: { ctrlKey?: boolean; deltaMode?: 0 | 1 | 2; deltaX?: number; shiftKey?: boolean } = {}
+  ): Promise<void> {
+    const p = await this.at(x, y);
+    await this.page.evaluate(
+      (arg) => {
+        const target = document.elementFromPoint(arg.x, arg.y) ?? document.querySelector('#viewport')!;
+        target.dispatchEvent(
+          new WheelEvent('wheel', {
+            deltaY: arg.deltaY,
+            deltaX: arg.deltaX ?? 0,
+            deltaMode: arg.deltaMode ?? 0,
+            ctrlKey: arg.ctrlKey ?? false,
+            shiftKey: arg.shiftKey ?? false,
+            clientX: arg.x,
+            clientY: arg.y,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      },
+      { ...opts, x: p.x, y: p.y, deltaY }
+    );
+    // The editor renders on the next frame, so give it one.
+    await this.page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+  }
+
+  /** Grabs the rotation knob of a selected annotation and swings it to `degrees`. */
+  async rotateTo(index: number, degrees: number, mods: Mods = {}): Promise<void> {
+    const knob = (await this.handles(index)).find((h) => h.id === 'rot');
+    if (!knob) throw new Error(`annotation ${index} has no rotation handle`);
+    const c = (await this.center(index))!;
+    const arm = Math.hypot(knob.x - c.x, knob.y - c.y);
+    // The knob rests straight above the centre, so the target angle is a quarter
+    // turn behind the rotation being asked for.
+    const t = (degrees * Math.PI) / 180 - Math.PI / 2;
+    await this.drag([knob.x, knob.y], [c.x + Math.cos(t) * arm, c.y + Math.sin(t) * arm], mods);
   }
 
   async move(x: number, y: number): Promise<void> {
