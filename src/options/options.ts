@@ -10,6 +10,7 @@ const FIELDS: (keyof Settings)[] = [
   'hideSticky',
   'freezeAnimations',
   'maxCaptureHeight',
+  'mobileCaptureWidth',
   'format',
   'quality',
   'filenameTemplate',

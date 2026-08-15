@@ -10,9 +10,16 @@ import {
   dataUrlToBlob,
   gridPositions,
   makeRecord,
+  mobileMetrics,
   newCaptureId,
 } from './lib/capture-common';
-import { captureCrossOriginFrame, hasDebuggerPermission, printToPdf, turboCapture } from './cdp';
+import {
+  captureCrossOriginFrame,
+  hasDebuggerPermission,
+  printToPdf,
+  turboCapture,
+  turboMobileCapture,
+} from './cdp';
 import { pdfFilename } from './lib/filename';
 import type {
   CaptureContentMsg,
@@ -72,11 +79,32 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ['page', 'action'],
   });
   chrome.contextMenus.create({
+    id: 'fs-mobile',
+    title: 'Capture as mobile (390px)',
+    contexts: ['page', 'action'],
+  });
+  chrome.contextMenus.create({
     id: 'fs-pdf',
     title: 'Save as searchable PDF',
     contexts: ['page', 'action'],
   });
   chrome.contextMenus.create({ id: 'fs-history', title: 'Capture history', contexts: ['action'] });
+  void getSettings().then((s) =>
+    chrome.contextMenus.update('fs-mobile', {
+      title: `Capture as mobile (${mobileMetrics(s.mobileCaptureWidth).width}px)`,
+    })
+  );
+});
+
+// Keep the mobile menu label in sync with the configured emulation width.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync') return;
+  const width = changes['mobileCaptureWidth']?.newValue;
+  if (typeof width === 'number') {
+    chrome.contextMenus.update('fs-mobile', {
+      title: `Capture as mobile (${mobileMetrics(width).width}px)`,
+    });
+  }
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -91,6 +119,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
   if (info.menuItemId === 'fs-full-delayed') {
     void startCapture(tab, 'full', 5);
+    return;
+  }
+  if (info.menuItemId === 'fs-mobile') {
+    void startCapture(tab, 'full', undefined, true);
     return;
   }
   const mode: CaptureMode | null =
@@ -113,13 +145,20 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 async function startCapture(
   tab: chrome.tabs.Tab,
   mode: CaptureMode,
-  startDelayOverrideS?: number
+  startDelayOverrideS?: number,
+  mobile = false
 ): Promise<void> {
   const tabId = tab.id;
   if (tabId === undefined || busyTabs.has(tabId)) return;
   busyTabs.add(tabId);
   const badge = badgeFor(tabId);
   try {
+    // Mobile emulation needs CDP; requesting before any other await keeps the
+    // context menu click's user gesture valid (a no-op prompt when already granted).
+    if (mobile) {
+      const granted = await chrome.permissions.request({ permissions: ['debugger'] });
+      if (!granted) throw new Error('Mobile capture needs the debugger permission.');
+    }
     const settings = await getSettings();
 
     // Countdown on the badge before touching the page, so the user can open
@@ -177,6 +216,19 @@ async function startCapture(
     if (frameResult) {
       engine = 'turbo';
       ({ clip, tileCount, truncated } = frameResult);
+    } else if (mobile) {
+      // Device emulation reflows the page to a phone-width layout without touching
+      // the real window; tiles land in IndexedDB like any other Turbo capture.
+      if (!injectable) throw new Error('This page cannot be captured with device emulation.');
+      engine = 'turbo';
+      const result = await turboMobileCapture(
+        tabId,
+        capId,
+        settings.mobileCaptureWidth,
+        settings.maxCaptureHeight,
+        (done, total) => void badge.set(`${Math.round((done / total) * 100)}%`)
+      );
+      ({ clip, tileCount, truncated } = result);
     } else if (mode === 'visible' || !injectable) {
       // Single shot; also the graceful fallback on chrome:// pages and the Web Store.
       ({ clip, tileCount } = await captureVisibleSingle(tab, capId));
