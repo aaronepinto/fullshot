@@ -4,7 +4,13 @@
  * Requires the optional "debugger" permission (user opts in from Options).
  */
 import { putTile } from './lib/db';
-import { base64ToBlob, pickFrameTarget, type FrameTargetInfo } from './lib/capture-common';
+import {
+  base64ToBlob,
+  mobileMetrics,
+  pickFrameTarget,
+  segmentRects,
+  type FrameTargetInfo,
+} from './lib/capture-common';
 import type { Rect } from './lib/types';
 
 const PROTOCOL = '1.3';
@@ -55,6 +61,37 @@ export async function turboCapture(
   try {
     return await captureViaSession(target, capId, requestedClip, maxHeight, onProgress);
   } finally {
+    await chrome.debugger.detach(target).catch(() => undefined);
+  }
+}
+
+/**
+ * Captures the page as a phone-width layout without touching the real window:
+ * Emulation.setDeviceMetricsOverride reflows the page to a mobile viewport, then the
+ * shared segmented capture shoots the new layout. The override is always cleared.
+ */
+export async function turboMobileCapture(
+  tabId: number,
+  capId: string,
+  width: number,
+  maxHeight: number,
+  onProgress: (done: number, total: number) => void
+): Promise<TurboResult> {
+  const target = { tabId };
+  await chrome.debugger.attach(target, PROTOCOL);
+  try {
+    await chrome.debugger.sendCommand(
+      target,
+      'Emulation.setDeviceMetricsOverride',
+      mobileMetrics(width)
+    );
+    // Give responsive layouts and media queries a moment to settle after the reflow.
+    await new Promise((r) => setTimeout(r, 500));
+    return await captureViaSession(target, capId, null, maxHeight, onProgress);
+  } finally {
+    await chrome.debugger
+      .sendCommand(target, 'Emulation.clearDeviceMetricsOverride')
+      .catch(() => undefined);
     await chrome.debugger.detach(target).catch(() => undefined);
   }
 }
@@ -119,10 +156,7 @@ async function captureViaSession(
   }
   if (clip.w < 1 || clip.h < 1) throw new Error('Empty capture region');
 
-  const segments: Rect[] = [];
-  for (let y = clip.y; y < clip.y + clip.h; y += SEGMENT_H) {
-    segments.push({ x: clip.x, y, w: clip.w, h: Math.min(SEGMENT_H, clip.y + clip.h - y) });
-  }
+  const segments = segmentRects(clip, SEGMENT_H);
 
   let index = 0;
   for (const seg of segments) {
