@@ -26,5 +26,6 @@
     "type": "git",
     "url": "https://github.com/aaronepinto/smollet-screencappy.git"
   },
-  "homepage": "https://screencappy.smollet.app"
+  "homepage": "https://screencappy.smollet.app",
+  "license": "Apache-2.0"
 }
