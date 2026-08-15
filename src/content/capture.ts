@@ -15,7 +15,11 @@ interface SavedInline {
 }
 
 (() => {
-  const w = window as typeof window & { __screencappyCapture?: boolean };
+  const w = window as typeof window & {
+    __screencappyCapture?: boolean;
+    /** Scrollable element chosen by the element picker (shared isolated world). */
+    __screencappyPickedEl?: HTMLElement;
+  };
   if (w.__screencappyCapture) return;
   w.__screencappyCapture = true;
 
@@ -30,14 +34,22 @@ interface SavedInline {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
-  function measure(maxHeight: number): PageMetrics {
+  function measure(maxHeight: number, usePicked: boolean): PageMetrics {
     const de = document.documentElement;
     const body = document.body;
     const pageW = Math.max(de.scrollWidth, body?.scrollWidth ?? 0, de.clientWidth);
     const rawH = Math.max(de.scrollHeight, body?.scrollHeight ?? 0, de.clientHeight);
 
-    // Window barely scrolls: look for the SPA-style inner container holding the content.
-    containerEl = rawH - window.innerHeight < 200 ? findScrollContainer() : null;
+    if (usePicked && !w.__screencappyPickedEl?.isConnected) {
+      throw new Error('The picked element is no longer in the page.');
+    }
+    // Element capture pins the scroller to the picked element; otherwise, when the
+    // window barely scrolls, look for the SPA-style inner container holding the content.
+    containerEl = usePicked
+      ? w.__screencappyPickedEl!
+      : rawH - window.innerHeight < 200
+        ? findScrollContainer()
+        : null;
     if (containerEl) {
       const rawContainerH = containerEl.scrollHeight;
       const truncated = rawContainerH > maxHeight;
@@ -214,6 +226,7 @@ interface SavedInline {
     s.scrollLeft = originalScroll.x;
     s.scrollTop = originalScroll.y;
     containerEl = null;
+    delete w.__screencappyPickedEl;
   }
 
   async function handle(msg: CaptureContentMsg): Promise<unknown> {
@@ -221,7 +234,7 @@ interface SavedInline {
       case 'fs:ping':
         return { ok: true };
       case 'fs:measure':
-        return measure(msg.maxHeight);
+        return measure(msg.maxHeight, msg.usePicked ?? false);
       case 'fs:prepare':
         prepare(msg.hideSticky, msg.freezeAnimations);
         return { ok: true };
