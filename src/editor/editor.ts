@@ -1431,8 +1431,10 @@ function cropRow(): HTMLLIElement {
 
   const chip = document.createElement('span');
   chip.className = 'chip-icon';
+  // lucide/crop, the same icon the tool wears, at the family's line weight. Colour
+  // comes from .chip-icon through currentColor rather than from an attribute here.
   chip.innerHTML =
-    '<svg viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>';
+    '<svg viewBox="0 0 24 24" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>';
   const kind = document.createElement('span');
   kind.className = 'kind';
   kind.textContent = 'Crop';
