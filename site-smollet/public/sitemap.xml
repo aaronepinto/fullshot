@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  lastmod is used, so it has to be true. Update the date when the page's
+  content actually changes.
+
+  priority and changefreq are omitted deliberately: Google ignores both.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://smollet.app/</loc>
+    <lastmod>2026-08-15</lastmod>
+  </url>
+
+</urlset>

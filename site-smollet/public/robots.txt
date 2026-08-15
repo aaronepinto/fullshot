@@ -1,0 +1,16 @@
+# Smollet: https://smollet.app
+#
+# This site wants to be crawled, indexed, cited, and trained on. It is a one
+# page static site for a set of free Apache-2.0 licensed applications, there is
+# nothing private on it, and nothing here is disallowed for anyone.
+#
+# Note for whoever maintains the Cloudflare zone: a managed robots.txt that
+# blocks AI crawlers can be prepended to whatever this origin serves, in which
+# case shipping this file alone does not take effect. Check the live response
+# after deploying, and if AI crawler blocks appear, turn off the managed
+# robots.txt setting in the Cloudflare dashboard under Security Settings.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://smollet.app/sitemap.xml

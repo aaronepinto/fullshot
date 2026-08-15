@@ -1,0 +1,22 @@
+// Smollet umbrella site: pure static assets, no server code, no bindings.
+// Deploy with: cd site-smollet && bunx wrangler deploy
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "smollet-site",
+  "compatibility_date": "2026-08-15",
+  "assets": {
+    "directory": "./public",
+    // Serve public/404.html for any path that does not match an asset.
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    {
+      "pattern": "smollet.app",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.smollet.app",
+      "custom_domain": true
+    }
+  ]
+}

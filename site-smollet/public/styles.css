@@ -1,0 +1,273 @@
+/* Smollet umbrella site. One stylesheet, no external requests.
+
+   The ink shell from the Smollet design system, committed to rather than
+   flipped: warm off-white on near-black, one italic serif carrying the voice,
+   sans for the plumbing, tracked mono for labels. Text tiers are alpha of a
+   single ink colour, and emphasis is a solid fill rather than a coloured
+   accent, so the page stays near-monochrome throughout. */
+
+/* ---------------------------------------------------------------- fonts */
+
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Instrument Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/InstrumentSans-Variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('/fonts/Newsreader-Regular-Variable.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Spline Sans Mono';
+  font-style: normal;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url('/fonts/SplineSansMono-Variable.woff2') format('woff2');
+}
+
+/* --------------------------------------------------------------- tokens */
+
+:root {
+  color-scheme: dark;
+
+  --ink-950: oklch(0.145 0.005 285);
+  --ink-900: oklch(0.185 0.007 285);
+  --paper: oklch(0.95 0.006 88);
+
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Instrument Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --label-tracking: 0.18em;
+
+  --radius-xs: 7px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+
+  --ease-soft-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 0.25s;
+  --duration-view: 0.9s;
+
+  --surface-canvas: var(--ink-950);
+  --surface-canvas-deep: oklch(0.12 0.004 285);
+  --surface-card: var(--ink-900);
+  --surface-card-hover: color-mix(in oklch, var(--ink-900) 84%, white 8%);
+
+  --text-primary: var(--paper);
+  --text-secondary: color-mix(in oklch, var(--paper) 70%, transparent);
+  --text-tertiary: color-mix(in oklch, var(--paper) 50%, transparent);
+
+  --border-hairline: color-mix(in oklch, white 12%, transparent);
+  --border-default: color-mix(in oklch, white 20%, transparent);
+  --border-strong: color-mix(in oklch, white 38%, transparent);
+
+  --accent: var(--text-primary);
+  --accent-tint: color-mix(in oklch, white 12%, transparent);
+  --text-on-accent: var(--ink-950);
+  --focus-ring: color-mix(in oklch, white 55%, transparent);
+  --link-hover: color-mix(in oklch, var(--paper) 62%, transparent);
+
+  --column: 680px;
+}
+
+/* --------------------------------------------------------------- shared */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+  font: 400 16px/1.6 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* margin-inline rather than the margin shorthand: sections set their own
+   vertical rhythm and a shorthand here would silently zero it out. */
+.wrap {
+  max-width: var(--column);
+  margin-inline: auto;
+  padding: 0 28px;
+}
+
+a { color: var(--text-primary); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--link-hover); }
+:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 3px; }
+
+.label {
+  font: 500 11.5px/1.4 var(--font-mono);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------- masthead */
+
+.masthead { padding-top: 108px; }
+
+.masthead h1 {
+  font: italic 400 clamp(72px, 16vw, 128px) / 0.98 var(--font-display);
+  margin: 20px 0 0;
+  letter-spacing: -0.01em;
+}
+
+/* The approved logotype is lowercase. The markup keeps the name capitalised so
+   that the entity name, and what a screen reader announces, stay "Smollet";
+   only the rendering is the wordmark. Scoped to the wordmark rather than to
+   every h1, because the 404 heading is a sentence, not the logo. */
+.masthead h1.wordmark { text-transform: lowercase; }
+
+.masthead .lede {
+  font: 400 22px/1.55 var(--font-serif);
+  color: var(--text-secondary);
+  max-width: 460px;
+  margin: 24px 0 0;
+}
+
+/* ------------------------------------------------------------- sections */
+
+section { margin-top: 92px; }
+section > .label { margin-bottom: 22px; }
+
+.manifesto p {
+  font: 400 19px/1.72 var(--font-serif);
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+}
+.manifesto p:last-child { margin-bottom: 0; }
+.manifesto strong { color: var(--text-primary); font-weight: 500; }
+
+/* -------------------------------------------------------------- product */
+
+.products { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+
+.product {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: 26px 28px 28px;
+  transition: background-color var(--duration-fast) var(--ease-soft-out);
+}
+.product:hover { background: var(--surface-card-hover); }
+
+.product h3 {
+  font: italic 400 34px/1.1 var(--font-display);
+  margin: 0;
+}
+.product h3 a { text-decoration: none; }
+.product h3 a:hover { color: var(--text-primary); text-decoration: underline; }
+
+.product p {
+  font: 400 16px/1.62 var(--font-ui);
+  color: var(--text-secondary);
+  margin: 12px 0 0;
+  max-width: 52ch;
+}
+
+.product-links {
+  margin: 20px 0 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product-links a {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border-default);
+  text-decoration: none;
+  font: 500 13.5px/1.35 var(--font-ui);
+  transition: background-color var(--duration-fast) var(--ease-soft-out),
+              border-color var(--duration-fast) var(--ease-soft-out);
+}
+.product-links a:hover { background: var(--accent-tint); border-color: var(--border-strong); color: var(--text-primary); }
+.product-links a.solid { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent); }
+.product-links a.solid:hover {
+  background: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
+  border-color: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
+  color: var(--text-on-accent);
+}
+
+/* The forthcoming slot is an outline, not a filled card: it holds the shape
+   of a product without pretending to be one. */
+.product.forthcoming {
+  background: transparent;
+  border: 1px dashed var(--border-hairline);
+}
+.product.forthcoming:hover { background: transparent; }
+.product.forthcoming h3 { font: 500 17px/1.4 var(--font-ui); color: var(--text-tertiary); }
+.product.forthcoming p { margin-top: 8px; }
+
+/* ----------------------------------------------------------- principles */
+
+.principles { list-style: none; margin: 0; padding: 0; }
+.principles li {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 8px 24px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border-hairline);
+}
+.principles li:last-child { border-bottom: 1px solid var(--border-hairline); }
+.principles dfn {
+  font: 500 12px/1.5 var(--font-mono);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--text-primary);
+}
+.principles span { font: 400 16.5px/1.6 var(--font-ui); color: var(--text-secondary); }
+
+/* ---------------------------------------------------------------- footer */
+
+footer {
+  margin-top: 96px;
+  padding-bottom: 72px;
+  font: 500 11.5px/1.9 var(--font-mono);
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.footer-rule { border-top: 1px solid var(--border-hairline); padding-top: 26px; }
+footer p { margin: 0; }
+footer a { color: var(--text-secondary); text-decoration: none; border-bottom: 1px solid var(--border-default); }
+footer a:hover { color: var(--text-primary); border-bottom-color: var(--border-strong); }
+
+/* ---------------------------------------------------------------- motion */
+
+.rise { animation: rise-in var(--duration-view) var(--ease-soft-out) both; }
+.rise-2 { animation-delay: 0.1s; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px); filter: blur(7px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01s !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .wrap { padding: 0 22px; }
+  .masthead { padding-top: 76px; }
+  .masthead .lede { max-width: none; font-size: 20px; }
+  section { margin-top: 68px; }
+  .principles li { grid-template-columns: 1fr; gap: 6px; }
+}
