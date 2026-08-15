@@ -23,6 +23,13 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
+      # The build renders the icons, and it renders them in a real browser.
+      # Pinned the same way as the end-to-end matrix rather than relying on
+      # whatever Chrome the runner image happens to ship.
+      - uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1
+        id: chrome
+        with:
+          chrome-version: stable
       - run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
@@ -30,6 +37,8 @@ jobs:
         run: bun run test
       - name: Build
         run: bun run build
+        env:
+          CHROME: ${{ steps.chrome.outputs.chrome-path }}
       - name: Pack
         run: cd dist && zip -r -X ../screencappy.zip .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
