@@ -60,4 +60,20 @@ describe('pickDominantScroller', () => {
     const scroller = candidate({ clientWidth: 700, clientHeight: 800 });
     expect(pickDominantScroller([bigButStatic, scroller], VP_W, VP_H)).toBe(scroller);
   });
+
+  test('a mail reading pane wins over the folder list beside it', () => {
+    // 25/75 split of a 1200px window under a 48px header.
+    const folders = candidate({ clientWidth: 300, clientHeight: 752, scrollHeight: 2400 });
+    const reading = candidate({ clientWidth: 900, clientHeight: 752, scrollHeight: 2600 });
+    expect(pickDominantScroller([folders, reading], VP_W, VP_H)).toBe(reading);
+  });
+
+  test('ignoreOverflow admits containers locked with overflow hidden', () => {
+    const locked = candidate({ overflowY: 'hidden' });
+    expect(pickDominantScroller([locked], VP_W, VP_H, true)).toBe(locked);
+    // The other rules still apply: nothing to scroll is still nothing to scroll.
+    expect(
+      pickDominantScroller([candidate({ overflowY: 'hidden', scrollHeight: 700 })], VP_W, VP_H, true)
+    ).toBeNull();
+  });
 });
