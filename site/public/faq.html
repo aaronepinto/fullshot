@@ -7,8 +7,12 @@
   <meta name="description" content="Answers about Screencappy, the free open source full page screenshot extension for Chrome: what it costs, what permissions it needs, where captures are stored, which formats it exports, and which browsers it supports." />
   <link rel="canonical" href="https://screencappy.smollet.app/faq" />
 
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)" />
   <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSerif-Italic.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSans-Variable.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/Newsreader-Regular-Variable.woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 
   <meta property="og:type" content="article" />
@@ -224,6 +228,10 @@
   </script>
 </head>
 <body>
+  <header class="site-header">
+    <a class="wordmark" href="/"><img src="/icon.png" alt="" width="22" height="22" />Screencappy</a>
+    <span class="byline">by <a href="https://smollet.app">Smollet</a></span>
+  </header>
   <main class="prose">
     <nav class="crumbs"><a href="/">Screencappy</a> / FAQ</nav>
 
@@ -304,6 +312,7 @@
       <a href="/how-to-take-a-full-page-screenshot-in-chrome">How to take a full page screenshot in Chrome</a> ·
       <a href="/privacy">Privacy policy</a> ·
       <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
+      <p class="colophon">Screencappy, by <a href="https://smollet.app">Smollet</a></p>
     </footer>
   </main>
 </body>
