@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SingleFile and Screencappy: Save a Page or an Image</title>
+  <meta name="description" content="SingleFile saves a web page as one self contained HTML file with text that stays selectable. Screencappy saves it as an image. Both are free and open source, and they solve different problems." />
+  <link rel="canonical" href="https://screencappy.smollet.app/singlefile-alternative" />
+
+  <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a0a0c" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/icon.png" />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSerif-Italic.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/InstrumentSans-Variable.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/Newsreader-Regular-Variable.woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Screencappy" />
+  <meta property="og:url" content="https://screencappy.smollet.app/singlefile-alternative" />
+  <meta property="og:title" content="SingleFile and Screencappy: which one do you need?" />
+  <meta property="og:description" content="Use SingleFile to keep a page. Use Screencappy to show a page. Both free, both open source, and they work well side by side." />
+  <meta property="og:image" content="https://screencappy.smollet.app/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Screencappy, free open source full page screenshots for Chrome" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://screencappy.smollet.app/singlefile-alternative#webpage",
+        "url": "https://screencappy.smollet.app/singlefile-alternative",
+        "name": "SingleFile and Screencappy: which one do you need?",
+        "description": "A disambiguation between SingleFile, which saves a web page as one self contained HTML file, and Screencappy, which saves a web page as an image. Both are free and open source.",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "about": { "@id": "https://screencappy.smollet.app/#software" },
+        "breadcrumb": { "@id": "https://screencappy.smollet.app/singlefile-alternative#breadcrumb" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://screencappy.smollet.app/singlefile-alternative#breadcrumb",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Screencappy",
+            "item": "https://screencappy.smollet.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Alternatives",
+            "item": "https://screencappy.smollet.app/alternatives"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "SingleFile and Screencappy"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://screencappy.smollet.app/singlefile-alternative#faqpage",
+        "url": "https://screencappy.smollet.app/singlefile-alternative",
+        "name": "SingleFile and Screencappy: which one do you need?",
+        "dateModified": "2026-08-15",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://screencappy.smollet.app/#website" },
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does SingleFile produce screenshots?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. It produces an HTML file with the CSS, images, fonts and frames inlined, so the page opens offline exactly as it looked. It has no PNG or JPEG export and no PDF export. That is not a shortcoming, it is the design: the output is a working page, not a picture of one."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "When is SingleFile the better tool?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "When you want the page to still be a page. Text stays selectable and searchable, links still work, and the layout reflows. For archiving research, saving documentation before it changes, or keeping a copy of something you will want to read and search later, SingleFile is the better answer and it is very good at it. It runs on more browsers than anything else in this comparison, including Firefox, Safari and Firefox for Android, and it has a command line tool."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "When is a screenshot the better tool?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "When the output needs to be an image. Bug reports, design reviews, receipts, anything you are pasting into a ticket, a document, a chat, or a slide. An HTML file cannot be dropped into a Jira comment or a Figma board. A PNG can. That is the whole of the difference."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which one should you use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Use SingleFile to keep a page. Use Screencappy to show a page. If you do both regularly, install both. They request different things, they do not conflict, and between them they cover archiving and sharing without a subscription or an account anywhere."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="/"><img src="/icon.png" alt="" width="22" height="22" />Screencappy</a>
+    <span class="byline">by <a href="https://smollet.app">Smollet</a></span>
+  </header>
+  <main class="prose">
+    <nav class="crumbs"><a href="/">Screencappy</a> / <a href="/alternatives">Alternatives</a> / SingleFile and Screencappy</nav>
+
+    <h1>SingleFile and Screencappy: which one do you need?</h1>
+    <p class="verified">Last verified: August 15, 2026</p>
+
+    <p class="lede">SingleFile saves a web page as one self contained HTML file. Screencappy saves a
+    web page as one image. If you are choosing between them, the question is whether you want the
+    page or a picture of the page.</p>
+
+    <p>Both are free, both are open source, and neither requires an account. They solve different
+    problems and they work well side by side.</p>
+
+    <h2>Does SingleFile produce screenshots?</h2>
+
+    <p>No. It produces an HTML file with the CSS, images, fonts and frames inlined, so the page
+    opens offline exactly as it looked.</p>
+
+    <p>It has no PNG or JPEG export and no PDF export. That is not a shortcoming, it is the design:
+    the output is a working page, not a picture of one.</p>
+
+    <h2>When is SingleFile the better tool?</h2>
+
+    <p>When you want the page to still be a page. Text stays selectable and searchable, links still
+    work, and the layout reflows.</p>
+
+    <p>For archiving research, saving documentation before it changes, or keeping a copy of
+    something you will want to read and search later, SingleFile is the better answer and it is very
+    good at it. It runs on more browsers than anything else in this comparison, including Firefox,
+    Safari and Firefox for Android, and it has a command line tool.</p>
+
+    <h2>When is a screenshot the better tool?</h2>
+
+    <p>When the output needs to be an image. Bug reports, design reviews, receipts, anything you are
+    pasting into a ticket, a document, a chat, or a slide.</p>
+
+    <p>An HTML file cannot be dropped into a Jira comment or a Figma board. A PNG can. That is the
+    whole of the difference.</p>
+
+    <h2>How do SingleFile and Screencappy compare?</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col"></th><th scope="col">SingleFile</th><th scope="col">Screencappy</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Output</th>
+            <td>Self contained HTML, ZIP, MHTML, Webarchive</td>
+            <td>PNG, JPEG, WebP, PDF</td>
+          </tr>
+          <tr>
+            <th scope="row">Image export</th>
+            <td>No</td>
+            <td>Yes</td>
+          </tr>
+          <tr>
+            <th scope="row">Text remains selectable</th>
+            <td>Yes</td>
+            <td>No, output is an image</td>
+          </tr>
+          <tr>
+            <th scope="row">Price</th>
+            <td>Free</td>
+            <td>Free</td>
+          </tr>
+          <tr>
+            <th scope="row">License</th>
+            <td>AGPL-3.0, source public</td>
+            <td>Apache-2.0, source public</td>
+          </tr>
+          <tr>
+            <th scope="row">Account required</th>
+            <td>No</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <th scope="row">Cloud upload</th>
+            <td>None by default, optional opt in destinations</td>
+            <td>None</td>
+          </tr>
+          <tr>
+            <th scope="row">Host permissions</th>
+            <td>Requests all sites</td>
+            <td>None requested</td>
+          </tr>
+          <tr>
+            <th scope="row">Browsers</th>
+            <td>Chrome, Firefox, Safari, Edge, Firefox for Android, plus a command line tool</td>
+            <td>Chrome</td>
+          </tr>
+          <tr>
+            <th scope="row">Store rating</th>
+            <td>4.4 from 1.1K ratings</td>
+            <td>Not yet listed</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p>SingleFile requests access to all sites and Screencappy does not, but that difference is
+      inherent to what SingleFile does: it cannot inline a page's assets without access to them.
+      Both facts are stated here, and neither is a criticism.</p>
+    </div>
+
+    <h2>Which one should you use?</h2>
+
+    <p>Use SingleFile to keep a page. Use Screencappy to show a page.</p>
+
+    <p>If you do both regularly, install both. They request different things, they do not conflict,
+    and between them they cover archiving and sharing without a subscription or an account
+    anywhere.</p>
+
+    <footer>
+      <p><a href="/alternatives">All comparisons</a> · <a href="/">Screencappy home</a> ·
+      <a href="/faq">FAQ</a> · <a href="/privacy">Privacy policy</a> ·
+      <a href="https://github.com/aaronepinto/smollet-screencappy">Source on GitHub</a></p>
+      <p>SingleFile is a trademark of its respective owner. Screencappy is not affiliated with,
+      endorsed by, or connected to SingleFile in any way.</p>
+      <p class="colophon">Screencappy, by <a href="https://smollet.app">Smollet</a></p>
+    </footer>
+  </main>
+</body>
+</html>
