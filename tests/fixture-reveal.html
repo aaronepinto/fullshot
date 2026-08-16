@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e reveal-on-scroll fixture</title>
+  <style>
+    /* The animate-in-on-scroll pattern every marketing and docs template ships: sections
+       start transparent and 48px low, and an IntersectionObserver clears both over a
+       transition. While a section is mid-transition it is a blend toward the white page
+       behind it, sitting at the wrong offset, so a tile shot at that moment holds neither
+       the section's colour nor its position. Both are single-pixel assertions here
+       because each section paints the solid colour that encodes its own index.
+       ?dur=<ms> sets the transition duration (0 disables it).
+       ?mode=timeline swaps the observer for a scroll-driven animation, whose progress is
+       tied to the scroll offset rather than to time: no amount of waiting settles it. */
+    html { scroll-behavior: auto; }
+    body { margin: 0; background: #fff; font: 700 96px/1 system-ui, sans-serif; }
+    section {
+      height: 500px; display: flex; align-items: center; justify-content: center;
+      color: rgba(255, 255, 255, 0.75);
+    }
+    body.io section {
+      opacity: 0;
+      transform: translateY(48px);
+      transition: opacity var(--dur) ease, transform var(--dur) ease;
+    }
+    body.io section.shown { opacity: 1; transform: none; }
+    body.timeline section {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+    }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(48px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const timeline = params.get('mode') === 'timeline';
+    const dur = params.get('dur') ?? '400';
+    document.body.classList.add(timeline ? 'timeline' : 'io');
+    document.body.style.setProperty('--dur', dur + 'ms');
+
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement('section');
+      // rgb(6 + i, 90, 160): the harness reads the section index straight out of one
+      // pixel, so a duplicated, skipped or half-faded section is a hard failure.
+      s.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      s.textContent = i;
+      document.body.appendChild(s);
+    }
+
+    if (!timeline) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) if (e.isIntersecting) e.target.classList.add('shown');
+        },
+        { threshold: 0.1 }
+      );
+      for (const s of document.querySelectorAll('section')) io.observe(s);
+    }
+  </script>
+</body>
+</html>

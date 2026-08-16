@@ -1,3 +1,5 @@
+import type { DegradeReason, HugePageChoice } from './capture-common';
+
 export type CaptureMode = 'full' | 'visible' | 'selection' | 'element';
 export type Engine = 'stitch' | 'turbo';
 
@@ -21,6 +23,13 @@ export interface PageMetrics {
   url: string;
   /** True when the page was taller than the configured capture ceiling and got clipped. */
   truncated: boolean;
+  /**
+   * Set when the page itself makes a full-page capture impossible or pointless, so the
+   * capture is honestly the visible area plus the reason. See DEGRADED_NOTICE.
+   */
+  degraded?: DegradeReason;
+  /** The height the page claimed, when that claim is the reason for `degraded`. */
+  reportedH?: number;
   /**
    * Visible client area of the scroll container that drives the capture, in viewport
    * CSS px. Present only when the window barely scrolls and an inner element (Gmail,
@@ -87,13 +96,24 @@ export interface CaptureRecord {
 /** Messages the background sends to the capture content script. */
 export type CaptureContentMsg =
   | { type: 'fs:ping' }
-  | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean }
+  /** allowHuge takes an implausible reported height at face value, capped at maxHeight. */
+  | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean; allowHuge?: boolean }
+  /** Asks the user what to do about a page reporting a height nothing could walk. */
+  | { type: 'fs:askHugePage'; reportedHeight: number; limitHeight: number }
   | { type: 'fs:prepare'; hideSticky: boolean; freezeAnimations: boolean }
   /** autoLoadMaxHeight, when set, runs the infinite-scroll auto-load loop first (CSS px ceiling). */
   | { type: 'fs:prescroll'; stepY: number; maxY: number; autoLoadMaxHeight?: number }
   /** maxY is the bottom of the region to capture: how far the page has to be able to scroll. */
   | { type: 'fs:probeScroll'; maxY: number }
-  | { type: 'fs:scrollTo'; x: number; y: number; settleMs: number; hideFixed: boolean }
+  /** firstTile/lastTile place the tile in the grid: which pinned furniture belongs on it. */
+  | {
+      type: 'fs:scrollTo';
+      x: number;
+      y: number;
+      settleMs: number;
+      firstTile: boolean;
+      lastTile: boolean;
+    }
   | { type: 'fs:restore' };
 
 export interface ScrollResult {

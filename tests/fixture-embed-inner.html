@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e embedded document</title>
+  <style>
+    /* 25 numbered pages of a paginated document, 5000px in all, each encoding its index. */
+    body { margin: 0; font: 700 40px/200px system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    .page { height: 200px; padding-left: 40px; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <script>
+    for (let i = 0; i < 25; i++) {
+      const page = document.createElement('div');
+      page.className = 'page';
+      page.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      page.textContent = 'Page ' + (i + 1);
+      document.body.appendChild(page);
+    }
+  </script>
+</body>
+</html>

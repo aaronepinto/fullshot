@@ -6,9 +6,15 @@
  */
 import {
   AUTO_LOAD,
+  CLIPPED_MIN_OVERFLOW,
   HIJACK,
+  IMAGE_WAIT,
+  IMPLAUSIBLE_HEIGHT,
   MAX_SCAN_NODES,
+  OPAQUE_EMBED_COVERAGE,
   SETTLE,
+  fixedEdge,
+  formatPx,
   hasFixedBackground,
   intersectsViewport,
   movedEnough,
@@ -16,8 +22,10 @@ import {
   settleWatchMs,
   shouldContinueAutoLoad,
   shouldKeepSettling,
+  showsOnTile,
   walkShadowTree,
 } from '../lib/capture-common';
+import type { DegradeReason, FixedEdge, HugePageChoice } from '../lib/capture-common';
 import type {
   CaptureContentMsg,
   PageMetrics,
@@ -33,6 +41,13 @@ interface SavedInline {
   priority: string;
 }
 
+/** A viewport-pinned element, the edge it is pinned to, and whether it is hidden now. */
+interface PinnedEl {
+  el: HTMLElement;
+  edge: FixedEdge;
+  hidden: boolean;
+}
+
 (() => {
   const w = window as typeof window & {
     __screencappyCapture?: boolean;
@@ -43,9 +58,8 @@ interface SavedInline {
   w.__screencappyCapture = true;
 
   let styleEls: HTMLStyleElement[] = [];
-  let fixedEls: HTMLElement[] = [];
+  let fixedEls: PinnedEl[] = [];
   let savedInline: SavedInline[] = [];
-  let fixedHidden = false;
   let originalScroll = { x: 0, y: 0 };
   let containerEl: HTMLElement | null = null;
   /** Set when the picked element is a same-origin iframe: scrolling happens in here. */
@@ -57,6 +71,8 @@ interface SavedInline {
   let lastScrollAt = 0;
   /** Slowest reaction to a scroll seen in this run, ms: how long the next tile waits. */
   let renderLatency = 0;
+  /** What is left of the run's budget for waiting on images still on the wire, ms. */
+  let imageBudgetMs = IMAGE_WAIT.totalMs;
 
   const scroller = () =>
     frameDoc
@@ -65,7 +81,46 @@ interface SavedInline {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
-  function measure(maxHeight: number, usePicked: boolean): PageMetrics {
+  /**
+   * A reported height this far past anything real is a broken measurement (a docs
+   * framework was seen reporting 2^25). Capturing the visible area and saying so beats
+   * walking tens of thousands of tiles of nothing.
+   */
+  function degradeFor(rawHeight: number, allowHuge: boolean): DegradeReason | undefined {
+    return !allowHuge && rawHeight > IMPLAUSIBLE_HEIGHT ? 'huge' : undefined;
+  }
+
+  /**
+   * A plugin-backed viewer filling the window, a PDF above all. There is no document
+   * behind an <embed> to scroll, so the visible area is all the stitch engine can honestly
+   * offer, and it says so rather than handing back page one of forty.
+   */
+  function opaqueEmbed(): DegradeReason | undefined {
+    for (const el of document.querySelectorAll<HTMLElement>('embed, object')) {
+      const r = el.getBoundingClientRect();
+      if (
+        r.width >= window.innerWidth * OPAQUE_EMBED_COVERAGE &&
+        r.height >= window.innerHeight * OPAQUE_EMBED_COVERAGE
+      ) {
+        return 'embed';
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Whether a screenful of content is being clipped away by a wrapper that offers no way
+   * to scroll it - the app-shell page whose document really is one viewport tall, where
+   * measuring the page correctly still loses everything below the fold. Only asked when
+   * the page is one viewport and no scroller was found, so it costs nothing on long pages.
+   */
+  function clippedAway(): DegradeReason | undefined {
+    const el = findScrollContainer(true);
+    const hidden = el ? el.scrollHeight - el.clientHeight : 0;
+    return hidden > window.innerHeight * CLIPPED_MIN_OVERFLOW ? 'clipped' : undefined;
+  }
+
+  function measure(maxHeight: number, usePicked: boolean, allowHuge = false): PageMetrics {
     const de = document.documentElement;
     const body = document.body;
     const pageW = Math.max(de.scrollWidth, body?.scrollWidth ?? 0, de.clientWidth);
@@ -77,10 +132,10 @@ interface SavedInline {
     // Element capture pins the scroller to the picked element; otherwise, when the
     // window barely scrolls, look for the SPA-style inner container holding the content.
     frameDoc = null;
+    const shortPage = rawH - window.innerHeight < 200;
     containerEl = usePicked
       ? w.__screencappyPickedEl!
-      : (adoptedScroller ??
-        (rawH - window.innerHeight < 200 ? findScrollContainer() : null));
+      : (adoptedScroller ?? (shortPage ? findScrollContainer() : null));
     // A picked same-origin iframe scrolls inside its own document: the frame's
     // scrollingElement is the scroller and its full content size is the page.
     if (containerEl instanceof HTMLIFrameElement) {
@@ -89,10 +144,11 @@ interface SavedInline {
       frameDoc = doc;
       const se = doc.scrollingElement ?? doc.documentElement;
       const rawFrameH = se.scrollHeight;
-      const truncated = rawFrameH > maxHeight;
+      const degraded = degradeFor(rawFrameH, allowHuge);
+      const truncated = !degraded && rawFrameH > maxHeight;
       return {
         pageW: se.scrollWidth,
-        pageH: truncated ? maxHeight : rawFrameH,
+        pageH: degraded ? window.innerHeight : truncated ? maxHeight : rawFrameH,
         vpW: window.innerWidth,
         vpH: window.innerHeight,
         dpr: window.devicePixelRatio,
@@ -101,15 +157,17 @@ interface SavedInline {
         title: document.title,
         url: location.href,
         truncated,
+        ...(degraded ? { degraded, reportedH: rawFrameH } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
     if (containerEl) {
       const rawContainerH = containerEl.scrollHeight;
-      const truncated = rawContainerH > maxHeight;
+      const degraded = degradeFor(rawContainerH, allowHuge);
+      const truncated = !degraded && rawContainerH > maxHeight;
       return {
         pageW: containerEl.scrollWidth,
-        pageH: truncated ? maxHeight : rawContainerH,
+        pageH: degraded ? containerEl.clientHeight : truncated ? maxHeight : rawContainerH,
         vpW: window.innerWidth,
         vpH: window.innerHeight,
         dpr: window.devicePixelRatio,
@@ -118,14 +176,17 @@ interface SavedInline {
         title: document.title,
         url: location.href,
         truncated,
+        ...(degraded ? { degraded, reportedH: rawContainerH } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
 
-    const truncated = rawH > maxHeight;
+    const degraded =
+      degradeFor(rawH, allowHuge) ?? (shortPage ? (opaqueEmbed() ?? clippedAway()) : undefined);
+    const truncated = !degraded && rawH > maxHeight;
     return {
       pageW,
-      pageH: truncated ? maxHeight : rawH,
+      pageH: degraded ? window.innerHeight : truncated ? maxHeight : rawH,
       vpW: window.innerWidth,
       vpH: window.innerHeight,
       dpr: window.devicePixelRatio,
@@ -134,29 +195,147 @@ interface SavedInline {
       title: document.title,
       url: location.href,
       truncated,
+      ...(degraded ? { degraded, reportedH: rawH } : {}),
     };
+  }
+
+  /**
+   * Content height an element has to offer. A same-origin iframe reports its own border
+   * box as its scrollHeight, so an app or a document living entirely inside one looks flat
+   * from out here; what it actually holds is its document's height. This is what lets the
+   * viewer-shaped page (a paginated document filling the window) be captured whole.
+   */
+  function contentHeight(el: HTMLElement): number {
+    if (!(el instanceof HTMLIFrameElement)) return el.scrollHeight;
+    const doc = accessibleFrameDoc(el);
+    const se = doc?.scrollingElement ?? doc?.documentElement;
+    return se ? se.scrollHeight : el.scrollHeight;
+  }
+
+  /**
+   * Asks the user what to do about a page reporting a height nothing could walk, and
+   * resolves with their answer. Which of the three is right depends on what the page
+   * actually is, and only the person looking at it knows that, so the engine asks instead
+   * of deciding: a broken measurement over real content wants the first N px, a viewer
+   * that reports nonsense and paints one screen wants the visible area, and someone who
+   * would rather fix the page first wants neither.
+   *
+   * Shown before anything about the page has been touched, and gone before the first
+   * tile, so it can never end up in the capture. Its markup lives in a closed shadow root
+   * for the same reason the selection overlay's does: the host page can neither restyle
+   * it nor read it.
+   */
+  function askHugePage(reportedHeight: number, limitHeight: number): Promise<HugePageChoice> {
+    return new Promise<HugePageChoice>((resolve) => {
+      const host = document.createElement('div');
+      // The one part of the overlay the outside can see, so the e2e harness can wait for it.
+      host.setAttribute('data-screencappy', 'huge-page-prompt');
+      host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+      const shadow = host.attachShadow({ mode: 'closed' });
+      const root = document.createElement('div');
+      root.innerHTML = `
+        <style>
+          /* The shell's ink, cream and single sky accent, held to literals because this
+             overlay lives in the host page and cannot reach the extension's stylesheet. */
+          .scrim {
+            position: fixed; inset: 0; background: rgba(10, 10, 12, .55);
+            display: flex; align-items: center; justify-content: center;
+          }
+          .card {
+            width: min(460px, calc(100vw - 48px)); box-sizing: border-box;
+            background: rgba(10, 10, 12, .97); color: #faf6ec;
+            border: 1px solid rgba(250, 246, 236, .16); border-radius: 14px;
+            padding: 22px 24px; font: 14px/1.5 system-ui, sans-serif;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .55);
+          }
+          h1 { font: 600 16px/1.3 system-ui, sans-serif; margin: 0 0 8px; }
+          p { margin: 0 0 18px; color: rgba(250, 246, 236, .78); }
+          b { color: #38bdf8; font-weight: 600; }
+          .actions { display: flex; flex-direction: column; gap: 8px; }
+          button {
+            font: 500 14px/1 system-ui, sans-serif; text-align: left;
+            padding: 11px 14px; border-radius: 9px; cursor: pointer;
+            background: rgba(250, 246, 236, .06); color: #faf6ec;
+            border: 1px solid rgba(250, 246, 236, .16);
+          }
+          button:hover { background: rgba(250, 246, 236, .12); }
+          button.primary { background: #38bdf8; color: #0a0a0c; border-color: #38bdf8; }
+          button.primary:hover { background: #7dd3fc; }
+          button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+          .keys { margin: 14px 0 0; font-size: 12px; color: rgba(250, 246, 236, .55); }
+        </style>
+        <div class="scrim">
+          <div class="card" role="dialog" aria-modal="true" aria-labelledby="t">
+            <h1 id="t">This page reports an impossible height</h1>
+            <p>
+              It says it is <b class="reported"></b> tall, which is almost certainly a
+              measurement bug rather than that much content. What should the capture cover?
+            </p>
+            <div class="actions">
+              <button class="primary" data-choice="limit">Capture the first <span class="limit"></span></button>
+              <button data-choice="visible">Capture the visible area only</button>
+              <button data-choice="cancel">Cancel</button>
+            </div>
+            <p class="keys"><b>Enter</b> for the first option &nbsp;·&nbsp; <b>Esc</b> to cancel</p>
+          </div>
+        </div>
+      `;
+      root.querySelector('.reported')!.textContent = formatPx(reportedHeight);
+      root.querySelector('.limit')!.textContent = formatPx(limitHeight);
+      shadow.appendChild(root);
+      document.documentElement.appendChild(host);
+
+      const finish = (choice: HugePageChoice) => {
+        window.removeEventListener('keydown', onKey, true);
+        host.remove();
+        resolve(choice);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        finish('cancel');
+      };
+      for (const button of root.querySelectorAll<HTMLButtonElement>('button')) {
+        button.addEventListener('click', () =>
+          finish((button.dataset['choice'] as HugePageChoice) ?? 'cancel')
+        );
+      }
+      window.addEventListener('keydown', onKey, true);
+      // Focus lands on the option that keeps the most content, so Enter takes it.
+      root.querySelector<HTMLButtonElement>('button.primary')!.focus();
+    });
   }
 
   function findScrollContainer(ignoreOverflow = false): HTMLElement | null {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
     const minArea = vpW * vpH * 0.4;
-    const all = document.querySelectorAll<HTMLElement>('body *');
-    const limit = Math.min(all.length, 60_000);
     const candidates: { el: HTMLElement; overflowY: string; scrollHeight: number; clientWidth: number; clientHeight: number }[] = [];
-    for (let i = 0; i < limit; i++) {
-      const el = all[i]!;
-      const ch = el.clientHeight;
-      // Cheap geometry pre-filter before the expensive computed-style read.
-      if (ch === 0 || el.scrollHeight <= ch + 100 || el.clientWidth * ch < minArea) continue;
-      candidates.push({
-        el,
-        overflowY: getComputedStyle(el).overflowY,
-        scrollHeight: el.scrollHeight,
-        clientWidth: el.clientWidth,
-        clientHeight: ch,
-      });
-    }
+    if (!document.body) return null;
+    // The walk descends into open shadow roots, the same as the sticky and fixed pass:
+    // a design-system app shell often keeps its one real scroller inside a custom
+    // element, where querySelectorAll cannot see it.
+    walkShadowTree<Element>(
+      document.body.children,
+      (node) => {
+        const el = node as HTMLElement;
+        const ch = el.clientHeight;
+        // Cheap geometry pre-filter before the expensive computed-style read.
+        if (ch === 0 || el.clientWidth * ch < minArea) return;
+        const scrollHeight = contentHeight(el);
+        if (scrollHeight <= ch + 100) return;
+        candidates.push({
+          el,
+          // A frame scrolls its own document, whatever the frame element's own overflow says.
+          overflowY: el instanceof HTMLIFrameElement ? 'auto' : getComputedStyle(el).overflowY,
+          scrollHeight,
+          clientWidth: el.clientWidth,
+          clientHeight: ch,
+        });
+      },
+      MAX_SCAN_NODES
+    );
     return pickDominantScroller(candidates, vpW, vpH, ignoreOverflow)?.el ?? null;
   }
 
@@ -200,11 +379,23 @@ interface SavedInline {
       html, body { scroll-behavior: auto !important; overscroll-behavior: none !important; }
       ::-webkit-scrollbar { display: none !important; }
       html { scrollbar-width: none !important; }
+      /* Snapping lets the browser overrule the offset each tile was scrolled to and land
+         on a snap point instead, which leaves a hole between one tile and the next. */
+      *, *::before, *::after {
+        scroll-snap-type: none !important;
+        scroll-snap-align: none !important;
+      }
       ${
         freezeAnimations
           ? `*, *::before, *::after {
                animation-play-state: paused !important;
                transition-property: none !important;
+               /* Scroll-driven animations (animation-timeline: view()) advance with the
+                  scroll offset, so there is no time to wait for and pausing one freezes
+                  it wherever it stood: a section below the fold stays fully transparent
+                  and displaced. Detaching the timeline drops the animation out of effect
+                  and the element renders its settled base style. */
+               animation-timeline: none !important;
              }`
           : ''
       }
@@ -237,7 +428,13 @@ interface SavedInline {
         (el) => {
           const style = view.getComputedStyle(el);
           if (style.position === 'fixed') {
-            fixedEls.push(el as HTMLElement);
+            // Measured now, before anything scrolls, so the box is where the user sees it.
+            const edge = fixedEdge(
+              el.getBoundingClientRect(),
+              window.innerWidth,
+              window.innerHeight
+            );
+            fixedEls.push({ el: el as HTMLElement, edge, hidden: false });
           } else if (hideSticky && style.position === 'sticky') {
             setInline(el as HTMLElement, 'position', 'static');
           }
@@ -254,17 +451,25 @@ interface SavedInline {
     watcher = watchMutations();
   }
 
-  function setFixedHidden(hide: boolean) {
-    if (hide === fixedHidden) return;
-    fixedHidden = hide;
-    for (const el of fixedEls) {
+  /**
+   * Hides the pinned furniture that does not belong on this tile: a header shows on the
+   * first, a bottom bar or floating button on the last, a full-height rail on every one.
+   * The scroll container itself is never hidden - on a page whose real content lives in a
+   * fixed panel (a modal, an app shell) that panel *is* the capture.
+   */
+  function setFixedForTile(firstTile: boolean, lastTile: boolean) {
+    for (const pinned of fixedEls) {
+      if (pinned.el === containerEl || pinned.el.contains(containerEl)) continue;
+      const hide = !showsOnTile(pinned.edge, firstTile, lastTile);
+      if (hide === pinned.hidden) continue;
+      pinned.hidden = hide;
       if (hide) {
-        setInline(el, 'visibility', 'hidden');
+        setInline(pinned.el, 'visibility', 'hidden');
       } else {
         // restore just the visibility entries for this element
         for (let i = savedInline.length - 1; i >= 0; i--) {
           const s = savedInline[i]!;
-          if (s.el === el && s.prop === 'visibility') {
+          if (s.el === pinned.el && s.prop === 'visibility') {
             applySaved(s);
             savedInline.splice(i, 1);
           }
@@ -480,6 +685,58 @@ interface SavedInline {
     };
   }
 
+  /** Images on screen that have been asked for and have not arrived yet. */
+  function pendingImages(): HTMLImageElement[] {
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const out: HTMLImageElement[] = [];
+    let scanned = 0;
+    for (const doc of frameDoc ? [document, frameDoc] : [document]) {
+      const images = doc.images;
+      for (let i = 0; i < images.length && scanned < IMAGE_WAIT.maxScanned; i++, scanned++) {
+        const img = images[i]!;
+        if (img.complete) continue;
+        if (!intersectsViewport(img.getBoundingClientRect(), vpW, vpH)) continue;
+        out.push(img);
+      }
+    }
+    return out;
+  }
+
+  function imageSettled(img: HTMLImageElement): Promise<void> {
+    return new Promise((resolve) => {
+      const done = () => {
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+        resolve();
+      };
+      img.addEventListener('load', done);
+      img.addEventListener('error', done);
+    });
+  }
+
+  /**
+   * Holds the shot while images this tile will show are still on their way. The mutation
+   * settle cannot cover this: a requested image mutates nothing while it waits, so a
+   * page of lazy images on a slow connection stitches together out of placeholders.
+   */
+  async function awaitImages() {
+    if (imageBudgetMs <= 0) return;
+    const startedAt = Date.now();
+    const deadline = startedAt + Math.min(imageBudgetMs, IMAGE_WAIT.perTileMs);
+    for (;;) {
+      const pending = pendingImages();
+      const left = deadline - Date.now();
+      if (!pending.length || left <= 0) break;
+      // Racing the sleep bounds the wait; looping again picks up images that only
+      // started loading once the ones ahead of them finished.
+      await Promise.race([Promise.all(pending.map(imageSettled)), sleep(left)]);
+    }
+    imageBudgetMs -= Date.now() - startedAt;
+    // One frame for the decoded image to actually paint.
+    await nextFrame();
+  }
+
   /**
    * Folds the previous tile's reaction into the run's render latency. The observer keeps
    * running while the tile is shot and stored, so a page that reacted only after the
@@ -490,8 +747,14 @@ interface SavedInline {
     renderLatency = Math.max(renderLatency, watcher.lastAt - lastScrollAt);
   }
 
-  async function scrollTo(x: number, y: number, settleMs: number, hideFixed: boolean): Promise<ScrollResult> {
-    setFixedHidden(hideFixed);
+  async function scrollTo(
+    x: number,
+    y: number,
+    settleMs: number,
+    firstTile: boolean,
+    lastTile: boolean
+  ): Promise<ScrollResult> {
+    setFixedForTile(firstTile, lastTile);
     const s = scroller();
     noteRenderLatency();
     const watchMs = settleWatchMs(renderLatency);
@@ -518,6 +781,7 @@ interface SavedInline {
       quiet = count === seen ? quiet + 1 : 0;
       seen = count;
     }
+    await awaitImages();
     return { x: s.scrollLeft, y: s.scrollTop };
   }
 
@@ -526,12 +790,12 @@ interface SavedInline {
     watcher = null;
     lastScrollAt = 0;
     renderLatency = 0;
+    imageBudgetMs = IMAGE_WAIT.totalMs;
     for (const styleEl of styleEls) styleEl.remove();
     styleEls = [];
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);
     savedInline = [];
     fixedEls = [];
-    fixedHidden = false;
     const s = scroller();
     s.scrollLeft = originalScroll.x;
     s.scrollTop = originalScroll.y;
@@ -546,7 +810,9 @@ interface SavedInline {
       case 'fs:ping':
         return { ok: true };
       case 'fs:measure':
-        return measure(msg.maxHeight, msg.usePicked ?? false);
+        return measure(msg.maxHeight, msg.usePicked ?? false, msg.allowHuge ?? false);
+      case 'fs:askHugePage':
+        return askHugePage(msg.reportedHeight, msg.limitHeight);
       case 'fs:prepare':
         prepare(msg.hideSticky, msg.freezeAnimations);
         return { ok: true };
@@ -563,7 +829,7 @@ interface SavedInline {
       case 'fs:probeScroll':
         return probeScroll(msg.maxY);
       case 'fs:scrollTo':
-        return scrollTo(msg.x, msg.y, msg.settleMs, msg.hideFixed);
+        return scrollTo(msg.x, msg.y, msg.settleMs, msg.firstTile, msg.lastTile);
       case 'fs:restore':
         restore();
         return { ok: true };
