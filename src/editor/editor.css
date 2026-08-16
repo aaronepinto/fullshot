@@ -584,6 +584,9 @@ kbd {
   box-shadow: var(--shadow-md);
   padding: 9px 16px;
   max-width: 70vw;
+  /* A saved-to path has no spaces to break at, so without this it runs out of
+     the toast rather than wrapping inside it. */
+  overflow-wrap: anywhere;
 }
 .toast.error { border-color: var(--danger); }
 

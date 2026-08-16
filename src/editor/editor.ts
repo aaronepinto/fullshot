@@ -25,6 +25,7 @@ import {
 import {
   copyToClipboard,
   downloadBlobs,
+  downloadPath,
   exportImages,
   exportPdf,
   type ImageFormat,
@@ -1329,18 +1330,30 @@ async function doDownload(format: ImageFormat | `pdf-${PdfPageMode}`) {
   if (!state.image || !state.record || !state.settings) return;
   try {
     toast('Exporting…');
+    let ids: number[];
+    let count = 1;
     if (format.startsWith('pdf')) {
       const mode = format.slice(4) as PdfPageMode;
       const blob = await exportPdf(exportSource(), mode);
-      await downloadBlobs([blob], baseName(), 'pdf', state.settings.saveAs);
+      ids = await downloadBlobs([blob], baseName(), 'pdf', state.settings.saveAs);
     } else {
       const fmt = format as ImageFormat;
       const blobs = await exportImages(exportSource(), fmt, state.settings.quality);
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
-      await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
-      if (blobs.length > 1) toast(`Image exceeded canvas limits, so it was saved as ${blobs.length} numbered files.`);
+      ids = await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
+      count = blobs.length;
+      if (count > 1) toast(`Image exceeded canvas limits, so it was saved as ${count} numbered files.`);
     }
-    toast('Saved ✓');
+    // Where it went, not just that it went: the browser picks the folder, renames
+    // around collisions, and a Save As dialog can put it anywhere.
+    const path = await downloadPath(ids[0]);
+    toast(
+      path
+        ? count > 1
+          ? `Saved ${count} files, starting at ${path}`
+          : `Saved to ${path}`
+        : 'Saved ✓'
+    );
   } catch (err) {
     toast(`Export failed: ${err}`, true);
   }
