@@ -162,8 +162,13 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun run build:firefox
+      # AMO requires human readable source for bundled code; ship the exact
+      # release commit so reviewers can rebuild with bun install && bun run
+      # build:firefox.
+      - name: Archive source for AMO review
+        run: git archive --format=zip --output "$RUNNER_TEMP/screencappy-source.zip" HEAD
       - name: Submit to AMO
         env:
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        run: bunx web-ext sign --source-dir dist-firefox --channel listed --no-input
+        run: bunx web-ext sign --source-dir dist-firefox --channel listed --no-input --upload-source-code "$RUNNER_TEMP/screencappy-source.zip"
