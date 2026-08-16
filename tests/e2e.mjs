@@ -445,6 +445,244 @@ async function runScenario(browser, url, scenario, fixtures) {
   await applySettings(worker, {});
 }
 
+// ---------------------------------------------------------------------------
+// Axis: the capture must leave the page exactly as it found it
+// ---------------------------------------------------------------------------
+
+/**
+ * Fixtures the restoration axis runs over. Each one has to be static: a page that
+ * animates or streams rows of its own accord would differ from itself between two
+ * snapshots and say nothing about the capture. Every one of these carries something the
+ * capture overrides - a sticky header, an inner scroller, root scroll locks the hijack
+ * probe lifts, pinned furniture, snapping - so the snapshot has something to catch.
+ */
+const RESTORE_FIXTURES = [
+  { name: 'full-page', path: '/', tiles: 6 },
+  { name: 'container', path: '/container', tiles: 4 },
+  { name: 'mail', path: '/mail', tiles: 4 },
+  { name: 'furniture', path: '/furniture', tiles: 5 },
+  { name: 'snap', path: '/smooth?snap=mandatory', tiles: 8 },
+  // One tile, so the forced failure never fires: the success path is all it can prove.
+  { name: 'hijack', path: '/hijack', tiles: 1 },
+];
+
+/**
+ * Everything about the page that a capture could disturb and must not: every element's
+ * full computed style, its inline style attribute, every scroll offset, and the head and
+ * the root's children, where the capture's own injected stylesheet would show up.
+ * @param {import('puppeteer-core').Page} page
+ */
+function snapshotPage(page) {
+  return page.evaluate(() => {
+    const els = [...document.querySelectorAll('*')];
+    return {
+      styles: els.map((el) => {
+        const cs = getComputedStyle(el);
+        let out = '';
+        for (const prop of cs) out += `${prop}:${cs.getPropertyValue(prop)};`;
+        return out;
+      }),
+      inline: els.map((el) => el.getAttribute('style') ?? ''),
+      scrolls: els.map((el) => `${el.scrollTop},${el.scrollLeft}`),
+      windowScroll: `${window.scrollY},${window.scrollX}`,
+      head: document.head.innerHTML,
+      rootChildren: [...document.documentElement.children].map((el) => el.tagName).join(','),
+      count: els.length,
+    };
+  });
+}
+
+/**
+ * @param {string} label
+ * @param {ReturnType<typeof snapshotPage> extends Promise<infer T> ? T : never} before
+ * @param {ReturnType<typeof snapshotPage> extends Promise<infer T> ? T : never} after
+ */
+function assertRestored(label, before, after) {
+  const fail = (what, a, b) => {
+    throw new Error(
+      `[${label}] the capture did not put ${what} back\n  before: ${String(a).slice(0, 300)}\n  after:  ${String(b).slice(0, 300)}`
+    );
+  };
+  if (before.count !== after.count) fail('the element count', before.count, after.count);
+  if (before.head !== after.head) fail('the document head', before.head, after.head);
+  if (before.rootChildren !== after.rootChildren) {
+    fail("the root element's children", before.rootChildren, after.rootChildren);
+  }
+  if (before.windowScroll !== after.windowScroll) {
+    fail('the window scroll offset', before.windowScroll, after.windowScroll);
+  }
+  for (const key of /** @type {const} */ (['styles', 'inline', 'scrolls'])) {
+    for (let i = 0; i < before[key].length; i++) {
+      if (before[key][i] !== after[key][i]) fail(`${key} on element ${i}`, before[key][i], after[key][i]);
+    }
+  }
+}
+
+/**
+ * Runs one fixture twice: once letting the capture finish, and once with
+ * captureVisibleTab rejecting partway through, which is the path where restoration is
+ * usually skipped. About six reviews in the taxonomy describe a competitor leaving the
+ * page it captured visibly broken.
+ * @param {Browser} browser
+ * @param {string} base
+ * @param {{ name: string, path: string, tiles: number }} fixture
+ */
+async function runRestoration(browser, base, fixture) {
+  const worker = await backgroundWorker(browser);
+  await applySettings(worker, {});
+
+  for (const failAt of [0, 3]) {
+    const label = `${BROWSER}/restore-${fixture.name}${failAt ? `-fail@${failAt}` : ''}`;
+    const willFail = failAt > 0 && fixture.tiles >= failAt;
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 800 });
+    await page.goto(`${base}${fixture.path}`, { waitUntil: 'load' });
+    const before = await snapshotPage(page);
+
+    const fired = await worker.evaluate(async (/** @type {number} */ n) => {
+      const original = chrome.tabs.captureVisibleTab.bind(chrome.tabs);
+      let calls = 0;
+      let hit = false;
+      if (n > 0) {
+        chrome.tabs.captureVisibleTab = async (...args) => {
+          if (++calls === n) {
+            hit = true;
+            throw new Error('injected capture failure');
+          }
+          return original(...args);
+        };
+      }
+      try {
+        const hook = /** @type {typeof globalThis & { __screencappyStart(tab: chrome.tabs.Tab, mode: string): Promise<void> }} */ (
+          globalThis
+        );
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab) throw new Error('No active tab to capture');
+        await hook.__screencappyStart(tab, 'full');
+      } finally {
+        chrome.tabs.captureVisibleTab = original;
+      }
+      return hit;
+    }, failAt);
+
+    if (willFail && !fired) {
+      throw new Error(`[${label}] the injected capture failure never fired, so nothing was proven`);
+    }
+    // The editor opens in front on the success path, and a hidden page gets no animation
+    // frames, so the page has to come back to the front before it can settle.
+    for (const target of browser.targets()) {
+      if (!target.url().includes('editor.html')) continue;
+      await (await target.page())?.close();
+    }
+    await page.bringToFront();
+    // The content script restores before it answers, but give the page a frame to settle.
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 200))));
+    assertRestored(label, before, await snapshotPage(page));
+    console.log(`✓ [${label}] page left byte-identical${fired ? ' after a failed tile' : ''}`);
+
+    await page.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Axis: device pixel ratio
+// ---------------------------------------------------------------------------
+
+/** Row height and count of the seam fixture, which the cadence assertion is built on. */
+const SEAM = { rowH: 16, rows: 250 };
+
+/**
+ * Runs the seam fixture at several device pixel ratios in a browser launched for each
+ * one, because the scale a capture actually gets is the browser's, not an emulation
+ * override. Roughly eight reviews in the taxonomy describe a strip missing off the side
+ * of the image on one machine and not another, which is this arithmetic.
+ * @param {string} base
+ */
+async function runDprAxis(base) {
+  for (const dsf of [1, 1.25, 1.5, 2]) {
+    const label = `${BROWSER}/dpr-${dsf}`;
+    const browser = await puppeteer.launch({
+      executablePath: findChrome(),
+      pipe: true,
+      enableExtensions: true,
+      args: [
+        '--no-first-run',
+        '--window-size=1200,800',
+        `--force-device-scale-factor=${dsf}`,
+        ...(process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
+      ],
+    });
+    try {
+      await browser.installExtension(DIST_E2E);
+      const page = await browser.newPage();
+      await page.goto(`${base}/seam`, { waitUntil: 'load' });
+
+      // What the page itself says it is, measured the way the content script measures it.
+      const css = await page.evaluate(() => ({
+        w: Math.max(
+          document.documentElement.scrollWidth,
+          document.body.scrollWidth,
+          document.documentElement.clientWidth
+        ),
+        h: Math.max(
+          document.documentElement.scrollHeight,
+          document.body.scrollHeight,
+          document.documentElement.clientHeight
+        ),
+        dpr: window.devicePixelRatio,
+      }));
+      if (Math.abs(css.dpr - dsf) > 0.001) {
+        throw new Error(`[${label}] the browser reports devicePixelRatio ${css.dpr}, not ${dsf}`);
+      }
+
+      const worker = await backgroundWorker(browser);
+      await applySettings(worker, {});
+      await startCapture(worker);
+      const editorTarget = await browser.waitForTarget((t) => t.url().includes('editor.html'), {
+        timeout: 300_000,
+      });
+      const editor = await editorTarget.page();
+      if (!editor) throw new Error(`[${label}] The editor target had no page`);
+      await editor.waitForSelector('#loading[hidden]', { timeout: 300_000 });
+
+      const wantW = Math.round(css.w * dsf);
+      const wantH = Math.round(css.h * dsf);
+      // Rows are read at their vertical centres, so a boundary landing on a fractional
+      // device pixel cannot blur the sample even at 1.25 and 1.5.
+      const points = Array.from({ length: SEAM.rows }, (_, i) => ({
+        x: Math.round(60 * dsf),
+        y: Math.round((i * SEAM.rowH + SEAM.rowH / 2) * dsf),
+      }));
+      const img = await inspectImage(editor, { points, colors: [], gaps: true });
+
+      if (img.width !== wantW || img.height !== wantH) {
+        throw new Error(
+          `[${label}] composed ${img.width}×${img.height}, expected ${wantW}×${wantH}` +
+            ` for ${css.w}×${css.h} CSS px at ${dsf}× - a strip is missing off an edge`
+        );
+      }
+      if (img.gaps.count > 0) {
+        throw new Error(
+          `[${label}] ${img.gaps.count} pixels no tile painted, rows ${img.gaps.minY}..${img.gaps.maxY}`
+        );
+      }
+      img.pixels.forEach((rgb, i) => {
+        const got = decodeIndex(rgb ?? [0, 0, 0]);
+        if (got !== i) {
+          throw new Error(
+            `[${label}] row ${i} at device y=${points[i].y} decoded as ${got === null ? fmt(rgb) : got}` +
+              ' - the row cadence breaks there, which is a seam'
+          );
+        }
+      });
+      console.log(`✓ [${label}] ${img.width}×${img.height} from ${css.w}×${css.h} CSS px, cadence unbroken`);
+      await editor.close();
+    } finally {
+      await browser.close();
+    }
+  }
+}
+
 async function main() {
   if (!existsSync(`${DIST}/manifest.json`)) throw new Error('Run `bun run build` first.');
 
@@ -477,10 +715,17 @@ async function main() {
   const only = process.env.ONLY?.split(',').filter(Boolean);
   const scenarios = [...SCENARIOS, ...GAUNTLET].filter((s) => !only || only.includes(s.name));
 
+  const wants = (name) => !only || only.includes(name);
+
   let failed = false;
   try {
     for (const scenario of scenarios) {
       await runScenario(browser, `${fixtures.base}${scenario.path}`, scenario, fixtures);
+    }
+    if (wants('restore')) {
+      for (const fixture of RESTORE_FIXTURES) {
+        await runRestoration(browser, fixtures.base, fixture);
+      }
     }
     console.log(`✓ e2e passed (${BROWSER}): ${scenarios.length} scenarios`);
   } catch (err) {
@@ -488,6 +733,16 @@ async function main() {
     console.error(`✗ e2e failed (${BROWSER}):`, err);
   } finally {
     await browser.close();
+  }
+
+  // The device pixel ratio a capture gets is the browser's, not something an emulation
+  // override can stand in for, so each ratio needs its own browser.
+  try {
+    if (!failed && wants('dpr')) await runDprAxis(fixtures.base);
+  } catch (err) {
+    failed = true;
+    console.error(`✗ e2e failed (${BROWSER}):`, err);
+  } finally {
     fixtures.close();
     await rm(DIST_E2E, { recursive: true, force: true });
   }
