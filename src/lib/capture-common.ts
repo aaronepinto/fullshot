@@ -222,12 +222,21 @@ export const HIJACK_NOTICE =
 export const IMPLAUSIBLE_HEIGHT = 1_000_000;
 
 /** Why a capture came back smaller than the whole page, when the reason is the page. */
-export type DegradeReason = 'huge';
+export type DegradeReason = 'huge' | 'clipped';
 
 /** What the editor tells the user for each of those reasons. */
 export const DEGRADED_NOTICE: Record<DegradeReason, string> = {
   huge: 'This page reports an implausible height, so a full-page capture would never finish; captured the visible area',
+  clipped:
+    'The content below the fold is inside a container that cannot be scrolled, so only the visible area could be captured',
 };
+
+/**
+ * How much clipped-away content a wrapper must be hiding before the capture mentions it,
+ * as a fraction of the viewport. A page with a small clipped carousel is not a page whose
+ * content went missing, and saying so on every such page would train the note out.
+ */
+export const CLIPPED_MIN_OVERFLOW = 0.5;
 
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;

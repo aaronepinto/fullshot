@@ -6,6 +6,7 @@
  */
 import {
   AUTO_LOAD,
+  CLIPPED_MIN_OVERFLOW,
   HIJACK,
   IMAGE_WAIT,
   IMPLAUSIBLE_HEIGHT,
@@ -87,6 +88,18 @@ interface PinnedEl {
     return rawHeight > IMPLAUSIBLE_HEIGHT ? 'huge' : undefined;
   }
 
+  /**
+   * Whether a screenful of content is being clipped away by a wrapper that offers no way
+   * to scroll it - the app-shell page whose document really is one viewport tall, where
+   * measuring the page correctly still loses everything below the fold. Only asked when
+   * the page is one viewport and no scroller was found, so it costs nothing on long pages.
+   */
+  function clippedAway(): DegradeReason | undefined {
+    const el = findScrollContainer(true);
+    const hidden = el ? el.scrollHeight - el.clientHeight : 0;
+    return hidden > window.innerHeight * CLIPPED_MIN_OVERFLOW ? 'clipped' : undefined;
+  }
+
   function measure(maxHeight: number, usePicked: boolean): PageMetrics {
     const de = document.documentElement;
     const body = document.body;
@@ -99,10 +112,10 @@ interface PinnedEl {
     // Element capture pins the scroller to the picked element; otherwise, when the
     // window barely scrolls, look for the SPA-style inner container holding the content.
     frameDoc = null;
+    const shortPage = rawH - window.innerHeight < 200;
     containerEl = usePicked
       ? w.__screencappyPickedEl!
-      : (adoptedScroller ??
-        (rawH - window.innerHeight < 200 ? findScrollContainer() : null));
+      : (adoptedScroller ?? (shortPage ? findScrollContainer() : null));
     // A picked same-origin iframe scrolls inside its own document: the frame's
     // scrollingElement is the scroller and its full content size is the page.
     if (containerEl instanceof HTMLIFrameElement) {
@@ -148,7 +161,7 @@ interface PinnedEl {
       };
     }
 
-    const degraded = degradeFor(rawH);
+    const degraded = degradeFor(rawH) ?? (shortPage ? clippedAway() : undefined);
     const truncated = !degraded && rawH > maxHeight;
     return {
       pageW,
