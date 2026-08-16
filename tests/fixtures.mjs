@@ -146,6 +146,7 @@ const GAUNTLET_PAGES = {
   '/frames-deep': 'fixture-frames-deep.html',
   '/frames-foreign': 'fixture-frames-foreign.html',
   '/smooth': 'fixture-smooth.html',
+  '/shadow': 'fixture-shadow.html',
 };
 
 /** The four ways the smooth-scrolling fixture is registered; the assertions are identical. */
@@ -472,6 +473,38 @@ export const GAUNTLET = [
   smoothVariant('smooth-behavior', '?behavior=smooth'),
   smoothVariant('smooth-snap-mandatory', '?snap=mandatory'),
   smoothVariant('smooth-snap-proximity', '?snap=proximity'),
+  // Sticky inside an open shadow root, which the prepare pass walks, against sticky inside
+  // a closed one, which nothing outside can reach. The first appears once; the second is
+  // asserted to repeat, so the limitation is recorded rather than discovered.
+  {
+    name: 'shadow',
+    path: '/shadow',
+    minW: 1200,
+    maxW: 1200,
+    minH: 5120,
+    maxH: 5120,
+    note: '',
+    maxMs: 300_000,
+    noGaps: true,
+    sequence: { x: 600, y0: 310, dy: 500, count: 6 },
+    colors: [
+      { name: 'sticky header in an open shadow root', rgb: [14, 165, 233], count: 1200 * 60, topY: 0 },
+      { name: 'sticky header in a closed shadow root', rgb: [220, 38, 38], minCount: 2 * 1200 * 60 },
+    ],
+    gap: 'a sticky header inside a closed shadow root cannot be pinned, so it repeats per tile',
+  },
+  // A scroller that exists only inside a shadow root, on a page that cannot scroll itself.
+  {
+    name: 'shadow-scroller',
+    path: '/shadow?mode=scroller',
+    minW: 1150,
+    maxW: 1200,
+    minH: 2000,
+    maxH: 2000,
+    note: '',
+    maxMs: 300_000,
+    sequence: { x: 600, y0: 100, dy: 200, count: 10 },
+  },
 ];
 
 // ---------------------------------------------------------------------------
