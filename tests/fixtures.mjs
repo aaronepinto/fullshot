@@ -147,7 +147,14 @@ const GAUNTLET_PAGES = {
   '/frames-foreign': 'fixture-frames-foreign.html',
   '/smooth': 'fixture-smooth.html',
   '/shadow': 'fixture-shadow.html',
+  '/endless': 'fixture-endless.html',
 };
+
+/**
+ * The endless fixture needs the auto-load loop on, and a lower capture ceiling than the
+ * 40000px default so the capped run stays a test rather than an endurance event.
+ */
+const ENDLESS_SETTINGS = { autoLoadMore: true, maxCaptureHeight: 12000 };
 
 /** The four ways the smooth-scrolling fixture is registered; the assertions are identical. */
 const smoothVariant = (name, query) => ({
@@ -504,6 +511,37 @@ export const GAUNTLET = [
     note: '',
     maxMs: 300_000,
     sequence: { x: 600, y0: 100, dy: 200, count: 10 },
+  },
+  // A page that grows for as long as anything scrolls it. The capture has to stop at the
+  // configured ceiling, land exactly on it, and tell the user it was capped.
+  {
+    name: 'endless',
+    path: '/endless',
+    minW: 1200,
+    maxW: 1200,
+    minH: 12_000,
+    maxH: 12_000,
+    note: 'Truncated',
+    maxMs: 300_000,
+    settings: ENDLESS_SETTINGS,
+    noGaps: true,
+    sequence: { x: 600, y0: 200, dy: 400, count: 30 },
+  },
+  // The same page stopping after four rounds, which is the ordinary auto-loading page:
+  // the capture terminates at the real document height with nothing to warn about, so the
+  // cap is proven not to fire on pages that end by themselves.
+  {
+    name: 'endless-limited',
+    path: '/endless?limit=4',
+    minW: 1200,
+    maxW: 1200,
+    minH: 7200,
+    maxH: 7200,
+    note: '',
+    maxMs: 300_000,
+    settings: ENDLESS_SETTINGS,
+    noGaps: true,
+    sequence: { x: 600, y0: 200, dy: 400, count: 18 },
   },
 ];
 
