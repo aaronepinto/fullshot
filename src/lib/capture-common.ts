@@ -201,6 +201,34 @@ export const HIJACK_NOTICE =
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;
 
+/** Which edge a viewport-pinned element belongs to, and so which tiles it may appear on. */
+export type FixedEdge = 'top' | 'bottom' | 'rail';
+
+/**
+ * Sorts a fixed element by the edge it is pinned to, from its viewport box measured
+ * before the capture scrolls anywhere.
+ *
+ * A tall narrow element is a side rail: it is full height on every screen, so it belongs
+ * on every tile, and a rail that stopped after the first tile would leave a column of
+ * unrelated content down the rest of the image. Everything else belongs to whichever half
+ * of the viewport its middle sits in: a cookie bar, a bottom toolbar or a floating action
+ * button is furniture of the *foot* of the page and belongs on the last tile only, while a
+ * header or a nav belongs on the first. Treating them all as top-of-viewport overlays is
+ * the documented second-order bug in this area.
+ */
+export function fixedEdge(box: Box, vpW: number, vpH: number): FixedEdge {
+  const height = box.bottom - box.top;
+  const width = box.right - box.left;
+  if (height >= vpH * 0.8 && width <= vpW * 0.4) return 'rail';
+  return box.top + height / 2 > vpH / 2 ? 'bottom' : 'top';
+}
+
+/** Whether an element pinned to `edge` should be visible on this tile of the grid. */
+export function showsOnTile(edge: FixedEdge, firstTile: boolean, lastTile: boolean): boolean {
+  if (edge === 'rail') return true;
+  return edge === 'bottom' ? lastTile : firstTile;
+}
+
 /**
  * True when a computed background-attachment keeps any layer glued to the viewport.
  * Multi-background values are comma lists ("scroll, fixed"), so each layer is checked.

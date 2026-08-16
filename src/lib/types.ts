@@ -93,7 +93,15 @@ export type CaptureContentMsg =
   | { type: 'fs:prescroll'; stepY: number; maxY: number; autoLoadMaxHeight?: number }
   /** maxY is the bottom of the region to capture: how far the page has to be able to scroll. */
   | { type: 'fs:probeScroll'; maxY: number }
-  | { type: 'fs:scrollTo'; x: number; y: number; settleMs: number; hideFixed: boolean }
+  /** firstTile/lastTile place the tile in the grid: which pinned furniture belongs on it. */
+  | {
+      type: 'fs:scrollTo';
+      x: number;
+      y: number;
+      settleMs: number;
+      firstTile: boolean;
+      lastTile: boolean;
+    }
   | { type: 'fs:restore' };
 
 export interface ScrollResult {
