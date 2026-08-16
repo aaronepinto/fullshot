@@ -132,6 +132,13 @@ const GAUNTLET_PAGES = {
   '/reveal': 'fixture-reveal.html',
   '/furniture': 'fixture-furniture.html',
   '/lazy': 'fixture-lazy.html',
+  '/tall': 'fixture-tall.html',
+};
+
+/** The bands at each end of the tall fixture. */
+const TALL = {
+  top: /** @type {[number, number, number]} */ ([14, 165, 233]),
+  bottom: /** @type {[number, number, number]} */ ([236, 72, 153]),
 };
 
 /** Every image path the lazy fixture is expected to have asked the server for. */
@@ -254,6 +261,53 @@ export const GAUNTLET = [
     maxMs: 120_000,
     requested: LAZY_IMAGES,
     sequence: { x: 400, y0: 200, dy: 400, count: 25 },
+  },
+  // 20000px, past Chrome's 16384px compositor texture limit, which is where competitors
+  // crop without saying so. The bottom band has to be at the bottom of the image.
+  {
+    name: 'tall-20k',
+    path: '/tall?h=20000',
+    minW: 1200,
+    maxW: 1200,
+    minH: 20_000,
+    maxH: 20_000,
+    note: '',
+    maxMs: 120_000,
+    points: [
+      { name: 'top band', x: 600, y: 100, rgb: TALL.top },
+      { name: 'bottom band', x: 600, y: -100, rgb: TALL.bottom },
+      { name: 'last row', x: 600, y: -2, rgb: TALL.bottom },
+    ],
+  },
+  // 40000px is the capture ceiling itself, and the memory-pressure case: an engine
+  // holding every tile as a live canvas does not get here.
+  {
+    name: 'tall-40k',
+    path: '/tall?h=40000',
+    minW: 1200,
+    maxW: 1200,
+    minH: 40_000,
+    maxH: 40_000,
+    note: '',
+    maxMs: 240_000,
+    points: [
+      { name: 'top band', x: 600, y: 100, rgb: TALL.top },
+      { name: 'last row', x: 600, y: -2, rgb: TALL.bottom },
+    ],
+  },
+  // 2^25 px, the height a real docs site was observed reporting. There is no honest
+  // capture of a page like this, so the contract is a fast, explained degradation
+  // rather than forty seconds of walking a spacer.
+  {
+    name: 'tall-implausible',
+    path: '/tall?h=33554432',
+    minW: 1200,
+    maxW: 1200,
+    minH: 700,
+    maxH: 900,
+    note: 'implausible height',
+    maxMs: 30_000,
+    points: [{ name: 'top band', x: 600, y: 100, rgb: TALL.top }],
   },
 ];
 

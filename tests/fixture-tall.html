@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e very tall page fixture</title>
+  <style>
+    /* Height ceilings. ?h= sets the total document height:
+       20000 crosses Chrome's 16384px compositor texture limit, which is where
+       competitors silently crop; 40000 is memory pressure, a page whose tiles a naive
+       engine holds all at once; 33554432 is the value a real docs site was observed
+       reporting for document.body.scrollHeight, which crashes Playwright's full-page
+       screenshot outright and is not a length any engine should try to walk.
+       A solid band at each end makes truncation a single-pixel assertion: if the bottom
+       band is not at the bottom of the composed image, the capture was cropped. */
+    body { margin: 0; font: 700 64px/1 system-ui, sans-serif; color: #fff; }
+    #top { height: 200px; background: rgb(14, 165, 233); }
+    #bottom { height: 200px; background: rgb(236, 72, 153); }
+    #spacer {
+      background: repeating-linear-gradient(#f8fafc 0 40px, #e2e8f0 40px 80px);
+    }
+  </style>
+</head>
+<body>
+  <div id="top">top band</div>
+  <div id="spacer"></div>
+  <div id="bottom">bottom band</div>
+  <script>
+    const h = Number(new URLSearchParams(location.search).get('h') ?? 20000);
+    document.getElementById('spacer').style.height = Math.max(0, h - 400) + 'px';
+    // Chrome clamps element heights near 2^25, so the reported height is worth logging
+    // rather than assuming: this is exactly the number the engine has to cope with.
+    addEventListener('load', () => {
+      document.title = 'tall ' + document.documentElement.scrollHeight;
+    });
+  </script>
+</body>
+</html>
