@@ -213,6 +213,22 @@ export function movedEnough(commanded: number, delta: number): boolean {
 export const HIJACK_NOTICE =
   'This page uses custom scrolling that blocks full-page capture; captured the visible area';
 
+/**
+ * A page reporting more height than this is reporting a broken measurement, not a long
+ * page: 2^25 px has been seen in the wild from a docs framework, and no real document is
+ * a thousand screens tall. Walking it would mean tens of thousands of tiles of nothing,
+ * so the capture stops at the visible area and says why.
+ */
+export const IMPLAUSIBLE_HEIGHT = 1_000_000;
+
+/** Why a capture came back smaller than the whole page, when the reason is the page. */
+export type DegradeReason = 'huge';
+
+/** What the editor tells the user for each of those reasons. */
+export const DEGRADED_NOTICE: Record<DegradeReason, string> = {
+  huge: 'This page reports an implausible height, so a full-page capture would never finish; captured the visible area',
+};
+
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;
 
