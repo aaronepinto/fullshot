@@ -1,3 +1,5 @@
+import type { DegradeReason } from './capture-common';
+
 export type CaptureMode = 'full' | 'visible' | 'selection' | 'element';
 export type Engine = 'stitch' | 'turbo';
 
@@ -21,6 +23,11 @@ export interface PageMetrics {
   url: string;
   /** True when the page was taller than the configured capture ceiling and got clipped. */
   truncated: boolean;
+  /**
+   * Set when the page itself makes a full-page capture impossible or pointless, so the
+   * capture is honestly the visible area plus the reason. See DEGRADED_NOTICE.
+   */
+  degraded?: DegradeReason;
   /**
    * Visible client area of the scroll container that drives the capture, in viewport
    * CSS px. Present only when the window barely scrolls and an inner element (Gmail,

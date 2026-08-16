@@ -6,6 +6,7 @@
 import { getSettings } from './lib/settings';
 import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
 import {
+  DEGRADED_NOTICE,
   HIJACK,
   HIJACK_NOTICE,
   countdownSteps,
@@ -427,11 +428,16 @@ async function stitchCapture(
   };
 
   try {
+    // A page can also make a full-page capture impossible on its own terms, by reporting
+    // a height nothing could walk. measure() has already clipped the plan to the visible
+    // area; all that is left is to tell the user why.
+    let notice = metrics.degraded ? DEGRADED_NOTICE[metrics.degraded] : undefined;
+
     // Pages that drive their own scrolling report a tall page but never move, which
     // would stitch the same frame into every tile. The probe tries to get them moving
     // and, failing that, keeps the capture honest: the visible area plus a note.
-    let notice: string | undefined;
     if (
+      !notice &&
       !pickedScroller &&
       !metrics.containerRect &&
       clip.h > metrics.vpH + HIJACK.minOverflow

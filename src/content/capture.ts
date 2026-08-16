@@ -8,6 +8,7 @@ import {
   AUTO_LOAD,
   HIJACK,
   IMAGE_WAIT,
+  IMPLAUSIBLE_HEIGHT,
   MAX_SCAN_NODES,
   SETTLE,
   fixedEdge,
@@ -21,7 +22,7 @@ import {
   showsOnTile,
   walkShadowTree,
 } from '../lib/capture-common';
-import type { FixedEdge } from '../lib/capture-common';
+import type { DegradeReason, FixedEdge } from '../lib/capture-common';
 import type {
   CaptureContentMsg,
   PageMetrics,
@@ -77,6 +78,15 @@ interface PinnedEl {
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
+  /**
+   * A reported height this far past anything real is a broken measurement (a docs
+   * framework was seen reporting 2^25). Capturing the visible area and saying so beats
+   * walking tens of thousands of tiles of nothing.
+   */
+  function degradeFor(rawHeight: number): DegradeReason | undefined {
+    return rawHeight > IMPLAUSIBLE_HEIGHT ? 'huge' : undefined;
+  }
+
   function measure(maxHeight: number, usePicked: boolean): PageMetrics {
     const de = document.documentElement;
     const body = document.body;
@@ -101,10 +111,11 @@ interface PinnedEl {
       frameDoc = doc;
       const se = doc.scrollingElement ?? doc.documentElement;
       const rawFrameH = se.scrollHeight;
-      const truncated = rawFrameH > maxHeight;
+      const degraded = degradeFor(rawFrameH);
+      const truncated = !degraded && rawFrameH > maxHeight;
       return {
         pageW: se.scrollWidth,
-        pageH: truncated ? maxHeight : rawFrameH,
+        pageH: degraded ? window.innerHeight : truncated ? maxHeight : rawFrameH,
         vpW: window.innerWidth,
         vpH: window.innerHeight,
         dpr: window.devicePixelRatio,
@@ -113,15 +124,17 @@ interface PinnedEl {
         title: document.title,
         url: location.href,
         truncated,
+        ...(degraded ? { degraded } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
     if (containerEl) {
       const rawContainerH = containerEl.scrollHeight;
-      const truncated = rawContainerH > maxHeight;
+      const degraded = degradeFor(rawContainerH);
+      const truncated = !degraded && rawContainerH > maxHeight;
       return {
         pageW: containerEl.scrollWidth,
-        pageH: truncated ? maxHeight : rawContainerH,
+        pageH: degraded ? containerEl.clientHeight : truncated ? maxHeight : rawContainerH,
         vpW: window.innerWidth,
         vpH: window.innerHeight,
         dpr: window.devicePixelRatio,
@@ -130,14 +143,16 @@ interface PinnedEl {
         title: document.title,
         url: location.href,
         truncated,
+        ...(degraded ? { degraded } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
 
-    const truncated = rawH > maxHeight;
+    const degraded = degradeFor(rawH);
+    const truncated = !degraded && rawH > maxHeight;
     return {
       pageW,
-      pageH: truncated ? maxHeight : rawH,
+      pageH: degraded ? window.innerHeight : truncated ? maxHeight : rawH,
       vpW: window.innerWidth,
       vpH: window.innerHeight,
       dpr: window.devicePixelRatio,
@@ -146,6 +161,7 @@ interface PinnedEl {
       title: document.title,
       url: location.href,
       truncated,
+      ...(degraded ? { degraded } : {}),
     };
   }
 
