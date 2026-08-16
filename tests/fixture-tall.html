@@ -11,13 +11,23 @@
        reporting for document.body.scrollHeight, which crashes Playwright's full-page
        screenshot outright and is not a length any engine should try to walk.
        A solid band at each end makes truncation a single-pixel assertion: if the bottom
-       band is not at the bottom of the composed image, the capture was cropped. */
+       band is not at the bottom of the composed image, the capture was cropped.
+       ?content= sets how much real content sits at the top before the spacer, so the
+       impossible-height variants can tell apart a capture that stopped at the last
+       content (two screens of it) and one that took the visible area only (one screen).
+       The top band is striped rather than flat: a capture that stops at the last painted
+       tile has to be able to tell content from spacer, and a flat colour is not content
+       any test could distinguish from an empty one. */
     body { margin: 0; font: 700 64px/1 system-ui, sans-serif; color: #fff; }
-    #top { height: 200px; background: rgb(14, 165, 233); }
-    #bottom { height: 200px; background: rgb(236, 72, 153); }
-    #spacer {
-      background: repeating-linear-gradient(#f8fafc 0 40px, #e2e8f0 40px 80px);
+    #top {
+      background: rgb(14, 165, 233);
+      background-image: repeating-linear-gradient(
+        90deg, rgba(255, 255, 255, .25) 0 40px, rgba(255, 255, 255, 0) 40px 80px
+      );
     }
+    #bottom { height: 200px; background: rgb(236, 72, 153); }
+    /* Blank, the way a broken page's phantom height really is. */
+    #spacer { background: #fff; }
   </style>
 </head>
 <body>
@@ -25,8 +35,11 @@
   <div id="spacer"></div>
   <div id="bottom">bottom band</div>
   <script>
-    const h = Number(new URLSearchParams(location.search).get('h') ?? 20000);
-    document.getElementById('spacer').style.height = Math.max(0, h - 400) + 'px';
+    const params = new URLSearchParams(location.search);
+    const h = Number(params.get('h') ?? 20000);
+    const content = Number(params.get('content') ?? 200);
+    document.getElementById('top').style.height = content + 'px';
+    document.getElementById('spacer').style.height = Math.max(0, h - content - 200) + 'px';
     // Chrome clamps element heights near 2^25, so the reported height is worth logging
     // rather than assuming: this is exactly the number the engine has to cope with.
     addEventListener('load', () => {

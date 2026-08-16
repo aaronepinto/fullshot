@@ -14,6 +14,7 @@ import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 import {
   GAUNTLET,
+  HUGE_PAGE_PATH,
   SCENARIOS,
   assertComposed,
   decodeIndex,
@@ -485,7 +486,9 @@ const RESTORE_FIXTURES = [
  */
 function snapshotPage(page) {
   return page.evaluate(() => {
-    const els = [...document.querySelectorAll('*')];
+    // The extension's own overlays are counted separately: while one is deliberately on
+    // screen it is not damage, and after a capture there must be none left.
+    const els = [...document.querySelectorAll('*')].filter((el) => !el.hasAttribute('data-screencappy'));
     return {
       styles: els.map((el) => {
         const cs = getComputedStyle(el);
@@ -497,8 +500,12 @@ function snapshotPage(page) {
       scrolls: els.map((el) => `${el.scrollTop},${el.scrollLeft}`),
       windowScroll: `${window.scrollY},${window.scrollX}`,
       head: document.head.innerHTML,
-      rootChildren: [...document.documentElement.children].map((el) => el.tagName).join(','),
+      rootChildren: [...document.documentElement.children]
+        .filter((el) => !el.hasAttribute('data-screencappy'))
+        .map((el) => el.tagName)
+        .join(','),
       count: els.length,
+      overlays: document.querySelectorAll('[data-screencappy]').length,
     };
   });
 }
@@ -507,14 +514,18 @@ function snapshotPage(page) {
  * @param {string} label
  * @param {ReturnType<typeof snapshotPage> extends Promise<infer T> ? T : never} before
  * @param {ReturnType<typeof snapshotPage> extends Promise<infer T> ? T : never} after
+ * @param {{ ignoreOverlays?: boolean }} [opts] Set while an overlay is deliberately up.
  */
-function assertRestored(label, before, after) {
+function assertRestored(label, before, after, opts = {}) {
   const fail = (what, a, b) => {
     throw new Error(
       `[${label}] the capture did not put ${what} back\n  before: ${String(a).slice(0, 300)}\n  after:  ${String(b).slice(0, 300)}`
     );
   };
   if (before.count !== after.count) fail('the element count', before.count, after.count);
+  if (!opts.ignoreOverlays && before.overlays !== after.overlays) {
+    fail('its own overlays', `${before.overlays} of them`, `${after.overlays} of them`);
+  }
   if (before.head !== after.head) fail('the document head', before.head, after.head);
   if (before.rootChildren !== after.rootChildren) {
     fail("the root element's children", before.rootChildren, after.rootChildren);
@@ -591,6 +602,111 @@ async function runRestoration(browser, base, fixture) {
     assertRestored(label, before, await snapshotPage(page));
     console.log(`✓ [${label}] page left byte-identical${fired ? ' after a failed tile' : ''}`);
 
+    await page.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Axis: the impossible-height prompt
+// ---------------------------------------------------------------------------
+
+/** The one part of the prompt overlay visible from outside its closed shadow root. */
+const HUGE_PROMPT = '[data-screencappy="huge-page-prompt"]';
+
+/**
+ * Drives the prompt a page reporting an impossible height raises, through the real
+ * overlay and with the keyboard only, because a choice the user cannot reach is not a
+ * choice. The two settings that skip the prompt are registered as ordinary scenarios;
+ * what is left to prove here is that the prompt appears before the page is touched, that
+ * Enter takes the option keeping the most content, that the others are reachable by Tab,
+ * and that cancelling captures nothing and disturbs nothing.
+ * @param {Browser} browser
+ * @param {string} base
+ */
+async function runHugePagePrompt(browser, base) {
+  const worker = await backgroundWorker(browser);
+  const cases = [
+    {
+      name: 'enter',
+      keys: ['Enter'],
+      what: 'Enter takes the first N px, the option that keeps the most content',
+      expect: { w: 1200, h: 1600, note: 'stops at the last content' },
+    },
+    {
+      name: 'tab-enter',
+      keys: ['Tab', 'Enter'],
+      what: 'Tab reaches the visible-area option',
+      expect: { w: 1200, h: 800, note: 'implausible height' },
+    },
+    { name: 'escape', keys: ['Escape'], what: 'Escape captures nothing', expect: null },
+  ];
+
+  for (const testCase of cases) {
+    const label = `${BROWSER}/huge-prompt-${testCase.name}`;
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 800 });
+    await page.goto(`${base}${HUGE_PAGE_PATH}`, { waitUntil: 'load' });
+    // No settings: asking is the default, which is the point.
+    await applySettings(worker, {});
+    const before = await snapshotPage(page);
+
+    // The hook does not resolve until the choice is made, so it is left running.
+    await worker.evaluate(() => {
+      const g = /** @type {typeof globalThis & Record<string, unknown>} */ (globalThis);
+      g['__promptRun'] = (async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab) throw new Error('No active tab to capture');
+        await /** @type {any} */ (g)['__screencappyStart'](tab, 'full');
+      })();
+    });
+
+    await page.waitForSelector(HUGE_PROMPT, { timeout: 30_000 });
+    // Nothing about the page may have been touched while the question is on screen.
+    assertRestored(`${label} (while the prompt is up)`, before, await snapshotPage(page), {
+      ignoreOverlays: true,
+    });
+
+    await mkdir(`${ROOT}.scratch`, { recursive: true });
+    await page.screenshot({ path: `${ROOT}.scratch/e2e-${BROWSER}-huge-prompt.png` });
+
+    await page.bringToFront();
+    for (const key of testCase.keys) await page.keyboard.press(key);
+    await page.waitForSelector(HUGE_PROMPT, { hidden: true, timeout: 30_000 });
+
+    if (testCase.expect) {
+      const editorTarget = await browser.waitForTarget((t) => t.url().includes('editor.html'), {
+        timeout: 120_000,
+      });
+      const editor = await editorTarget.page();
+      if (!editor) throw new Error(`[${label}] The editor target had no page`);
+      await editor.waitForSelector('#loading[hidden]', { timeout: 120_000 });
+      const dims = await editor.$eval('#statDims', (el) => el.textContent);
+      assertComposed(label, dims, {
+        minW: testCase.expect.w,
+        maxW: testCase.expect.w,
+        minH: testCase.expect.h,
+        maxH: testCase.expect.h,
+      });
+      const note = (await editor.$eval('#statNote', (el) => el.textContent))?.trim() ?? '';
+      if (!note.includes(testCase.expect.note)) {
+        throw new Error(`[${label}] expected a note containing "${testCase.expect.note}", got "${note}"`);
+      }
+      await editor.close();
+    } else {
+      await worker.evaluate(() => /** @type {any} */ (globalThis)['__promptRun']);
+      const editors = browser.targets().filter((t) => t.url().includes('editor.html'));
+      if (editors.length) throw new Error(`[${label}] cancelling still opened an editor`);
+      const badge = await worker.evaluate(async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        return chrome.action.getBadgeText({ tabId: tab?.id });
+      });
+      if (badge) throw new Error(`[${label}] cancelling left "${badge}" on the badge`);
+    }
+
+    await page.bringToFront();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => setTimeout(r, 200))));
+    assertRestored(label, before, await snapshotPage(page));
+    console.log(`✓ [${label}] ${testCase.what}`);
     await page.close();
   }
 }
@@ -737,6 +853,7 @@ async function main() {
     for (const scenario of scenarios) {
       await runScenario(browser, `${fixtures.base}${scenario.path}`, scenario, fixtures);
     }
+    if (wants('prompt')) await runHugePagePrompt(browser, fixtures.base);
     if (wants('restore')) {
       for (const fixture of RESTORE_FIXTURES) {
         await runRestoration(browser, fixtures.base, fixture);

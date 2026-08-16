@@ -1,4 +1,4 @@
-import type { DegradeReason } from './capture-common';
+import type { DegradeReason, HugePageChoice } from './capture-common';
 
 export type CaptureMode = 'full' | 'visible' | 'selection' | 'element';
 export type Engine = 'stitch' | 'turbo';
@@ -28,6 +28,8 @@ export interface PageMetrics {
    * capture is honestly the visible area plus the reason. See DEGRADED_NOTICE.
    */
   degraded?: DegradeReason;
+  /** The height the page claimed, when that claim is the reason for `degraded`. */
+  reportedH?: number;
   /**
    * Visible client area of the scroll container that drives the capture, in viewport
    * CSS px. Present only when the window barely scrolls and an inner element (Gmail,
@@ -94,7 +96,10 @@ export interface CaptureRecord {
 /** Messages the background sends to the capture content script. */
 export type CaptureContentMsg =
   | { type: 'fs:ping' }
-  | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean }
+  /** allowHuge takes an implausible reported height at face value, capped at maxHeight. */
+  | { type: 'fs:measure'; maxHeight: number; usePicked?: boolean; allowHuge?: boolean }
+  /** Asks the user what to do about a page reporting a height nothing could walk. */
+  | { type: 'fs:askHugePage'; reportedHeight: number; limitHeight: number }
   | { type: 'fs:prepare'; hideSticky: boolean; freezeAnimations: boolean }
   /** autoLoadMaxHeight, when set, runs the infinite-scroll auto-load loop first (CSS px ceiling). */
   | { type: 'fs:prescroll'; stepY: number; maxY: number; autoLoadMaxHeight?: number }

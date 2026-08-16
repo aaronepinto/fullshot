@@ -14,6 +14,7 @@ import {
   OPAQUE_EMBED_COVERAGE,
   SETTLE,
   fixedEdge,
+  formatPx,
   hasFixedBackground,
   intersectsViewport,
   movedEnough,
@@ -24,7 +25,7 @@ import {
   showsOnTile,
   walkShadowTree,
 } from '../lib/capture-common';
-import type { DegradeReason, FixedEdge } from '../lib/capture-common';
+import type { DegradeReason, FixedEdge, HugePageChoice } from '../lib/capture-common';
 import type {
   CaptureContentMsg,
   PageMetrics,
@@ -85,16 +86,10 @@ interface PinnedEl {
    * framework was seen reporting 2^25). Capturing the visible area and saying so beats
    * walking tens of thousands of tiles of nothing.
    */
-  function degradeFor(rawHeight: number): DegradeReason | undefined {
-    return rawHeight > IMPLAUSIBLE_HEIGHT ? 'huge' : undefined;
+  function degradeFor(rawHeight: number, allowHuge: boolean): DegradeReason | undefined {
+    return !allowHuge && rawHeight > IMPLAUSIBLE_HEIGHT ? 'huge' : undefined;
   }
 
-  /**
-   * Whether a screenful of content is being clipped away by a wrapper that offers no way
-   * to scroll it - the app-shell page whose document really is one viewport tall, where
-   * measuring the page correctly still loses everything below the fold. Only asked when
-   * the page is one viewport and no scroller was found, so it costs nothing on long pages.
-   */
   /**
    * A plugin-backed viewer filling the window, a PDF above all. There is no document
    * behind an <embed> to scroll, so the visible area is all the stitch engine can honestly
@@ -113,13 +108,19 @@ interface PinnedEl {
     return undefined;
   }
 
+  /**
+   * Whether a screenful of content is being clipped away by a wrapper that offers no way
+   * to scroll it - the app-shell page whose document really is one viewport tall, where
+   * measuring the page correctly still loses everything below the fold. Only asked when
+   * the page is one viewport and no scroller was found, so it costs nothing on long pages.
+   */
   function clippedAway(): DegradeReason | undefined {
     const el = findScrollContainer(true);
     const hidden = el ? el.scrollHeight - el.clientHeight : 0;
     return hidden > window.innerHeight * CLIPPED_MIN_OVERFLOW ? 'clipped' : undefined;
   }
 
-  function measure(maxHeight: number, usePicked: boolean): PageMetrics {
+  function measure(maxHeight: number, usePicked: boolean, allowHuge = false): PageMetrics {
     const de = document.documentElement;
     const body = document.body;
     const pageW = Math.max(de.scrollWidth, body?.scrollWidth ?? 0, de.clientWidth);
@@ -143,7 +144,7 @@ interface PinnedEl {
       frameDoc = doc;
       const se = doc.scrollingElement ?? doc.documentElement;
       const rawFrameH = se.scrollHeight;
-      const degraded = degradeFor(rawFrameH);
+      const degraded = degradeFor(rawFrameH, allowHuge);
       const truncated = !degraded && rawFrameH > maxHeight;
       return {
         pageW: se.scrollWidth,
@@ -156,13 +157,13 @@ interface PinnedEl {
         title: document.title,
         url: location.href,
         truncated,
-        ...(degraded ? { degraded } : {}),
+        ...(degraded ? { degraded, reportedH: rawFrameH } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
     if (containerEl) {
       const rawContainerH = containerEl.scrollHeight;
-      const degraded = degradeFor(rawContainerH);
+      const degraded = degradeFor(rawContainerH, allowHuge);
       const truncated = !degraded && rawContainerH > maxHeight;
       return {
         pageW: containerEl.scrollWidth,
@@ -175,13 +176,13 @@ interface PinnedEl {
         title: document.title,
         url: location.href,
         truncated,
-        ...(degraded ? { degraded } : {}),
+        ...(degraded ? { degraded, reportedH: rawContainerH } : {}),
         containerRect: visibleClientRect(containerEl),
       };
     }
 
     const degraded =
-      degradeFor(rawH) ?? (shortPage ? (opaqueEmbed() ?? clippedAway()) : undefined);
+      degradeFor(rawH, allowHuge) ?? (shortPage ? (opaqueEmbed() ?? clippedAway()) : undefined);
     const truncated = !degraded && rawH > maxHeight;
     return {
       pageW,
@@ -194,7 +195,7 @@ interface PinnedEl {
       title: document.title,
       url: location.href,
       truncated,
-      ...(degraded ? { degraded } : {}),
+      ...(degraded ? { degraded, reportedH: rawH } : {}),
     };
   }
 
@@ -209,6 +210,101 @@ interface PinnedEl {
     const doc = accessibleFrameDoc(el);
     const se = doc?.scrollingElement ?? doc?.documentElement;
     return se ? se.scrollHeight : el.scrollHeight;
+  }
+
+  /**
+   * Asks the user what to do about a page reporting a height nothing could walk, and
+   * resolves with their answer. Which of the three is right depends on what the page
+   * actually is, and only the person looking at it knows that, so the engine asks instead
+   * of deciding: a broken measurement over real content wants the first N px, a viewer
+   * that reports nonsense and paints one screen wants the visible area, and someone who
+   * would rather fix the page first wants neither.
+   *
+   * Shown before anything about the page has been touched, and gone before the first
+   * tile, so it can never end up in the capture. Its markup lives in a closed shadow root
+   * for the same reason the selection overlay's does: the host page can neither restyle
+   * it nor read it.
+   */
+  function askHugePage(reportedHeight: number, limitHeight: number): Promise<HugePageChoice> {
+    return new Promise<HugePageChoice>((resolve) => {
+      const host = document.createElement('div');
+      // The one part of the overlay the outside can see, so the e2e harness can wait for it.
+      host.setAttribute('data-screencappy', 'huge-page-prompt');
+      host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;';
+      const shadow = host.attachShadow({ mode: 'closed' });
+      const root = document.createElement('div');
+      root.innerHTML = `
+        <style>
+          /* The shell's ink, cream and single sky accent, held to literals because this
+             overlay lives in the host page and cannot reach the extension's stylesheet. */
+          .scrim {
+            position: fixed; inset: 0; background: rgba(10, 10, 12, .55);
+            display: flex; align-items: center; justify-content: center;
+          }
+          .card {
+            width: min(460px, calc(100vw - 48px)); box-sizing: border-box;
+            background: rgba(10, 10, 12, .97); color: #faf6ec;
+            border: 1px solid rgba(250, 246, 236, .16); border-radius: 14px;
+            padding: 22px 24px; font: 14px/1.5 system-ui, sans-serif;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .55);
+          }
+          h1 { font: 600 16px/1.3 system-ui, sans-serif; margin: 0 0 8px; }
+          p { margin: 0 0 18px; color: rgba(250, 246, 236, .78); }
+          b { color: #38bdf8; font-weight: 600; }
+          .actions { display: flex; flex-direction: column; gap: 8px; }
+          button {
+            font: 500 14px/1 system-ui, sans-serif; text-align: left;
+            padding: 11px 14px; border-radius: 9px; cursor: pointer;
+            background: rgba(250, 246, 236, .06); color: #faf6ec;
+            border: 1px solid rgba(250, 246, 236, .16);
+          }
+          button:hover { background: rgba(250, 246, 236, .12); }
+          button.primary { background: #38bdf8; color: #0a0a0c; border-color: #38bdf8; }
+          button.primary:hover { background: #7dd3fc; }
+          button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+          .keys { margin: 14px 0 0; font-size: 12px; color: rgba(250, 246, 236, .55); }
+        </style>
+        <div class="scrim">
+          <div class="card" role="dialog" aria-modal="true" aria-labelledby="t">
+            <h1 id="t">This page reports an impossible height</h1>
+            <p>
+              It says it is <b class="reported"></b> tall, which is almost certainly a
+              measurement bug rather than that much content. What should the capture cover?
+            </p>
+            <div class="actions">
+              <button class="primary" data-choice="limit">Capture the first <span class="limit"></span></button>
+              <button data-choice="visible">Capture the visible area only</button>
+              <button data-choice="cancel">Cancel</button>
+            </div>
+            <p class="keys"><b>Enter</b> for the first option &nbsp;·&nbsp; <b>Esc</b> to cancel</p>
+          </div>
+        </div>
+      `;
+      root.querySelector('.reported')!.textContent = formatPx(reportedHeight);
+      root.querySelector('.limit')!.textContent = formatPx(limitHeight);
+      shadow.appendChild(root);
+      document.documentElement.appendChild(host);
+
+      const finish = (choice: HugePageChoice) => {
+        window.removeEventListener('keydown', onKey, true);
+        host.remove();
+        resolve(choice);
+      };
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key !== 'Escape') return;
+        e.preventDefault();
+        e.stopPropagation();
+        finish('cancel');
+      };
+      for (const button of root.querySelectorAll<HTMLButtonElement>('button')) {
+        button.addEventListener('click', () =>
+          finish((button.dataset['choice'] as HugePageChoice) ?? 'cancel')
+        );
+      }
+      window.addEventListener('keydown', onKey, true);
+      // Focus lands on the option that keeps the most content, so Enter takes it.
+      root.querySelector<HTMLButtonElement>('button.primary')!.focus();
+    });
   }
 
   function findScrollContainer(ignoreOverflow = false): HTMLElement | null {
@@ -714,7 +810,9 @@ interface PinnedEl {
       case 'fs:ping':
         return { ok: true };
       case 'fs:measure':
-        return measure(msg.maxHeight, msg.usePicked ?? false);
+        return measure(msg.maxHeight, msg.usePicked ?? false, msg.allowHuge ?? false);
+      case 'fs:askHugePage':
+        return askHugePage(msg.reportedHeight, msg.limitHeight);
       case 'fs:prepare':
         prepare(msg.hideSticky, msg.freezeAnimations);
         return { ok: true };
