@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.1](https://github.com/smollet-app/screencappy/compare/v0.3.0...v0.3.1) (2026-08-16)
+
+
+### 🐛 Bug fixes
+
+* **capture:** explain browser-protected pages instead of an ERR badge ([6566199](https://github.com/smollet-app/screencappy/commit/6566199ec81b9df767c1f48ce338924586323d69))
+* **capture:** probe Web Store pages instead of assuming Chrome's lockdown ([f399780](https://github.com/smollet-app/screencappy/commit/f399780c0eee18c4221d677ae254c9b70e3ac546))
+* **editor:** stop the drawers cropping the first row's rings ([5408191](https://github.com/smollet-app/screencappy/commit/5408191dcf4aca5ef3cb9b74fb50659ac707e63c))
+
+
+### 📝 Documentation
+
+* preserve the agent bridge architecture spec on the roadmap ([5a88e70](https://github.com/smollet-app/screencappy/commit/5a88e7009c774a1481178b9a3ee9bcac627a177a))
+
 ## [0.3.0](https://github.com/smollet-app/screencappy/compare/v0.2.0...v0.3.0) (2026-08-16)
 
 
