@@ -39,10 +39,14 @@ function flashSaved() {
 async function updateTurboUi() {
   const engineEl = $<HTMLSelectElement>('#engine');
   if (!debuggerAvailable()) {
-    // Firefox has no chrome.debugger, so Turbo can never work there.
+    // Firefox has no chrome.debugger, so Turbo can never work there. Naming the two
+    // context menu items as well: they simply do not appear in this build, and a
+    // missing menu item explains itself to nobody.
     engineEl.querySelector<HTMLOptionElement>('option[value="turbo"]')!.disabled = true;
     $('#turboHint').textContent =
-      'Turbo is unavailable in this browser: it needs the DevTools debugger API, which only Chromium-based browsers provide.';
+      'Turbo is unavailable in this build: it needs the DevTools debugger API, which this browser does not provide. ' +
+      'The "Save as searchable PDF" and "Capture as mobile" context menu items need the same API, so they are absent too. ' +
+      'Everything else works the same way it does elsewhere.';
     $('#grantDebugger').hidden = true;
     return;
   }
@@ -104,6 +108,10 @@ $('#grantDebugger').addEventListener('click', async () => {
   await requestDebuggerPermission();
   await updateTurboUi();
 });
+
+// The running build's own version, so what is installed can be checked against
+// what the repository says shipped.
+$('#version').textContent = `screencappy ${chrome.runtime.getManifest().version}`;
 
 $('#editShortcuts').addEventListener('click', (e) => {
   e.preventDefault();
