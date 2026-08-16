@@ -140,7 +140,14 @@ const GAUNTLET_PAGES = {
   '/clipped': 'fixture-clipped.html',
   '/embed': 'fixture-embed.html',
   '/embed-inner': 'fixture-embed-inner.html',
+  '/frames': 'fixture-frames.html',
+  '/frames-inner': 'fixture-frames-inner.html',
+  '/frames-deep': 'fixture-frames-deep.html',
+  '/frames-foreign': 'fixture-frames-foreign.html',
 };
+
+/** The cross-origin frame's colour, which must survive into the composed image. */
+const FOREIGN = /** @type {[number, number, number]} */ ([200, 30, 90]);
 
 /** The page behind the modal, which must not reach the composed image at all. */
 const MODAL_BEHIND = /** @type {[number, number, number]} */ ([120, 120, 120]);
@@ -423,6 +430,27 @@ export const GAUNTLET = [
     note: 'embedded viewer',
     maxMs: 60_000,
     gap: 'the scroll-and-stitch engine cannot reach inside <embed>',
+  },
+  // Frames two deep plus one from a foreign origin. Every frame has to land at its own
+  // offset, and the cross-origin one has to come through as the browser painted it rather
+  // than blank or fatal.
+  {
+    name: 'frames',
+    path: '/frames',
+    minW: 1200,
+    maxW: 1200,
+    minH: 1600,
+    maxH: 1600,
+    note: '',
+    maxMs: 60_000,
+    points: [
+      { name: 'outer page above the frames', x: 900, y: 100, rgb: indexColor(0) },
+      { name: 'frame one deep', x: 300, y: 300, rgb: indexColor(10) },
+      { name: 'frame two deep', x: 300, y: 500, rgb: indexColor(20) },
+      { name: 'cross-origin frame', x: 900, y: 400, rgb: FOREIGN },
+      { name: 'outer page below the frames', x: 900, y: 1500, rgb: indexColor(1) },
+    ],
+    colors: [{ name: 'cross-origin frame', rgb: FOREIGN, count: 500 * 400, tolerance: 0.05 }],
   },
 ];
 
