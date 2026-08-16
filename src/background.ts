@@ -14,6 +14,7 @@ import {
   countdownSteps,
   dataUrlToBlob,
   gridPositions,
+  isRestrictedUrl,
   isUniform,
   makeRecord,
   mobileMetrics,
@@ -300,8 +301,21 @@ async function startCapture(
     await badge.clear();
   } catch (err) {
     console.error('[screencappy] capture failed', err);
-    await badge.set('ERR', '#dc2626');
-    setTimeout(() => void badge.clear(), 4000);
+    // A protected page is a browser rule, not a screencappy error, and a
+    // three-letter badge cannot say so. Open the editor's explanation state
+    // instead; the bare badge stays for failures we genuinely cannot name.
+    if (isRestrictedUrl(tab.url ?? '')) {
+      const params = new URLSearchParams({ blocked: tab.url ?? '' });
+      await chrome.tabs.create({
+        url: chrome.runtime.getURL(`editor.html?${params}`),
+        index: tab.index + 1,
+        openerTabId: tabId,
+      });
+      await badge.clear();
+    } else {
+      await badge.set('ERR', '#dc2626');
+      setTimeout(() => void badge.clear(), 4000);
+    }
   } finally {
     busyTabs.delete(tabId);
   }
@@ -806,14 +820,6 @@ async function sendToTab<T = void>(tabId: number, msg: CaptureContentMsg): Promi
     throw new Error((res as { __err: string }).__err);
   }
   return res as T;
-}
-
-function isRestrictedUrl(url: string): boolean {
-  if (!url) return true;
-  if (/^(chrome|chrome-extension|devtools|edge|about|view-source|chrome-untrusted):/.test(url)) {
-    return true;
-  }
-  return /^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/.test(url);
 }
 
 function intersect(a: Rect, b: Rect): Rect {

@@ -175,6 +175,17 @@
       <h2>No capture selected</h2>
       <p>Pick a capture from the history panel, or capture a page with <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>.</p>
     </div>
+    <div id="blockedState" class="empty" hidden>
+      <img src="icons/icon128.png" alt="" width="72" />
+      <h2>Your browser protects that page</h2>
+      <p>
+        Browsers do not let any extension see their own settings pages or the
+        extension store, so screencappy cannot capture
+        <span id="blockedUrl" class="blocked-url"></span>.
+      </p>
+      <p>For that one page, use your system screenshot instead: <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd> on Mac, <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> on Windows.</p>
+      <p>Every normal website works. This is a browser rule, not a bug.</p>
+    </div>
   </main>
 
   <footer class="statusbar">

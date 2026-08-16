@@ -520,6 +520,19 @@ export function segmentRects(clip: Rect, segH: number): Rect[] {
   return segments;
 }
 
+/**
+ * Pages the browser walls off from every extension: its own UI schemes and the
+ * Web Store, which chrome.google.com serves with an optional /u/<n>/ account
+ * prefix. Nothing can be injected there and captureVisibleTab is refused too.
+ */
+export function isRestrictedUrl(url: string): boolean {
+  if (!url) return true;
+  if (/^(chrome|chrome-extension|devtools|edge|about|view-source|chrome-untrusted):/.test(url)) {
+    return true;
+  }
+  return /^https:\/\/(chrome\.google\.com\/(u\/\d+\/)?webstore|chromewebstore\.google\.com)/.test(url);
+}
+
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);

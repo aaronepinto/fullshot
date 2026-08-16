@@ -2078,6 +2078,17 @@ async function boot() {
   $('#ctxDownload').textContent = `Download ${FORMAT_LABEL[state.settings.format] ?? 'PNG'}`;
 
   const params = new URLSearchParams(location.search);
+  const blocked = params.get('blocked');
+  if (blocked !== null) {
+    // The capture was refused by the browser itself; explain that instead of
+    // showing an empty editor under an ERR badge.
+    $('#loading').hidden = true;
+    $('#blockedState').hidden = false;
+    const short = blocked.replace(/^https?:\/\//, '').split('?')[0] ?? '';
+    $('#blockedUrl').textContent = short.length > 64 ? `${short.slice(0, 64)}…` : short;
+    document.title = 'screencappy | page protected by the browser';
+    return;
+  }
   const id = params.get('id');
   if (!id) {
     $('#loading').hidden = true;
