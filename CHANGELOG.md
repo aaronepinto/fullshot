@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.3.0](https://github.com/smollet-app/screencappy/compare/v0.2.0...v0.3.0) (2026-08-16)
+
+
+### ✨ Features
+
+* **capture:** ask what to capture when a page reports an impossible height ([721bb95](https://github.com/smollet-app/screencappy/commit/721bb956062e5b26bbf2b609002341220df13698))
+* **capture:** capture the document inside a full-bleed iframe ([f725041](https://github.com/smollet-app/screencappy/commit/f725041593304bccd020a6cf02269c9829f88233))
+* **capture:** say so when content is clipped away with no way to scroll ([4277369](https://github.com/smollet-app/screencappy/commit/4277369a1f10201134b70f4a51fca0c6f0887884))
+* **editor:** one-row toolbar, roving tool focus, and an honest empty state ([c00536a](https://github.com/smollet-app/screencappy/commit/c00536ad2b179abac471637510f057ec96f8cbea))
+* **editor:** say where an export actually landed ([380b5e0](https://github.com/smollet-app/screencappy/commit/380b5e0ed72ce9395484a69954be2839187462e8))
+* **options:** show the running build, its source, and what this browser lacks ([773f63f](https://github.com/smollet-app/screencappy/commit/773f63ff5f86d301573297d146574a66275cfc9c))
+
+
+### 🐛 Bug fixes
+
+* **capture:** find scroll containers inside open shadow roots ([29af071](https://github.com/smollet-app/screencappy/commit/29af0714527b8f363afed455cbeff099c47c517a))
+* **capture:** hold each tile for images that are still arriving ([34cbb2d](https://github.com/smollet-app/screencappy/commit/34cbb2d4f82ab2d8525cb303eb6d95a796cdfac7))
+* **capture:** keep the region size chip on screen at the bottom edge ([0f4299b](https://github.com/smollet-app/screencappy/commit/0f4299b4b77947c45520b97000e5e5f5b1c4e537))
+* **capture:** neutralise scroll-driven animation timelines ([0889d75](https://github.com/smollet-app/screencappy/commit/0889d75650d48930084fac57f22eb96c3a456ad6))
+* **capture:** pin furniture to the edge it belongs to, not to tile one ([845a0a1](https://github.com/smollet-app/screencappy/commit/845a0a1302202930247a6651fa7becfe84a83989))
+* **capture:** refuse pages that report an implausible height ([2a85dce](https://github.com/smollet-app/screencappy/commit/2a85dce3b0dede8b616a1c92b6f20953679c870a))
+* **capture:** turn scroll snapping off for the capture ([d4e0101](https://github.com/smollet-app/screencappy/commit/d4e0101dbd2037d54bc5645f32c70cb9ad65f03c))
+* **capture:** wait for images the way a slow page actually loads them ([70ff77a](https://github.com/smollet-app/screencappy/commit/70ff77ac06981f30614827952a4caba28f6e9258))
+* **editor:** repair the controls and layout the UI sweep found ([72de590](https://github.com/smollet-app/screencappy/commit/72de59093abdf961632432163f89ba194c3c6e62))
+* **export:** quiet download mode ([3249e61](https://github.com/smollet-app/screencappy/commit/3249e61a7d9dd2db97fc52075bbfdd8847bedd9c))
+* **export:** stop download mode from stealing focus and leaving a tab behind ([dc13359](https://github.com/smollet-app/screencappy/commit/dc13359916521d6fce52b28ae9cb3300c7ab7dc2))
+* **options:** make the debugger grant reachable and answer reduced motion ([8ca856f](https://github.com/smollet-app/screencappy/commit/8ca856fc11fa4b0ec11f0ec5b306fda54c274140))
+* **options:** tell the store-fallback build apart from a browser that cannot ([b9d33ff](https://github.com/smollet-app/screencappy/commit/b9d33fff559adeb85bd5c69b0c7ff87690f978d5))
+* **stitch:** compose at the ratio the page reports, not the one a bitmap implies ([c89778c](https://github.com/smollet-app/screencappy/commit/c89778cbd8d65343d9c55d04d5fe26a0b64a3ca7))
+* **stitch:** size each tile's box from its CSS coordinates, not its bitmap ([e77bf47](https://github.com/smollet-app/screencappy/commit/e77bf479c78963aa59d6d07502ffda1f3d2a6e7b))
+
+
+### 📝 Documentation
+
+* roadmap for post-launch releases ([2e088f0](https://github.com/smollet-app/screencappy/commit/2e088f0eef501e7840426abbb66a66d01f0526c2))
+
+
+### ✅ Tests
+
+* **e2e:** 100vh wrapper clipping content nothing can scroll ([b5d2f31](https://github.com/smollet-app/screencappy/commit/b5d2f310e015be7767e8b98ebc91101ba5636364))
+* **e2e:** assert the capture leaves the page exactly as it found it ([6bb4dcd](https://github.com/smollet-app/screencappy/commit/6bb4dcdb32a330253b7552b1f391d1251056de50))
+* **e2e:** difficult-site gauntlet with the engine fixes it exposed ([b2a017f](https://github.com/smollet-app/screencappy/commit/b2a017fc9d86bc7210ae90bfd42e2082fb0ce4f8))
+* **e2e:** frames two deep and one from a foreign origin ([cf18cd7](https://github.com/smollet-app/screencappy/commit/cf18cd776ba61f19119b1d1f9c4e436b823af92f))
+* **e2e:** full-bleed embedded document, iframe and plugin ([c672155](https://github.com/smollet-app/screencappy/commit/c672155af45ae1af461b36246e6e011a67bd739e))
+* **e2e:** infinite scroll, capped and naturally terminating ([9c1680f](https://github.com/smollet-app/screencappy/commit/9c1680f77bc14da4bd47a4ac0e935654cf198acd))
+* **e2e:** lazy images behind a delaying fixture server ([df1f179](https://github.com/smollet-app/screencappy/commit/df1f179bbcae91767bc22c957411dc1dc076aaf5))
+* **e2e:** make the frames assertions independent of font metrics ([389f91b](https://github.com/smollet-app/screencappy/commit/389f91b75feb7919a1c121b293a67dcdec3ea87c))
+* **e2e:** name the direction a composed image is wrong ([6a9121b](https://github.com/smollet-app/screencappy/commit/6a9121b0743726f390e2117c434210fd7a8ead9f))
+* **e2e:** pages at and past the composed-image ceiling ([7a92427](https://github.com/smollet-app/screencappy/commit/7a924271b3f5bedd68ea53ed50f340e80e71f392))
+* **e2e:** pinned furniture on all four edges ([4b44d17](https://github.com/smollet-app/screencappy/commit/4b44d17c07a60d68c8aa323b8c4aaf55d766e00d))
+* **e2e:** pixel-level gauntlet harness and the reveal-on-scroll fixture ([efbdf83](https://github.com/smollet-app/screencappy/commit/efbdf830416e5eb0be4464df51bdea79f979683c))
+* **e2e:** run a seam detector at four device pixel ratios ([0835d4b](https://github.com/smollet-app/screencappy/commit/0835d4b8dd476486f4203240d824362b4b300f6a))
+* **e2e:** scroll-locked modal over a long page ([03a562f](https://github.com/smollet-app/screencappy/commit/03a562f5075dbd05aff52c17fe3794f98e15e897))
+* **e2e:** smooth scrolling and scroll snapping, and a gap detector ([656befb](https://github.com/smollet-app/screencappy/commit/656befb7e15f106496d2754a5b9baa1f2bfeea65))
+* **e2e:** sticky and scrollable content inside shadow roots ([492bcb6](https://github.com/smollet-app/screencappy/commit/492bcb685941601236311b551db869d1f58b9112))
+* **e2e:** witness for the parallax background fix ([f23e57b](https://github.com/smollet-app/screencappy/commit/f23e57bd34c2aa136ab1f6ebdee7c790fab3e266))
+* **ui:** cover the new reporting, and stop describing controls twice ([8ee6209](https://github.com/smollet-app/screencappy/commit/8ee6209672ad53b794a46cac59da819864d40111))
+* **ui:** cover the roving toolbars, the colour popover and the one-row bar ([6d82d58](https://github.com/smollet-app/screencappy/commit/6d82d5858a5f1dbd12819a4d1d15ff2d6654a18f))
+* **ui:** exhaustive control sweep with the fixes it motivated ([ba1caa8](https://github.com/smollet-app/screencappy/commit/ba1caa877cc4719b87e449d0fcfc42e5430f102b))
+* **ui:** sweep every control, photograph every state, drive both overlays ([930de58](https://github.com/smollet-app/screencappy/commit/930de5876aea708244dafd10bd4eda76399b17f4))
+
 ## [0.2.0](https://github.com/smollet-app/screencappy/compare/v0.1.0...v0.2.0) (2026-08-15)
 
 
