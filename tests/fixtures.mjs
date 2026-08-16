@@ -2,11 +2,50 @@
  * The fixture pages and the dimensions a capture must reach, shared by the
  * Chromium e2e (tests/e2e.mjs) and the Firefox e2e (tests/e2e-firefox.mjs) so the
  * two drivers cannot drift into asserting different things.
+ *
+ * SCENARIOS is the cross-browser core: dimension-only assertions both drivers can
+ * make. GAUNTLET is the Chromium-only set built from the failure-mode taxonomy; its
+ * checks are pixel counts, colour sequences and request logs, which the Firefox
+ * driver has no way to read out of the editor.
  */
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { deflateSync } from 'node:zlib';
 
 const ROOT = new URL('..', import.meta.url).pathname;
+
+/**
+ * @typedef {object} ColorCheck
+ * @property {string} name Reported in the failure message.
+ * @property {[number, number, number]} rgb Exact colour to count in the composed image.
+ * @property {number} [count] Expected pixel count (within tolerance).
+ * @property {number} [minCount] Lower bound when an exact count is not knowable.
+ * @property {number} [maxCount] Upper bound.
+ * @property {number} [tolerance] Fraction of `count` allowed either way, default 0.02.
+ * @property {number} [topY] Expected topmost row holding the colour, ±2px.
+ * @property {number} [bottomY] Expected bottommost row, ±2px; negative counts from the bottom.
+ */
+
+/**
+ * @typedef {object} PointCheck
+ * @property {string} name
+ * @property {number} x Composed-image column; negative counts in from the right edge.
+ * @property {number} y Composed-image row; negative counts up from the bottom edge.
+ * @property {[number, number, number]} [rgb] Colour the pixel must be, exactly.
+ * @property {[number, number, number]} [notRgb] Colour the pixel must not be.
+ */
+
+/**
+ * @typedef {object} SequenceCheck
+ * A column of index-encoded bands (see indexColor below) read top to bottom: the
+ * decoded indices must be exactly 0, 1, 2 … so a duplicated frame, a skipped band
+ * or a seam gap is a hard failure rather than a judgement call.
+ * @property {number} x Column to sample; negative counts in from the right edge.
+ * @property {number} y0 Row of the first band's sample point.
+ * @property {number} dy Distance between band sample points.
+ * @property {number} count How many bands to read.
+ * @property {number} [first] Index the first band carries, default 0.
+ */
 
 /**
  * @typedef {object} Scenario
@@ -18,6 +57,14 @@ const ROOT = new URL('..', import.meta.url).pathname;
  * @property {number} [maxW] Widest composed width, for pane-shaped captures.
  * @property {number[]} [samples] Height fractions to pixel-sample (Chromium harness only).
  * @property {string} [note] Substring the editor's status note must show; '' asserts none.
+ * @property {{ width: number, height: number }} [viewport] Non-default window size.
+ * @property {Record<string, unknown>} [settings] Extension settings to apply for this run.
+ * @property {number} [maxMs] Wall-clock ceiling for the whole run, ms.
+ * @property {ColorCheck[]} [colors] Per-colour pixel-count assertions.
+ * @property {PointCheck[]} [points] Exact colours at fixed composed coordinates.
+ * @property {SequenceCheck} [sequence] Index-encoded bands read down one column.
+ * @property {string[]} [requested] Fixture-server paths that must all have been requested.
+ * @property {string} [gap] Documented engine limitation this scenario pins down.
  */
 
 /** @type {Scenario[]} */
@@ -42,30 +89,253 @@ export const SCENARIOS = [
   { name: 'hijack-nospacer', path: '/hijack?spacer=0', minW: 1100, maxW: 1300, minH: 700, maxH: 900, note: '' },
 ];
 
+/**
+ * Colour a fixture paints on band `i` so the harness can read the band's index back
+ * out of a single pixel. Green and blue are fixed markers, so an unrelated colour can
+ * never be mistaken for a band, and red carries the index.
+ */
+export function indexColor(i) {
+  return [6 + i, 90, 160];
+}
+
+/** The index encoded in a sampled pixel, or null when it is not a band colour. */
+export function decodeIndex([r, g, b]) {
+  return g === 90 && b === 160 ? r - 6 : null;
+}
+
+/** Solid colours the furniture fixture paints its pinned elements, shared with the checks. */
+export const FURNITURE = {
+  header: /** @type {[number, number, number]} */ ([14, 165, 233]),
+  bottomBar: /** @type {[number, number, number]} */ ([220, 38, 38]),
+  rail: /** @type {[number, number, number]} */ ([22, 163, 74]),
+  fab: /** @type {[number, number, number]} */ ([234, 179, 8]),
+  cookie: /** @type {[number, number, number]} */ ([147, 51, 234]),
+};
+
+/** Geometry the furniture fixture and its assertions both depend on. */
+export const FURNITURE_BOX = {
+  pageW: 1200,
+  pageH: 4000,
+  headerH: 60,
+  barH: 56,
+  railW: 72,
+  fabW: 56,
+  fabH: 56,
+  fabBottom: 80,
+  cookieW: 400,
+  cookieH: 40,
+  cookieBottom: 160,
+};
+
+/** Gauntlet fixture pages, added to the routes the fixture server serves. */
+const GAUNTLET_PAGES = {
+  '/reveal': 'fixture-reveal.html',
+};
+
+/**
+ * Chromium-only scenarios built from the failure-mode taxonomy. Each one reproduces a
+ * construct that competitors are reported to get wrong, and asserts the pixels rather
+ * than only the dimensions.
+ * @type {Scenario[]}
+ */
+export const GAUNTLET = [
+  // Reveal-on-scroll: 12 × 500px sections that start transparent and 48px low, with an
+  // IntersectionObserver clearing both over 400ms. A capture that shoots while a section
+  // is mid-transition gets a blend toward white at the wrong offset, which is the
+  // mechanism behind a large share of the "blank" and "cut off" reports.
+  {
+    name: 'reveal',
+    path: '/reveal',
+    minW: 1100,
+    minH: 6000,
+    maxH: 6000,
+    maxMs: 60_000,
+    sequence: { x: 60, y0: 250, dy: 500, count: 12 },
+  },
+  // The same page with a 1500ms transition, well past any settle budget: waiting cannot
+  // save this one, only neutralising the transition can.
+  {
+    name: 'reveal-slow',
+    path: '/reveal?dur=1500',
+    minW: 1100,
+    minH: 6000,
+    maxH: 6000,
+    maxMs: 60_000,
+    sequence: { x: 60, y0: 250, dy: 500, count: 12 },
+  },
+  // Scroll-driven animation variant: progress is tied to the scroll position through
+  // animation-timeline: view(), so there is no time to wait for at all. Pausing such an
+  // animation freezes it at whatever progress it had, which for a section below the fold
+  // is fully transparent.
+  {
+    name: 'reveal-timeline',
+    path: '/reveal?mode=timeline',
+    minW: 1100,
+    minH: 6000,
+    maxH: 6000,
+    maxMs: 60_000,
+    sequence: { x: 60, y0: 250, dy: 500, count: 12 },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Fixture server
+// ---------------------------------------------------------------------------
+
+const PAGES = {
+  '/': 'fixture.html',
+  '/container': 'fixture-container.html',
+  '/virtualized': 'fixture-virtualized.html',
+  '/mail': 'fixture-mail.html',
+  '/hijack': 'fixture-hijack.html',
+};
+
+/** PNG chunk CRC, table built once. */
+const CRC_TABLE = (() => {
+  const table = new Int32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    table[n] = c;
+  }
+  return table;
+})();
+
+function crc32(buf) {
+  let c = -1;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(body));
+  return Buffer.concat([len, body, crc]);
+}
+
+/**
+ * A solid-colour PNG, encoded here rather than pulled from a package: the fixture
+ * server stays dependency-free, and the exact bytes of the colour are what the pixel
+ * assertions compare against.
+ */
+function solidPng(w, h, [r, g, b]) {
+  const stride = w * 3 + 1;
+  const raw = Buffer.alloc(stride * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * stride;
+    for (let x = 0; x < w; x++) {
+      raw[row + 1 + x * 3] = r;
+      raw[row + 2 + x * 3] = g;
+      raw[row + 3 + x * 3] = b;
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8; // bit depth
+  ihdr[9] = 2; // truecolour
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+const pngCache = new Map();
+function bandPng(index) {
+  let png = pngCache.get(index);
+  if (!png) {
+    png = solidPng(800, 300, indexColor(index));
+    pngCache.set(index, png);
+  }
+  return png;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Serves the fixture pages plus two things the gauntlet needs: image responses the
+ * server can delay on demand (so "did the engine wait for the lazy image?" is a real
+ * question), and a log of which image paths were ever requested (so "did the engine
+ * even ask?" is answerable separately from "did it wait?").
+ *
+ * A second server on its own port acts as a foreign origin for the iframe fixture:
+ * same loopback host, different port, so cross-origin behaviour is exercised without
+ * the browser ever leaving the machine.
+ */
 export async function startFixtureServer() {
-  /** @type {Record<string, Buffer>} */
-  const pages = {
-    '/': await readFile(`${ROOT}tests/fixture.html`),
-    '/container': await readFile(`${ROOT}tests/fixture-container.html`),
-    '/virtualized': await readFile(`${ROOT}tests/fixture-virtualized.html`),
-    '/mail': await readFile(`${ROOT}tests/fixture-mail.html`),
-    '/hijack': await readFile(`${ROOT}tests/fixture-hijack.html`),
+  /** @type {Record<string, string>} */
+  const pages = {};
+  for (const [route, file] of Object.entries(PAGES)) {
+    pages[route] = await readFile(`${ROOT}tests/${file}`, 'utf8');
+  }
+  for (const [route, file] of Object.entries(GAUNTLET_PAGES)) {
+    pages[route] = await readFile(`${ROOT}tests/${file}`, 'utf8');
+  }
+
+  /** @type {string[]} */
+  let imageLog = [];
+
+  const listen = (handler) =>
+    new Promise((resolve) => {
+      const server = createServer(handler);
+      server.listen(0, '127.0.0.1', () => resolve(server));
+    });
+
+  const portOf = (server) => {
+    const address = server.address();
+    if (address === null || typeof address === 'string') {
+      throw new Error('The fixture server did not bind to a TCP port');
+    }
+    return address.port;
   };
-  const server = createServer((req, res) => {
-    res.setHeader('content-type', 'text/html');
-    // Fixtures take query parameters of their own, so route on the path alone.
+
+  // The foreign-origin server comes up first so its base URL can be substituted into
+  // the pages the main server hands out.
+  const alt = await listen((req, res) => {
     const path = (req.url ?? '/').split('?', 1)[0];
+    res.setHeader('content-type', 'text/html');
     res.end(pages[path] ?? pages['/']);
   });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(undefined)));
+  const altBase = `http://127.0.0.1:${portOf(alt)}`;
 
-  const address = server.address();
-  if (address === null || typeof address === 'string') {
-    throw new Error('The fixture server did not bind to a TCP port');
-  }
+  const main = await listen(async (req, res) => {
+    const url = new URL(req.url ?? '/', 'http://127.0.0.1');
+    const path = url.pathname;
+
+    if (path === '/img-log') {
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(imageLog));
+      return;
+    }
+    if (path.startsWith('/img/')) {
+      imageLog.push(path);
+      const index = Number(path.slice('/img/'.length).replace('.png', ''));
+      const delay = Number(url.searchParams.get('delay') ?? 0);
+      if (delay > 0) await sleep(delay);
+      res.setHeader('content-type', 'image/png');
+      res.setHeader('cache-control', 'no-store');
+      res.end(bandPng(Number.isFinite(index) ? index : 0));
+      return;
+    }
+    // Loading a page starts a fresh request log, so each scenario reads only its own.
+    if (path === '/lazy') imageLog = [];
+    res.setHeader('content-type', 'text/html');
+    res.end((pages[path] ?? pages['/']).replaceAll('__ALT_ORIGIN__', altBase));
+  });
+
   return {
-    base: `http://127.0.0.1:${address.port}`,
-    close: () => server.close(),
+    base: `http://127.0.0.1:${portOf(main)}`,
+    altBase,
+    imageLog: () => imageLog.slice(),
+    close: () => {
+      main.close();
+      alt.close();
+    },
   };
 }
 
