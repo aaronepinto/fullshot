@@ -134,7 +134,11 @@ const GAUNTLET_PAGES = {
   '/lazy': 'fixture-lazy.html',
   '/tall': 'fixture-tall.html',
   '/parallax': 'fixture-parallax.html',
+  '/modal': 'fixture-modal.html',
 };
+
+/** The page behind the modal, which must not reach the composed image at all. */
+const MODAL_BEHIND = /** @type {[number, number, number]} */ ([120, 120, 120]);
 
 /** The bands at each end of the tall fixture. */
 const TALL = {
@@ -333,6 +337,34 @@ export const GAUNTLET = [
     colors: [
       { name: 'sticky parallax layer', rgb: [255, 140, 0], count: 400 * 200, tolerance: 0.05 },
     ],
+  },
+  // Scroll-locked body, 4000px of page behind, and 2600px of what the user actually wants
+  // inside a fixed panel that scrolls on its own. The capture has to be the panel: its
+  // width, its height, and none of the page behind it.
+  {
+    name: 'modal',
+    path: '/modal',
+    minW: 1100,
+    maxW: 1125,
+    minH: 2600,
+    maxH: 2600,
+    note: '',
+    maxMs: 60_000,
+    sequence: { x: 560, y0: 100, dy: 200, count: 13 },
+    colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
+  },
+  // The same panel in the top layer, where hit testing and painting both differ.
+  {
+    name: 'modal-native',
+    path: '/modal?native=1',
+    minW: 1100,
+    maxW: 1125,
+    minH: 2600,
+    maxH: 2600,
+    note: '',
+    maxMs: 60_000,
+    sequence: { x: 560, y0: 100, dy: 200, count: 13 },
+    colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
   },
 ];
 
