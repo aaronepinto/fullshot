@@ -96,14 +96,15 @@ test('Turbo falls back to stitch when the permission is refused', async ({ page 
 });
 
 test('every settings control is reachable and rings when focused', async ({ options: page }) => {
-  const expected = (await enumerateControls(page))
-    .filter((c) => c.visible && c.focusable && !c.disabled)
-    .map((c) => c.sel);
-  const visited = await tabOrder(page, expected.length * 2 + 4);
-  expect(expected.filter((sel) => !visited.includes(sel)), 'controls tabbing never reaches').toEqual([]);
+  const stops = (await enumerateControls(page)).filter((c) => c.visible && c.focusable && !c.disabled);
+  const visited = await tabOrder(page, stops, stops.length * 2 + 4);
+  expect(
+    stops.map((c) => c.sel).filter((sel) => !visited.includes(sel)),
+    'controls tabbing never reaches'
+  ).toEqual([]);
 
   const unringed: string[] = [];
-  for (const sel of expected) {
+  for (const { sel } of stops) {
     const ring = await page.evaluate((s) => {
       const el = document.querySelector<HTMLElement>(s)!;
       el.focus();
@@ -121,4 +122,15 @@ test('the settings page loads without complaint', async ({ page }) => {
   await page.goto('/options.html');
   await expect(page.locator('#filenameTemplate')).toHaveValue('{domain} {date} {time}');
   expect(watch.errors).toEqual([]);
+});
+
+test('the page says which build is running and where the source is', async ({ options: page }) => {
+  // The category's reviews ask for this by name: a version you can check against a
+  // public repository, rather than being told to trust the binary.
+  await expect(page.locator('#version')).toHaveText('screencappy 0.2.0');
+  await expect(page.locator('#sourceLink')).toHaveAttribute(
+    'href',
+    'https://github.com/smollet-app/screencappy'
+  );
+  await expect(page.locator('footer')).toContainText('No account, no telemetry, no network requests');
 });

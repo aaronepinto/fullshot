@@ -348,18 +348,18 @@ test('the canvas context menu copies and downloads', async ({ editor, page }) =>
 // ---------------------------------------------------------------------------
 
 test('every visible control is in the tab ring, and the ring closes', async ({ editor, page }) => {
-  const expected = [...(await allControls(page, editor)).values()]
-    .filter((c) => c.state === 'rest' && c.focusable && !c.disabled && c.sel !== '#canvas')
-    .map((c) => c.sel);
-  expect(expected.length).toBeGreaterThan(20);
+  const stops = [...(await allControls(page, editor)).values()].filter(
+    (c) => c.state === 'rest' && c.focusable && !c.disabled && c.sel !== '#canvas'
+  );
+  expect(stops.length).toBeGreaterThan(20);
 
   // Two laps: the second proves the ring wraps rather than dead-ends on the last stop.
-  const visited = await tabOrder(page, expected.length * 2 + 6);
-  const missed = expected.filter((sel) => !visited.includes(sel));
+  const visited = await tabOrder(page, stops, stops.length * 2 + 6);
+  const missed = stops.map((c) => c.sel).filter((sel) => !visited.includes(sel));
   expect(missed, 'controls no amount of tabbing reaches').toEqual([]);
 
-  const first = visited.indexOf(expected[0]!);
-  expect(visited.slice(first + 1).includes(expected[0]!), 'the tab ring never comes back around').toBe(true);
+  const first = visited.indexOf(stops[0]!.sel);
+  expect(visited.slice(first + 1).includes(stops[0]!.sel), 'the tab ring never comes back around').toBe(true);
 });
 
 test('drawing does not trap focus on the canvas', async ({ editor, page }) => {
@@ -486,3 +486,18 @@ test('an annotation drawer with nothing in it says so', async ({ editor, page })
   await page.click('#btnAnnos');
   await expect(page.locator('#annoList')).toContainText('Nothing drawn yet.');
 });
+
+test('an export says where the file landed, not just that it saved', async ({ editor, page }) => {
+  await page.click('#btnDownload');
+  // The resolved path, read back from the browser after the download started,
+  // because the folder, the collision rename and Save As are all its decision.
+  await expect(editor.toast).toContainText('Saved to /Users/test/Downloads/');
+  await expect(editor.toast).toContainText('.png');
+
+  const asked = await page.evaluate(
+    () => (window as unknown as { __downloads: { filename: string }[] }).__downloads
+  );
+  expect(asked).toHaveLength(1);
+  expect(asked[0]!.filename).toMatch(/\.png$/);
+});
+
