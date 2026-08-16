@@ -135,6 +135,7 @@ const GAUNTLET_PAGES = {
   '/tall': 'fixture-tall.html',
   '/parallax': 'fixture-parallax.html',
   '/modal': 'fixture-modal.html',
+  '/clipped': 'fixture-clipped.html',
 };
 
 /** The page behind the modal, which must not reach the composed image at all. */
@@ -365,6 +366,32 @@ export const GAUNTLET = [
     maxMs: 60_000,
     sequence: { x: 560, y0: 100, dy: 200, count: 13 },
     colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
+  },
+  // A wrapper clipping 4000px to 100vh with nothing on the page able to scroll. The
+  // document really is one viewport tall, so the honest capture is one viewport - plus a
+  // note, because a one-screen image that looks like the whole page is the complaint.
+  {
+    name: 'clipped',
+    path: '/clipped',
+    minW: 1200,
+    maxW: 1200,
+    minH: 800,
+    maxH: 800,
+    note: 'cannot be scrolled',
+    maxMs: 30_000,
+    points: [{ name: 'first band', x: 600, y: 200, rgb: indexColor(0) }],
+  },
+  // The same page with a scrollable wrapper: all 4000px, and nothing to warn about.
+  {
+    name: 'clipped-fixed',
+    path: '/clipped?fix=1',
+    minW: 1150,
+    maxW: 1200,
+    minH: 4000,
+    maxH: 4000,
+    note: '',
+    maxMs: 60_000,
+    sequence: { x: 600, y0: 200, dy: 400, count: 10 },
   },
 ];
 

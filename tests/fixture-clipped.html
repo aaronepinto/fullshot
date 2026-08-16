@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e clipped wrapper fixture</title>
+  <style>
+    /* The wiki and docs app-shell shape, and the purest form of the single most common
+       complaint in the category: full-page mode returns exactly one viewport. Here the
+       page is honest about it. The wrapper clips 4000px of content to 100vh with
+       overflow: hidden and nothing on the page can scroll, so the document height really
+       is one screen and any height-probing engine is right to measure it that way.
+
+       Distinct from the hijack fixture, which reports a tall height nothing can move.
+       The content below the fold is genuinely unreachable, so the capture cannot contain
+       it - but the user has to be told that, rather than handed a one-screen image that
+       looks like the whole page.
+       ?fix=1 gives the wrapper overflow: auto, which is the same page done right. */
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    #wrap { height: 100vh; overflow: hidden; }
+    .band { height: 400px; font: 700 40px/400px system-ui, sans-serif; color: rgba(255,255,255,.75); padding-left: 40px; }
+  </style>
+</head>
+<body>
+  <div id="wrap"></div>
+  <script>
+    if (new URLSearchParams(location.search).get('fix') === '1') {
+      document.getElementById('wrap').style.overflow = 'auto';
+    }
+    const wrap = document.getElementById('wrap');
+    for (let i = 0; i < 10; i++) {
+      const band = document.createElement('div');
+      band.className = 'band';
+      band.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      band.textContent = 'Band ' + i;
+      wrap.appendChild(band);
+    }
+  </script>
+</body>
+</html>
