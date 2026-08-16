@@ -215,25 +215,31 @@ interface PinnedEl {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
     const minArea = vpW * vpH * 0.4;
-    const all = document.querySelectorAll<HTMLElement>('body *');
-    const limit = Math.min(all.length, 60_000);
     const candidates: { el: HTMLElement; overflowY: string; scrollHeight: number; clientWidth: number; clientHeight: number }[] = [];
-    for (let i = 0; i < limit; i++) {
-      const el = all[i]!;
-      const ch = el.clientHeight;
-      // Cheap geometry pre-filter before the expensive computed-style read.
-      if (ch === 0 || el.clientWidth * ch < minArea) continue;
-      const scrollHeight = contentHeight(el);
-      if (scrollHeight <= ch + 100) continue;
-      candidates.push({
-        el,
-        // A frame scrolls its own document, whatever the frame element's own overflow says.
-        overflowY: el instanceof HTMLIFrameElement ? 'auto' : getComputedStyle(el).overflowY,
-        scrollHeight,
-        clientWidth: el.clientWidth,
-        clientHeight: ch,
-      });
-    }
+    if (!document.body) return null;
+    // The walk descends into open shadow roots, the same as the sticky and fixed pass:
+    // a design-system app shell often keeps its one real scroller inside a custom
+    // element, where querySelectorAll cannot see it.
+    walkShadowTree<Element>(
+      document.body.children,
+      (node) => {
+        const el = node as HTMLElement;
+        const ch = el.clientHeight;
+        // Cheap geometry pre-filter before the expensive computed-style read.
+        if (ch === 0 || el.clientWidth * ch < minArea) return;
+        const scrollHeight = contentHeight(el);
+        if (scrollHeight <= ch + 100) return;
+        candidates.push({
+          el,
+          // A frame scrolls its own document, whatever the frame element's own overflow says.
+          overflowY: el instanceof HTMLIFrameElement ? 'auto' : getComputedStyle(el).overflowY,
+          scrollHeight,
+          clientWidth: el.clientWidth,
+          clientHeight: ch,
+        });
+      },
+      MAX_SCAN_NODES
+    );
     return pickDominantScroller(candidates, vpW, vpH, ignoreOverflow)?.el ?? null;
   }
 
