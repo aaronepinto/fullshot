@@ -84,7 +84,13 @@ async function stubChrome(page: Page, settings: Record<string, unknown> = {}): P
         id: 'test-extension-id',
       },
       downloads: {
+        // The push index doubles as the download id, which is what the editor
+        // hands back to search() to find out where the file actually landed.
         download: async (opts: unknown) => (w.__downloads as unknown[]).push(opts),
+        search: async ({ id }: { id: number }) => {
+          const opts = (w.__downloads as { filename: string }[])[id - 1];
+          return opts ? [{ id, state: 'complete', filename: `/Users/test/Downloads/${opts.filename}` }] : [];
+        },
       },
     };
   }, settings);
@@ -228,6 +234,15 @@ export class Editor {
 
   async tool(name: string): Promise<void> {
     await this.page.click(`[data-tool="${name}"]`);
+  }
+
+  /**
+   * Chooses an annotation colour. The nine swatches live behind one current-colour
+   * button, so every spec that wants a colour has to open that first.
+   */
+  async pickColor(hex: string): Promise<void> {
+    await this.page.click('#colorCurrent');
+    await this.page.click(`.swatch[data-color="${hex}"]`);
   }
 
   /**

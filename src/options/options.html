@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Declared before the stylesheet so the first paint is already the dark shell. -->
+  <meta name="color-scheme" content="dark" />
   <title>screencappy settings</title>
   <link rel="icon" href="icons/icon32.png" />
   <link rel="stylesheet" href="options.css" />
@@ -185,6 +187,17 @@
         Region <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> · <a href="#" id="editShortcuts">customize</a>
       </p>
     </section>
+
+    <!-- Provenance, because the loudest ask in this category's reviews is being
+         able to check what you installed rather than being told to trust it. -->
+    <footer>
+      <p>
+        <span id="version">screencappy</span> ·
+        <a id="sourceLink" href="https://github.com/smollet-app/screencappy" target="_blank" rel="noreferrer">Source on GitHub</a> ·
+        <a id="privacyLink" href="https://screencappy.smollet.app/privacy" target="_blank" rel="noreferrer">Privacy</a>
+      </p>
+      <p>No account, no telemetry, no network requests. Captures and settings stay in this browser.</p>
+    </footer>
 
     <p id="saved" class="saved" hidden>Saved ✓</p>
   </main>

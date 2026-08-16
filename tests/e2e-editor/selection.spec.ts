@@ -125,7 +125,7 @@ test('a style change spans the whole selection in one entry', async ({ editor, p
   await editor.click(370, 130, { shift: true });
 
   const before = await editor.state();
-  await page.click('.swatch[title="#3b82f6"]');
+  await editor.pickColor('#3b82f6');
 
   const after = await editor.state();
   expect(after.annos[0]!.color).toBe('#3b82f6');
