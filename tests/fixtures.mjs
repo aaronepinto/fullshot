@@ -136,6 +136,8 @@ const GAUNTLET_PAGES = {
   '/parallax': 'fixture-parallax.html',
   '/modal': 'fixture-modal.html',
   '/clipped': 'fixture-clipped.html',
+  '/embed': 'fixture-embed.html',
+  '/embed-inner': 'fixture-embed-inner.html',
 };
 
 /** The page behind the modal, which must not reach the composed image at all. */
@@ -392,6 +394,33 @@ export const GAUNTLET = [
     note: '',
     maxMs: 60_000,
     sequence: { x: 600, y0: 200, dy: 400, count: 10 },
+  },
+  // A single full-bleed same-origin iframe holding 5000px of paginated document, so the
+  // outer page's height is exactly one viewport. All 25 pages have to be in the capture.
+  {
+    name: 'embed-iframe',
+    path: '/embed',
+    minW: 1150,
+    maxW: 1200,
+    minH: 5000,
+    maxH: 5000,
+    note: '',
+    maxMs: 60_000,
+    sequence: { x: 600, y0: 100, dy: 200, count: 25 },
+  },
+  // The same document behind an <embed>, which is what Chrome's PDF viewer uses and which
+  // exposes no document to reach through. The contract is the honest fallback: the
+  // visible area plus a note saying why, never a silent one-page image.
+  {
+    name: 'embed-plugin',
+    path: '/embed?tag=embed',
+    minW: 1200,
+    maxW: 1200,
+    minH: 800,
+    maxH: 800,
+    note: 'embedded viewer',
+    maxMs: 30_000,
+    gap: 'the scroll-and-stitch engine cannot reach inside <embed>',
   },
 ];
 

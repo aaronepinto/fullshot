@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e full-bleed embed fixture</title>
+  <style>
+    /* Chrome's own PDF viewer in miniature, and the shape behind every "it only captured
+       one page of the PDF" report: the whole document is a single full-bleed embedded
+       view, so document.body.clientHeight on the outer page is exactly the viewport
+       height while the real content scrolls inside the embedded document.
+       ?tag=embed swaps the iframe for an <embed>, which is what Chrome's PDF viewer
+       actually uses and which exposes no contentDocument to reach through. */
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    #viewer { display: block; width: 100vw; height: 100vh; border: 0; }
+  </style>
+</head>
+<body>
+  <script>
+    const tag = new URLSearchParams(location.search).get('tag') === 'embed' ? 'embed' : 'iframe';
+    const el = document.createElement(tag);
+    el.id = 'viewer';
+    el.src = '/embed-inner';
+    if (tag === 'embed') el.type = 'text/html';
+    document.body.appendChild(el);
+  </script>
+</body>
+</html>
