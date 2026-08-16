@@ -9,7 +9,7 @@
  * Usage: bun run e2e   (requires `bun run build` output in dist/ and Chrome installed;
  * override the binary with CHROME=/path/to/chrome, and label the run with BROWSER=edge)
  */
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 import { SCENARIOS, assertComposed, startFixtureServer } from './fixtures.mjs';
@@ -115,6 +115,21 @@ async function checkSamples(label, editor, fractions) {
 }
 
 /**
+ * The extension's service worker, which is where the capture entry point lives.
+ * @param {Browser} browser
+ * @param {string} label
+ */
+async function backgroundWorker(browser, label) {
+  const swTarget = await browser.waitForTarget(
+    (/** @type {Target} */ t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
+    { timeout: 15000 }
+  );
+  const worker = await swTarget.worker();
+  if (!worker) throw new Error(`[${label}] The background service worker target had no worker`);
+  return worker;
+}
+
+/**
  * @param {Browser} browser
  * @param {string} url
  * @param {Scenario} scenario
@@ -126,12 +141,7 @@ async function runScenario(browser, url, scenario) {
   await page.goto(url, { waitUntil: 'load' });
   const startedAt = Date.now();
 
-  const swTarget = await browser.waitForTarget(
-    (/** @type {Target} */ t) => t.type() === 'service_worker' && t.url().endsWith('background.js'),
-    { timeout: 15000 }
-  );
-  const worker = await swTarget.worker();
-  if (!worker) throw new Error(`[${label}] The background service worker target had no worker`);
+  const worker = await backgroundWorker(browser, label);
 
   await worker.evaluate(async () => {
     // The extension parks its capture entry point on the worker's global.
@@ -176,6 +186,133 @@ async function runScenario(browser, url, scenario) {
   await page.close();
 }
 
+/**
+ * Width and height straight out of a PNG's IHDR chunk: 8 bytes of signature, a
+ * 4-byte length and the "IHDR" tag, then the two big-endian dimensions.
+ * @param {Buffer} buf
+ */
+function pngSize(buf) {
+  if (buf.length < 24 || buf.toString('latin1', 12, 16) !== 'IHDR') {
+    throw new Error('Not a PNG, or truncated before the header');
+  }
+  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+}
+
+/**
+ * Waits for a finished download whose name starts with `prefix`. Chrome writes a
+ * .crdownload placeholder first, so a matching name alone does not mean done.
+ * @param {string} dir
+ * @param {string} prefix
+ */
+async function waitForDownloadedFile(dir, prefix) {
+  for (let waited = 0; waited < 30000; waited += 250) {
+    const names = existsSync(dir) ? await readdir(dir) : [];
+    const hit = names.find((n) => n.startsWith(prefix) && !n.endsWith('.crdownload'));
+    if (hit) return `${dir}/${hit}`;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw new Error(`No download starting with "${prefix}" landed in ${dir}`);
+}
+
+/**
+ * "Download immediately" has to behave like a download, not like a capture that
+ * hijacks the browser: the editor tab it borrows must never take focus and must
+ * not still be there once the file has landed.
+ * @param {Browser} browser
+ * @param {string} url
+ * @param {string} downloadDir
+ */
+async function runDownloadModeCase(browser, url, downloadDir) {
+  const label = `${BROWSER}/download-mode`;
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1200, height: 800 });
+  await page.goto(url, { waitUntil: 'load' });
+
+  const worker = await backgroundWorker(browser, label);
+  const startedAt = Date.now();
+
+  // The extension cannot read chrome-extension: urls out of its own tab events
+  // without the "tabs" permission, which this feature has no reason to want. So
+  // the worker counts the tabs and their focus, and Puppeteer, which sees every
+  // target's url, says which of them was the editor.
+  /** @type {string[]} */
+  const editorTargets = [];
+  const onTarget = (/** @type {Target} */ t) => {
+    if (t.url().includes('editor.html')) editorTargets.push(t.url());
+  };
+  browser.on('targetcreated', onTarget);
+
+  const seen = await worker.evaluate(async () => {
+    await chrome.storage.sync.set({
+      afterCapture: 'download',
+      filenameTemplate: 'download-mode-probe',
+    });
+    // Recorded from the events rather than read back afterwards, because the tab
+    // is expected to be gone by the time the capture call returns.
+    /** @type {{ id: number | undefined, active: boolean }[]} */
+    const created = [];
+    /** @type {number[]} */
+    const activated = [];
+    const onCreated = (/** @type {chrome.tabs.Tab} */ t) =>
+      created.push({ id: t.id, active: t.active });
+    const onActivated = (/** @type {{ tabId: number }} */ info) => activated.push(info.tabId);
+    chrome.tabs.onCreated.addListener(onCreated);
+    chrome.tabs.onActivated.addListener(onActivated);
+
+    const hook = /** @type {typeof globalThis & { __screencappyStart(tab: chrome.tabs.Tab, mode: string): Promise<void> }} */ (
+      globalThis
+    );
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab) throw new Error('No active tab to capture');
+    await hook.__screencappyStart(tab, 'full');
+
+    // The tab is closed only after the download finishes writing, which happens
+    // some time after the capture itself returns.
+    let stillOpen = true;
+    for (let i = 0; i < 120 && stillOpen; i++) {
+      const open = await chrome.tabs.query({});
+      stillOpen = open.some((t) => created.some((c) => c.id === t.id));
+      if (stillOpen) await new Promise((r) => setTimeout(r, 250));
+    }
+    chrome.tabs.onCreated.removeListener(onCreated);
+    chrome.tabs.onActivated.removeListener(onActivated);
+    return { created, activated, stillOpen };
+  });
+
+  browser.off('targetcreated', onTarget);
+
+  if (editorTargets.length !== 1) {
+    throw new Error(`[${label}] Expected exactly one editor page, saw ${editorTargets.length}`);
+  }
+  if (seen.created.length !== 1) {
+    throw new Error(`[${label}] The capture opened ${seen.created.length} tabs, expected 1`);
+  }
+  const editor = seen.created[0];
+  if (editor.active) throw new Error(`[${label}] The editor tab was opened focused`);
+  if (seen.activated.includes(editor.id)) {
+    throw new Error(`[${label}] The editor tab took focus while the download ran`);
+  }
+  if (seen.stillOpen) throw new Error(`[${label}] The editor tab was still open after the download`);
+  const left = browser.targets().filter((/** @type {Target} */ t) => t.url().includes('editor.html'));
+  if (left.length > 0) throw new Error(`[${label}] ${left.length} editor page(s) survived the download`);
+
+  const file = await waitForDownloadedFile(downloadDir, 'download-mode-probe');
+  const { w, h } = pngSize(await readFile(file));
+  console.log(`[${label}] wrote ${file} at ${w}×${h} after ${Date.now() - startedAt}ms`);
+  if (w < 1100 || h < 4000) {
+    throw new Error(`[${label}] Download wrote ${w}×${h}, expected at least 1100×4000`);
+  }
+
+  await worker.evaluate(async () => {
+    await chrome.storage.sync.set({
+      afterCapture: 'editor',
+      filenameTemplate: '{domain} {date} {time}',
+    });
+  });
+  await page.close();
+  console.log(`✓ [${label}] downloaded without focus, tab closed itself`);
+}
+
 async function main() {
   if (!existsSync(`${DIST}/manifest.json`)) throw new Error('Run `bun run build` first.');
 
@@ -189,12 +326,31 @@ async function main() {
 
   const fixtures = await startFixtureServer();
 
+  // Downloads have to land somewhere this script can read them back from. The
+  // directory is seeded through a profile rather than through CDP's
+  // Browser.setDownloadBehavior, which renames every file after its download guid
+  // and would throw away the filename half of what the download case asserts.
+  const downloadDir = `${ROOT}.scratch/e2e-downloads`;
+  const profileDir = `${ROOT}.scratch/e2e-profile`;
+  await rm(downloadDir, { recursive: true, force: true });
+  await rm(profileDir, { recursive: true, force: true });
+  await mkdir(downloadDir, { recursive: true });
+  await mkdir(`${profileDir}/Default`, { recursive: true });
+  await writeFile(
+    `${profileDir}/Default/Preferences`,
+    JSON.stringify({
+      download: { default_directory: downloadDir, prompt_for_download: false, directory_upgrade: true },
+      savefile: { default_directory: downloadDir },
+    })
+  );
+
   // Chrome 137+ dropped --load-extension in branded builds; the supported path is
   // the CDP Extensions domain via Puppeteer's enableExtensions/installExtension.
   const browser = await puppeteer.launch({
     executablePath: findChrome(),
     pipe: true,
     enableExtensions: true,
+    userDataDir: profileDir,
     args: [
       '--no-first-run',
       '--window-size=1200,800',
@@ -209,6 +365,7 @@ async function main() {
     for (const scenario of SCENARIOS) {
       await runScenario(browser, `${fixtures.base}${scenario.path}`, scenario);
     }
+    await runDownloadModeCase(browser, `${fixtures.base}/`, downloadDir);
     console.log(`✓ e2e passed (${BROWSER})`);
   } catch (err) {
     failed = true;

@@ -98,18 +98,23 @@ export async function copyToClipboard(src: ExportSource): Promise<'ok' | 'split'
   return all.length > 1 ? 'split' : 'ok';
 }
 
+/** Downloads the blobs and returns the download ids, in the order they started. */
 export async function downloadBlobs(
   blobs: Blob[],
   baseName: string,
   ext: string,
   saveAs: boolean
-): Promise<void> {
+): Promise<number[]> {
+  const ids: number[] = [];
   for (let i = 0; i < blobs.length; i++) {
     const suffix = blobs.length > 1 ? `-${i + 1}` : '';
-    await chrome.downloads.download({
-      url: URL.createObjectURL(blobs[i]!),
-      filename: `${baseName}${suffix}.${ext}`,
-      saveAs: saveAs && i === 0,
-    });
+    ids.push(
+      await chrome.downloads.download({
+        url: URL.createObjectURL(blobs[i]!),
+        filename: `${baseName}${suffix}.${ext}`,
+        saveAs: saveAs && i === 0,
+      })
+    );
   }
+  return ids;
 }

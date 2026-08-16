@@ -5,7 +5,7 @@
 import { deleteCapture, getCapture, listCaptures, putCapture } from '../lib/db';
 import { renderFilename } from '../lib/filename';
 import { getSettings, type Settings } from '../lib/settings';
-import type { CaptureRecord, Rect } from '../lib/types';
+import type { CaptureRecord, Rect, RuntimeMsg } from '../lib/types';
 import {
   applyHandle,
   bounds,
@@ -1306,24 +1306,28 @@ function baseName(): string {
   return renderFilename(s.filenameTemplate, { title: r.title, url: r.url, mode: r.mode });
 }
 
-async function doDownload(format: ImageFormat | `pdf-${PdfPageMode}`) {
-  if (!state.image || !state.record || !state.settings) return;
+/** Returns the ids of the downloads that started, or an empty list if none did. */
+async function doDownload(format: ImageFormat | `pdf-${PdfPageMode}`): Promise<number[]> {
+  if (!state.image || !state.record || !state.settings) return [];
   try {
     toast('Exporting…');
+    let ids: number[];
     if (format.startsWith('pdf')) {
       const mode = format.slice(4) as PdfPageMode;
       const blob = await exportPdf(exportSource(), mode);
-      await downloadBlobs([blob], baseName(), 'pdf', state.settings.saveAs);
+      ids = await downloadBlobs([blob], baseName(), 'pdf', state.settings.saveAs);
     } else {
       const fmt = format as ImageFormat;
       const blobs = await exportImages(exportSource(), fmt, state.settings.quality);
       const ext = fmt === 'jpeg' ? 'jpg' : fmt;
-      await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
+      ids = await downloadBlobs(blobs, baseName(), ext, state.settings.saveAs);
       if (blobs.length > 1) toast(`Image exceeded canvas limits, so it was saved as ${blobs.length} numbered files.`);
     }
     toast('Saved ✓');
+    return ids;
   } catch (err) {
     toast(`Export failed: ${err}`, true);
+    return [];
   }
 }
 
@@ -1931,7 +1935,13 @@ async function boot() {
       toast('Heads up: the page exceeded the capture height limit and was truncated.', false);
     }
     if (params.get('autodownload')) {
-      await doDownload(state.settings.format);
+      const ids = await doDownload(state.settings.format);
+      // Download-only mode opens this tab purely to run the export, so it needs to
+      // hear how that went. Nothing listens in the other modes, and the rejection
+      // that follows from that is expected.
+      void chrome.runtime
+        .sendMessage({ type: 'fs:autodownload', ids } satisfies RuntimeMsg)
+        .catch(() => undefined);
     }
   } catch (err) {
     $('#loading').hidden = true;
