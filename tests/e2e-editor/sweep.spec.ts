@@ -35,9 +35,9 @@ async function signature(page: Page): Promise<string> {
       __optionsOpened: number;
     };
     const hidden = [
-      '#annoPanel', '#history', '#formatMenu', '#emojiPicker', '#ctxMenu', '#cropBar',
-      '#toast', '#textEditor', '#ctlWidth', '#ctlFont', '#ctlFill', '#emojiCurrent',
-      '#btnCropReset', '#statUrl', '#emptyState', '#loading',
+      '#annoPanel', '#history', '#formatMenu', '#emojiPicker', '#swatches', '#ctxMenu',
+      '#cropBar', '#toast', '#textEditor', '#ctlWidth', '#ctlFont', '#ctlFill',
+      '#emojiAnchor', '#zoomctl', '#btnCropReset', '#statUrl', '#emptyState', '#loading',
     ].map((s) => `${s}:${(document.querySelector<HTMLElement>(s)?.hidden ?? true) ? 1 : 0}`);
     const flags = [...document.querySelectorAll('[aria-pressed], [aria-expanded]')].map(
       (e) => `${e.id || (e as HTMLElement).dataset.tool || (e as HTMLElement).dataset.color}=` +
@@ -84,7 +84,7 @@ async function reset(page: Page): Promise<void> {
  * the sweep would read it as dead. This moves the group off the control under test
  * first, and returns the sibling it used, so the press has somewhere to travel from.
  */
-async function nudgeOffState(page: Page, sel: string): Promise<void> {
+async function nudgeOffState(page: Page, sel: string, restore: () => Promise<void>): Promise<void> {
   if ((await page.getAttribute(sel, 'aria-pressed')) !== 'true') return;
   const sibling = await page.evaluate((s) => {
     const el = document.querySelector<HTMLElement>(s)!;
@@ -96,7 +96,11 @@ async function nudgeOffState(page: Page, sel: string): Promise<void> {
     }
     return null;
   }, sel);
-  if (sibling) await page.click(sibling);
+  if (!sibling) return;
+  await page.click(sibling);
+  // Choosing a colour closes the popover the colours live in, so the control under
+  // test has to be put back on screen before it can be pressed.
+  if (!(await page.isVisible(sel))) await restore();
 }
 
 /** The states that reveal the controls the resting page keeps hidden. */
@@ -111,6 +115,7 @@ const STATES: { name: string; prep: (page: Page, editor: Editor) => Promise<void
       await page.click('#emojiCurrent');
     },
   },
+  { name: 'colour popover open', prep: async (page) => void (await page.click('#colorCurrent')) },
   { name: 'format menu open', prep: async (page) => void (await page.click('#btnFormat')) },
   { name: 'annotations drawer', prep: async (page) => void (await page.click('#btnAnnos')) },
   { name: 'history drawer', prep: async (page) => void (await page.click('#btnHistory')) },
@@ -220,7 +225,7 @@ test('no control on the editor is dead', async ({ editor, page }) => {
     const state = STATES.find((s) => s.name === c.state)!;
     await reset(page);
     await state.prep(page, editor);
-    await nudgeOffState(page, c.sel);
+    await nudgeOffState(page, c.sel, () => state.prep(page, editor));
     await settle(page);
     const before = await signature(page);
     await page.click(c.sel, { timeout: 5_000 });
@@ -348,10 +353,13 @@ test('the canvas context menu copies and downloads', async ({ editor, page }) =>
 // ---------------------------------------------------------------------------
 
 test('every visible control is in the tab ring, and the ring closes', async ({ editor, page }) => {
-  const stops = [...(await allControls(page, editor)).values()].filter(
-    (c) => c.state === 'rest' && c.focusable && !c.disabled && c.sel !== '#canvas'
-  );
-  expect(stops.length).toBeGreaterThan(20);
+  const rest = [...(await allControls(page, editor)).values()].filter((c) => c.state === 'rest');
+  const stops = rest.filter((c) => c.focusable && !c.disabled && c.sel !== '#canvas');
+  expect(stops.length).toBeGreaterThan(10);
+
+  // A roving group spends one stop between all of its members, not one each.
+  const roving = rest.filter((c) => c.rovingItem);
+  expect(roving.length, 'the tool row is not a roving group any more').toBe(10);
 
   // Two laps: the second proves the ring wraps rather than dead-ends on the last stop.
   const visited = await tabOrder(page, stops, stops.length * 2 + 6);
@@ -388,8 +396,10 @@ test('drawing does not trap focus on the canvas', async ({ editor, page }) => {
 });
 
 test('every tab stop draws a focus ring', async ({ editor, page }) => {
+  // Roving members included: the arrow keys put focus on them, so they need a ring
+  // as much as any tab stop does.
   const stops = [...(await allControls(page, editor)).values()].filter(
-    (c) => c.state === 'rest' && c.focusable && !c.disabled
+    (c) => c.state === 'rest' && (c.focusable || c.rovingItem) && !c.disabled
   );
   const unringed: string[] = [];
   for (const c of stops) {
@@ -475,10 +485,11 @@ test('the empty state stands in when there is no capture to show', async ({ edit
   await expect(page.locator('#emptyState')).toBeVisible();
   await expect(page.locator('#loading')).toBeHidden();
   await expect(page.locator('#statUrl')).toBeHidden();
-  // Nothing to export, so the export cluster says so rather than swallowing presses.
-  for (const sel of ['#btnCopy', '#btnDownload', '#btnFormat']) {
+  // Nothing to draw on or export, so nothing says otherwise.
+  for (const sel of ['#btnCopy', '#btnDownload', '#btnFormat', '#colorCurrent', '[data-tool="rect"]']) {
     await expect(page.locator(sel), `${sel} looks live with no capture loaded`).toBeDisabled();
   }
+  await expect(page.locator('#zoomctl'), 'the zoom group drives a blank readout').toBeHidden();
   expect(watch.errors).toEqual([]);
 });
 
@@ -501,3 +512,117 @@ test('an export says where the file landed, not just that it saved', async ({ ed
   expect(asked[0]!.filename).toMatch(/\.png$/);
 });
 
+
+// ---------------------------------------------------------------------------
+// Roving toolbars
+// ---------------------------------------------------------------------------
+
+/** Where focus is, named the way the toolbars name their own members. */
+function focused(page: Page): Promise<string | null> {
+  return page.evaluate(() => {
+    const el = document.activeElement as HTMLElement | null;
+    return el?.dataset.tool ?? el?.dataset.color ?? el?.id ?? null;
+  });
+}
+
+test('the tool row is one tab stop with the arrows moving inside it', async ({ editor, page }) => {
+  await page.focus('[data-tool="select"]');
+  await page.keyboard.press('ArrowRight');
+  expect(await focused(page)).toBe('crop');
+  await page.keyboard.press('ArrowRight');
+  expect(await focused(page)).toBe('arrow');
+  await page.keyboard.press('ArrowLeft');
+  expect(await focused(page)).toBe('crop');
+
+  await page.keyboard.press('End');
+  expect(await focused(page)).toBe('emoji');
+  // ...and the ends wrap rather than stopping dead.
+  await page.keyboard.press('ArrowRight');
+  expect(await focused(page)).toBe('select');
+  await page.keyboard.press('ArrowLeft');
+  expect(await focused(page)).toBe('emoji');
+  await page.keyboard.press('Home');
+  expect(await focused(page)).toBe('select');
+
+  // Exactly one member is in the document's tab ring at a time.
+  expect(
+    await page.$$eval('.tool', (els) => els.filter((e) => (e as HTMLElement).tabIndex === 0).length)
+  ).toBe(1);
+});
+
+test('the tool row remembers where you left it', async ({ editor, page }) => {
+  await page.focus('[data-tool="select"]');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  expect(await focused(page)).toBe('arrow');
+
+  // Away and back: Tab should return to the arrow tool, not to the start of the row.
+  // The colour button is the next stop after the row, so stepping back from it
+  // lands wherever the row was left.
+  await page.focus('#colorCurrent');
+  await page.keyboard.press('Shift+Tab');
+  expect(await focused(page)).toBe('arrow');
+});
+
+test('choosing a tool moves the row tab stop onto it', async ({ editor, page }) => {
+  await page.keyboard.press('r');
+  expect(await page.getAttribute('[data-tool="rect"]', 'tabindex')).toBe('0');
+  expect(await page.getAttribute('[data-tool="select"]', 'tabindex')).toBe('-1');
+});
+
+test('the colour popover hangs from its button and answers the arrows', async ({ editor, page }) => {
+  await expect(page.locator('#swatches')).toBeHidden();
+  await page.click('#colorCurrent');
+  await expect(page.locator('#swatches')).toBeVisible();
+  await expect(page.locator('#colorCurrent')).toHaveAttribute('aria-expanded', 'true');
+
+  // Anchored to the button rather than to the end of the bar.
+  const button = (await page.locator('#colorCurrent').boundingBox())!;
+  const popover = (await page.locator('#swatches').boundingBox())!;
+  expect(Math.abs(popover.x - button.x), 'the popover does not line up with its button').toBeLessThan(2);
+  expect(popover.y).toBeGreaterThan(button.y + button.height - 1);
+
+  // Opening it lands on the colour already in use, and the arrows walk the row.
+  expect(await focused(page)).toBe('#ef4444');
+  await page.keyboard.press('ArrowRight');
+  expect(await focused(page)).toBe('#f97316');
+  await page.keyboard.press('End');
+  expect(await focused(page)).toBe('#ffffff');
+
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#swatches')).toBeHidden();
+  await editor.tool('rect');
+  await editor.drag([100, 100], [300, 260]);
+  expect((await editor.annos())[0]!.color).toBe('#ffffff');
+});
+
+test('the current colour button wears the colour it stands for', async ({ editor, page }) => {
+  const dot = () => page.evaluate(() => getComputedStyle(document.querySelector('#colorDot')!).backgroundColor);
+  expect(await dot()).toBe('rgb(239, 68, 68)');
+  await editor.pickColor('#3b82f6');
+  expect(await dot()).toBe('rgb(59, 130, 246)');
+});
+
+test('Escape closes the colour popover before anything else', async ({ editor, page }) => {
+  await page.click('#colorCurrent');
+  await expect(page.locator('#swatches')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#swatches')).toBeHidden();
+  await expect(page.locator('#colorCurrent')).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('the toolbar stays on one row at 1280, whichever tool is chosen', async ({ editor, page }) => {
+  // Nine inline swatches pushed it onto a second row below 1340px, which put every
+  // 1280-class laptop on a permanently two-row toolbar. The widest cases are the
+  // tools that show style controls of their own, so all eleven are checked.
+  const barHeight = () =>
+    page.evaluate(() => document.querySelector('.topbar')!.getBoundingClientRect().height);
+
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const tool of Object.keys(TOOL_KEYS)) {
+      await editor.tool(tool);
+      expect(await barHeight(), `the toolbar wrapped at ${width}px on the ${tool} tool`).toBeLessThan(60);
+    }
+  }
+});

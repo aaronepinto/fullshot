@@ -237,6 +237,15 @@ export class Editor {
   }
 
   /**
+   * Chooses an annotation colour. The nine swatches live behind one current-colour
+   * button, so every spec that wants a colour has to open that first.
+   */
+  async pickColor(hex: string): Promise<void> {
+    await this.page.click('#colorCurrent');
+    await this.page.click(`.swatch[data-color="${hex}"]`);
+  }
+
+  /**
    * A synthetic wheel notch at an image-space point. Playwright's mouse.wheel only
    * ever reports pixels, so the line and page units that real mice and Firefox send
    * can only be exercised by constructing the event.

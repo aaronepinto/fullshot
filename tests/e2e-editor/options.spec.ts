@@ -76,12 +76,29 @@ test('the shortcuts link opens the browser page that owns them', async ({ option
   await expect.poll(() => openedTabs(page)).toEqual(['chrome://extensions/shortcuts']);
 });
 
-test('Turbo is offered where the debugger exists and refused where it does not', async ({ page }) => {
-  await stubOptionsChrome(page, { debugger: false });
+test('Firefox is told its browser cannot do Turbo, and what else is missing with it', async ({ page }) => {
+  await stubOptionsChrome(page, { debugger: false, build: 'firefox' });
   await page.goto('/options.html');
   await expect(page.locator('#engine option[value="turbo"]')).toBeDisabled();
-  await expect(page.locator('#turboHint')).toContainText('needs the DevTools debugger API');
+  await expect(page.locator('#turboHint')).toContainText('only Chromium-based browsers provide');
+  // The two context menu items vanish with it, and a missing menu item explains
+  // itself to nobody.
+  await expect(page.locator('#turboHint')).toContainText('Save as searchable PDF');
+  await expect(page.locator('#turboHint')).toContainText('Capture as mobile');
   await expect(page.locator('#grantDebugger')).toBeHidden();
+});
+
+test('the store-fallback build is told it is the build, not the browser', async ({ page }) => {
+  // Chromium can do Turbo; this build just ships without the permission. Telling
+  // this user their browser cannot do it would be plainly false.
+  await stubOptionsChrome(page, { debugger: false, build: 'store-fallback' });
+  await page.goto('/options.html');
+  await expect(page.locator('#engine option[value="turbo"]')).toBeDisabled();
+  const hint = page.locator('#turboHint');
+  await expect(hint).toContainText('Turbo is not in this build');
+  await expect(hint).not.toContainText('only Chromium-based browsers');
+  // ...and where to get the build that has it.
+  await expect(hint).toContainText('https://github.com/smollet-app/screencappy/releases/latest');
 });
 
 test('Turbo falls back to stitch when the permission is refused', async ({ page }) => {

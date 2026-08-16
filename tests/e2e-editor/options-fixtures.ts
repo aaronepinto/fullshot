@@ -15,6 +15,12 @@ export interface OptionsStubs {
   debuggerGranted?: boolean;
   /** Settings the page should boot with. */
   stored?: Record<string, unknown>;
+  /**
+   * Which build's manifest the page should read. 'chrome' declares the debugger
+   * permission, 'firefox' carries the gecko settings block instead, and
+   * 'store-fallback' is Chromium with the permission stripped.
+   */
+  build?: 'chrome' | 'firefox' | 'store-fallback';
 }
 
 declare global {
@@ -48,7 +54,15 @@ export async function stubOptionsChrome(page: Page, opts: OptionsStubs = {}): Pr
       },
       runtime: {
         getURL: (p: string) => new URL(p, location.origin).href,
-        getManifest: () => ({ version: '0.2.0' }),
+        getManifest: () => ({
+          version: '0.2.0',
+          permissions: o.build === 'chrome' || o.build === undefined
+            ? ['activeTab', 'downloads', 'debugger']
+            : ['activeTab', 'downloads'],
+          ...(o.build === 'firefox'
+            ? { browser_specific_settings: { gecko: { id: 'screencappy@smollet.app' } } }
+            : {}),
+        }),
         id: 'test-extension-id',
       },
     };
