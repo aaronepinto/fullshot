@@ -133,6 +133,7 @@ const GAUNTLET_PAGES = {
   '/furniture': 'fixture-furniture.html',
   '/lazy': 'fixture-lazy.html',
   '/tall': 'fixture-tall.html',
+  '/parallax': 'fixture-parallax.html',
 };
 
 /** The bands at each end of the tall fixture. */
@@ -308,6 +309,30 @@ export const GAUNTLET = [
     note: 'implausible height',
     maxMs: 30_000,
     points: [{ name: 'top band', x: 600, y: 100, rgb: TALL.top }],
+  },
+  // Viewport-glued backgrounds, the witness for the shipped fix. The page background is
+  // eight index-encoded bands: pinned to scroll they run 0 to 7 down the image, glued to
+  // the viewport they restart in every tile. The element-level fixed layer and the
+  // untouched local control are two points each.
+  {
+    name: 'parallax',
+    path: '/parallax',
+    minW: 1200,
+    maxW: 1200,
+    minH: 4800,
+    maxH: 4800,
+    note: '',
+    maxMs: 60_000,
+    sequence: { x: 1100, y0: 300, dy: 600, count: 8 },
+    points: [
+      { name: 'fixed layer, top half', x: 200, y: 1350, rgb: [255, 0, 0] },
+      { name: 'fixed layer, bottom half', x: 200, y: 1650, rgb: [0, 0, 255] },
+      { name: 'local control, top half', x: 200, y: 1950, rgb: [0, 200, 0] },
+      { name: 'local control, bottom half', x: 200, y: 2250, rgb: [200, 200, 0] },
+    ],
+    colors: [
+      { name: 'sticky parallax layer', rgb: [255, 140, 0], count: 400 * 200, tolerance: 0.05 },
+    ],
   },
 ];
 
