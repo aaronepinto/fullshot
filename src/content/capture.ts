@@ -205,6 +205,12 @@ interface SavedInline {
           ? `*, *::before, *::after {
                animation-play-state: paused !important;
                transition-property: none !important;
+               /* Scroll-driven animations (animation-timeline: view()) advance with the
+                  scroll offset, so there is no time to wait for and pausing one freezes
+                  it wherever it stood: a section below the fold stays fully transparent
+                  and displaced. Detaching the timeline drops the animation out of effect
+                  and the element renders its settled base style. */
+               animation-timeline: none !important;
              }`
           : ''
       }
