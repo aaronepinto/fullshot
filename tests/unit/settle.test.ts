@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  IMAGE_WAIT,
   SETTLE,
+  imageWaitBudgetMs,
   intersectsViewport,
   settleWatchMs,
   shouldKeepSettling,
@@ -64,5 +66,31 @@ describe('intersectsViewport', () => {
     expect(intersectsViewport(box(900, 1000), vp.w, vp.h)).toBe(false);
     expect(intersectsViewport(box(0, 100, 1300, 1400), vp.w, vp.h)).toBe(false);
     expect(intersectsViewport(box(0, 100, -200, -100), vp.w, vp.h)).toBe(false);
+  });
+});
+
+describe('imageWaitBudgetMs', () => {
+  test('a fresh tile gets the per-tile ceiling', () => {
+    expect(imageWaitBudgetMs(0, 0)).toBe(IMAGE_WAIT.perTileMs);
+  });
+
+  test('waiting that keeps getting its images does not use the run up', () => {
+    // The lazy-page failure in CI: every wait worked, every wait was charged, and the
+    // last tile had nothing left to spend on the one image that was still on its way.
+    expect(imageWaitBudgetMs(20_000, 0)).toBe(IMAGE_WAIT.perTileMs);
+  });
+
+  test('waiting that achieves nothing is cut off, so a dead image cannot cost minutes', () => {
+    expect(imageWaitBudgetMs(IMAGE_WAIT.fruitlessMs, IMAGE_WAIT.fruitlessMs)).toBe(0);
+    expect(imageWaitBudgetMs(3000, IMAGE_WAIT.fruitlessMs - 1)).toBeGreaterThan(0);
+  });
+
+  test('the overall ceiling still ends a page whose images all arrive slowly', () => {
+    expect(imageWaitBudgetMs(IMAGE_WAIT.totalMs, 0)).toBe(0);
+    expect(imageWaitBudgetMs(IMAGE_WAIT.totalMs - 500, 0)).toBe(500);
+  });
+
+  test('a wait that works is worth more than one that does not', () => {
+    expect(IMAGE_WAIT.totalMs).toBeGreaterThan(IMAGE_WAIT.fruitlessMs);
   });
 });
