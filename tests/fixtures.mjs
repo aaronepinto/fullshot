@@ -130,6 +130,13 @@ export const FURNITURE_BOX = {
 /** Gauntlet fixture pages, added to the routes the fixture server serves. */
 const GAUNTLET_PAGES = {
   '/reveal': 'fixture-reveal.html',
+  '/furniture': 'fixture-furniture.html',
+};
+
+/** Pixel counts the furniture fixture's geometry works out to, over a 1200px page. */
+const FURN = {
+  full: (h) => (1200 - FURNITURE_BOX.railW) * h,
+  rail: (h) => FURNITURE_BOX.railW * h,
 };
 
 /**
@@ -175,6 +182,46 @@ export const GAUNTLET = [
     maxH: 6000,
     maxMs: 60_000,
     sequence: { x: 60, y0: 250, dy: 500, count: 12 },
+  },
+  // Pinned furniture on all four edges. The counts below are the geometry worked out:
+  // each pinned element must contribute its own area exactly once, at the edge it is
+  // pinned to, and the full-height rail must run the whole composed image rather than
+  // stopping after the first screen.
+  {
+    name: 'furniture',
+    path: '/furniture',
+    minW: 1200,
+    maxW: 1200,
+    minH: 4000,
+    maxH: 4000,
+    note: '',
+    maxMs: 60_000,
+    colors: [
+      { name: 'sticky header', rgb: FURNITURE.header, count: FURN.full(FURNITURE_BOX.headerH), topY: 0, bottomY: FURNITURE_BOX.headerH - 1 },
+      { name: 'bottom bar', rgb: FURNITURE.bottomBar, count: FURN.full(FURNITURE_BOX.barH), bottomY: -1 },
+      { name: 'left rail', rgb: FURNITURE.rail, count: FURN.rail(FURNITURE_BOX.pageH), topY: 0, bottomY: -1 },
+      { name: 'floating button', rgb: FURNITURE.fab, count: FURNITURE_BOX.fabW * FURNITURE_BOX.fabH, bottomY: -(FURNITURE_BOX.fabBottom + 1) },
+      { name: 'cookie banner', rgb: FURNITURE.cookie, count: FURNITURE_BOX.cookieW * FURNITURE_BOX.cookieH, bottomY: -(FURNITURE_BOX.cookieBottom + 1) },
+    ],
+    sequence: { x: 600, y0: 257, dy: 394, count: 10 },
+  },
+  // One viewport of page, where hiding any of the five would itself be the bug.
+  {
+    name: 'furniture-single',
+    path: '/furniture?tiles=1',
+    minW: 1200,
+    maxW: 1200,
+    minH: 800,
+    maxH: 800,
+    note: '',
+    maxMs: 30_000,
+    colors: [
+      { name: 'sticky header', rgb: FURNITURE.header, count: FURN.full(FURNITURE_BOX.headerH), topY: 0 },
+      { name: 'bottom bar', rgb: FURNITURE.bottomBar, count: FURN.full(FURNITURE_BOX.barH), bottomY: -1 },
+      { name: 'left rail', rgb: FURNITURE.rail, count: FURN.rail(800), topY: 0, bottomY: -1 },
+      { name: 'floating button', rgb: FURNITURE.fab, count: FURNITURE_BOX.fabW * FURNITURE_BOX.fabH, bottomY: -(FURNITURE_BOX.fabBottom + 1) },
+      { name: 'cookie banner', rgb: FURNITURE.cookie, count: FURNITURE_BOX.cookieW * FURNITURE_BOX.cookieH, bottomY: -(FURNITURE_BOX.cookieBottom + 1) },
+    ],
   },
 ];
 

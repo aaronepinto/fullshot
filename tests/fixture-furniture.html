@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e pinned furniture fixture</title>
+  <style>
+    /* Pinned furniture on all four edges at once. An engine that treats every fixed
+       element as a top-of-viewport overlay, and so shows them on the first tile only,
+       gets three of these five wrong: the bottom bar and the floating button belong on
+       the last tile, where the bottom of the page is, and the full-height rail belongs
+       on every tile or none, because a rail that stops after the first screen leaves a
+       72px column of unrelated content down the rest of the image.
+
+       Every pinned element is a solid untextured rectangle of a colour nothing else on
+       the page uses, so "appears exactly once, and here" is a pixel count and two row
+       numbers. The page is exactly 4000px over a 800px viewport, so the tile grid lands
+       on 5 clean rows with no clamped overlap to reason about.
+       ?tiles=1 shortens the page to a single viewport, where hiding any of the five
+       would itself be the bug. */
+    body { margin: 0; font: 700 40px/1 system-ui, sans-serif; }
+    section { height: 394px; display: flex; align-items: center; padding-left: 100px; color: rgba(255,255,255,.7); }
+    #header {
+      position: sticky; top: 0; left: 0; right: 0; height: 60px;
+      background: rgb(14, 165, 233); z-index: 4;
+    }
+    #bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 56px;
+      background: rgb(220, 38, 38); z-index: 4;
+    }
+    #rail {
+      position: fixed; left: 0; top: 0; width: 72px; height: 100vh;
+      background: rgb(22, 163, 74); z-index: 5;
+    }
+    #fab {
+      position: fixed; right: 0; bottom: 80px; width: 56px; height: 56px;
+      background: rgb(234, 179, 8); z-index: 6;
+    }
+    #cookie {
+      position: fixed; left: 100px; bottom: 160px; width: 400px; height: 40px;
+      background: rgb(147, 51, 234); z-index: 7; transform: translateZ(0);
+    }
+  </style>
+</head>
+<body>
+  <div id="header"></div>
+  <div id="rail"></div>
+  <div id="bar"></div>
+  <div id="fab"></div>
+  <div id="cookie"></div>
+  <script>
+    // 60px of sticky header plus 10 × 394px of sections is exactly 4000px, so the tile
+    // grid is 5 clean rows and no furniture lands in a clamped overlap.
+    const single = new URLSearchParams(location.search).get('tiles') === '1';
+    const count = single ? 1 : 10;
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('section');
+      if (single) s.style.height = '700px';
+      s.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      s.textContent = 'Section ' + i;
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>
