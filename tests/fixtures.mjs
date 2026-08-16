@@ -300,11 +300,13 @@ export const GAUNTLET = [
     requested: LAZY_IMAGES,
     sequence: { x: 400, y0: 200, dy: 400, count: 25 },
   },
-  // The same page with responses 2s late, well past any per-tile settle: the engine has
-  // to hold the shot for content it can see is still on its way.
+  // The same page with responses 3s late. With six connections to a host, 25 images at
+  // that delay means the last one lands around twelve seconds in, well after the tile
+  // that shows it would otherwise have been shot, so the engine has to hold for it. Two
+  // seconds was the CI failure and is a coin flip on a fast machine; three is not.
   {
     name: 'lazy-slow',
-    path: '/lazy?delay=2000',
+    path: '/lazy?delay=3000',
     minW: 1200,
     maxW: 1200,
     minH: 10_000,
@@ -503,7 +505,13 @@ export const GAUNTLET = [
       { name: 'cross-origin frame', x: 900, y: 400, rgb: FOREIGN },
       { name: 'outer page below the frames', x: 900, y: 1500, rgb: indexColor(1) },
     ],
-    colors: [{ name: 'cross-origin frame', rgb: FOREIGN, count: 500 * 400, tolerance: 0.05 }],
+    // Counts as well as points: a frame that painted at a fraction of its colour, or not
+    // at all, fails the count wherever it happened, without depending on one lucky pixel.
+    colors: [
+      { name: 'frame one deep', rgb: indexColor(10), count: 600 * 200, tolerance: 0.05 },
+      { name: 'frame two deep', rgb: indexColor(20), count: 600 * 200, tolerance: 0.05 },
+      { name: 'cross-origin frame', rgb: FOREIGN, count: 500 * 400, tolerance: 0.05 },
+    ],
   },
   smoothVariant('smooth-control', ''),
   smoothVariant('smooth-behavior', '?behavior=smooth'),

@@ -5,8 +5,14 @@
   <title>Screencappy e2e frame, two deep</title>
   <style>
     body { margin: 0; font: 700 24px/200px system-ui, sans-serif; color: rgba(255,255,255,.75); }
-    div { height: 400px; padding-left: 24px; background: rgb(26, 90, 160); }
+    div { height: 400px; padding-left: 24px; background: rgb(26, 90, 160); position: relative; }
+    /* Absolutely positioned and clipped, so the label can neither change the layout nor
+       reach a sampled column. A sample that merely looks clear of the text on the machine
+       the fixture was written on is not clear where system-ui resolves to a wider family,
+       which is exactly how this fixture first failed in CI. */
+    .label { position: absolute; left: 24px; top: 0; max-width: 100px; overflow: hidden; white-space: nowrap; }
+
   </style>
 </head>
-<body><div>Frame, two deep</div></body>
+<body><div><span class="label">Frame, two deep</span></div></body>
 </html>

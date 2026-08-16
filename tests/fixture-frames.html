@@ -14,7 +14,13 @@
        capture's: what full-page capture owes here is the frames as the user sees them,
        at the right offsets, with the cross-origin one neither blank nor fatal. */
     body { margin: 0; font: 700 32px/200px system-ui, sans-serif; color: rgba(255,255,255,.75); }
-    #head, #foot { height: 200px; padding-left: 40px; }
+    #head, #foot { height: 200px; padding-left: 40px; position: relative; }
+    /* Absolutely positioned and clipped, so the label can neither change the layout nor
+       reach a sampled column. A sample that merely looks clear of the text on the machine
+       the fixture was written on is not clear where system-ui resolves to a wider family,
+       which is exactly how this fixture first failed in CI. */
+    .label { position: absolute; left: 40px; top: 0; max-width: 100px; overflow: hidden; white-space: nowrap; }
+
     #head { background: rgb(6, 90, 160); }
     #foot { background: rgb(7, 90, 160); }
     #row { height: 400px; }
@@ -25,12 +31,12 @@
   </style>
 </head>
 <body>
-  <div id="head">Outer page, above the frames</div>
+  <div id="head"><span class="label">Outer page, above the frames</span></div>
   <div id="row" style="position: relative">
     <iframe id="near" src="/frames-inner"></iframe>
     <iframe id="far" src="__ALT_ORIGIN__/frames-foreign"></iframe>
   </div>
   <div id="spacer"></div>
-  <div id="foot">Outer page, below the frames</div>
+  <div id="foot"><span class="label">Outer page, below the frames</span></div>
 </body>
 </html>

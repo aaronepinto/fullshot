@@ -29,6 +29,19 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const DIST = `${ROOT}dist`;
 const DIST_E2E = `${ROOT}dist-e2e`;
 const BROWSER = process.env.BROWSER ?? 'chromium';
+/**
+ * THROTTLE=8 runs every fixture page under an 8x CPU slowdown, which is how a hosted CI
+ * runner behaves next to a developer's machine. Readiness bugs that a fast machine hides
+ * behind its own speed show up here, and a fix for one is only proven under it.
+ */
+const THROTTLE = Number(process.env.THROTTLE ?? 0);
+
+/** @param {import('puppeteer-core').Page} page */
+async function throttleCpu(page) {
+  if (THROTTLE <= 1) return;
+  const cdp = await page.createCDPSession();
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: THROTTLE });
+}
 
 function findChrome() {
   const candidates = [
@@ -393,6 +406,7 @@ async function runScenario(browser, url, scenario, fixtures) {
   const budget = scenario.maxMs ?? 60_000;
   const page = await browser.newPage();
   await page.setViewport(scenario.viewport ?? { width: 1200, height: 800 });
+  await throttleCpu(page);
   await page.goto(url, { waitUntil: 'load' });
 
   const worker = await backgroundWorker(browser);
