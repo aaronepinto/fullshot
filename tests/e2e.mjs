@@ -169,7 +169,7 @@ function inspectImage(editor, spec) {
       }));
       const wanted = new Map(req.colors.map((c, i) => [c[0] * 65536 + c[1] * 256 + c[2], i]));
       // A pixel no tile covered stays transparent, which is what a seam gap looks like.
-      const gaps = { count: 0, minY: Infinity, maxY: -Infinity };
+      const gaps = { count: 0, minY: Infinity, maxY: -Infinity, /** @type {Record<number, number>} */ rows: {} };
       const counts = req.colors.map(() => ({
         count: 0,
         minX: Infinity,
@@ -206,6 +206,7 @@ function inspectImage(editor, spec) {
               gaps.count++;
               if (absY < gaps.minY) gaps.minY = absY;
               if (absY > gaps.maxY) gaps.maxY = absY;
+              gaps.rows[absY] = (gaps.rows[absY] ?? 0) + 1;
             }
             const hit = wanted.get(data[off] * 65536 + data[off + 1] * 256 + data[off + 2]);
             if (hit === undefined) continue;
@@ -226,6 +227,15 @@ function inspectImage(editor, spec) {
 
 /** @param {[number, number, number] | null} rgb */
 const fmt = (rgb) => (rgb ? `rgb(${rgb.join(',')})` : 'none');
+
+/** The worst few rows of a gap, as "row×count", which is what names the cause. */
+function describeGapRows(rows) {
+  return Object.entries(rows)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([y, n]) => `${y}×${n}`)
+    .join(' ');
+}
 
 /**
  * The stored capture record. Tile count and engine are what explain a slow or
@@ -273,6 +283,7 @@ async function checkPixels(label, editor, scenario) {
   if (scenario.noGaps && img.gaps.count > 0) {
     throw new Error(
       `[${label}] ${img.gaps.count} pixels no tile ever painted, rows ${img.gaps.minY}..${img.gaps.maxY}` +
+        ` (${describeGapRows(img.gaps.rows)})` +
         ' - the tiles did not land where the grid planned and left a hole between them'
     );
   }
@@ -605,6 +616,9 @@ async function runDprAxis(base) {
       executablePath: findChrome(),
       pipe: true,
       enableExtensions: true,
+      // Puppeteer's default viewport would install a device metrics override with a scale
+      // factor of 1, which is precisely the arithmetic this axis exists to exercise.
+      defaultViewport: null,
       args: [
         '--no-first-run',
         '--window-size=1200,800',
@@ -663,7 +677,8 @@ async function runDprAxis(base) {
       }
       if (img.gaps.count > 0) {
         throw new Error(
-          `[${label}] ${img.gaps.count} pixels no tile painted, rows ${img.gaps.minY}..${img.gaps.maxY}`
+          `[${label}] ${img.gaps.count} pixels no tile painted, rows ${img.gaps.minY}..${img.gaps.maxY}` +
+            ` (${describeGapRows(img.gaps.rows)})`
         );
       }
       img.pixels.forEach((rgb, i) => {
