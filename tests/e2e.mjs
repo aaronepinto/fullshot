@@ -121,11 +121,11 @@ async function checkSamples(label, editor, fractions) {
 }
 
 /**
- * Reads the composed image the editor stored in IndexedDB and answers two questions in
- * one pass over it: what colour is at these exact points, and how many pixels of these
- * exact colours are there and where do they start and end. Both are what the gauntlet's
- * assertions are made of - a repeated header, a missing band or a seam gap is a count or
- * a coordinate, not a judgement call.
+ * Reads the composed image the editor stored in IndexedDB and answers three questions in
+ * one pass over it: what colour is at these exact points, how many pixels of these exact
+ * colours are there and where do they start and end, and how many pixels no tile ever
+ * painted. All three are what the gauntlet's assertions are made of - a repeated header,
+ * a missing band or a seam gap is a count or a coordinate, not a judgement call.
  *
  * Negative coordinates count in from the right and bottom edges, which is how "the bottom
  * bar must end at the composed bottom" is expressed without knowing the height up front.
@@ -168,6 +168,8 @@ function inspectImage(editor, spec) {
         y: p.y < 0 ? height + p.y : p.y,
       }));
       const wanted = new Map(req.colors.map((c, i) => [c[0] * 65536 + c[1] * 256 + c[2], i]));
+      // A pixel no tile covered stays transparent, which is what a seam gap looks like.
+      const gaps = { count: 0, minY: Infinity, maxY: -Infinity };
       const counts = req.colors.map(() => ({
         count: 0,
         minX: Infinity,
@@ -180,7 +182,7 @@ function inspectImage(editor, spec) {
 
       for (const strip of strips) {
         const needsPoints = points.some((p, i) => !pixels[i] && p.y >= strip.y && p.y < strip.y + strip.h);
-        if (!needsPoints && wanted.size === 0) continue;
+        if (!needsPoints && wanted.size === 0 && !req.gaps) continue;
         const bmp = await createImageBitmap(strip.blob);
         const canvas = new OffscreenCanvas(bmp.width, bmp.height);
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -194,16 +196,21 @@ function inspectImage(editor, spec) {
           const off = ((p.y - strip.y) * canvas.width + Math.min(p.x, canvas.width - 1)) * 4;
           pixels[i] = [data[off], data[off + 1], data[off + 2]];
         }
-        if (wanted.size === 0) continue;
+        if (wanted.size === 0 && !req.gaps) continue;
         for (let y = 0; y < canvas.height; y++) {
           const row = y * canvas.width * 4;
+          const absY = strip.y + y;
           for (let x = 0; x < canvas.width; x++) {
             const off = row + x * 4;
+            if (req.gaps && data[off + 3] < 255) {
+              gaps.count++;
+              if (absY < gaps.minY) gaps.minY = absY;
+              if (absY > gaps.maxY) gaps.maxY = absY;
+            }
             const hit = wanted.get(data[off] * 65536 + data[off + 1] * 256 + data[off + 2]);
             if (hit === undefined) continue;
             const c = counts[hit];
             c.count++;
-            const absY = strip.y + y;
             if (x < c.minX) c.minX = x;
             if (x > c.maxX) c.maxX = x;
             if (absY < c.minY) c.minY = absY;
@@ -211,7 +218,7 @@ function inspectImage(editor, spec) {
           }
         }
       }
-      return { width, height, points, pixels, counts };
+      return { width, height, points, pixels, counts, gaps };
     },
     spec
   );
@@ -259,9 +266,16 @@ async function checkPixels(label, editor, scenario) {
     : [];
   const points = [...(scenario.points ?? []), ...seqPoints];
   const colors = (scenario.colors ?? []).map((c) => c.rgb);
-  if (!points.length && !colors.length) return;
+  if (!points.length && !colors.length && !scenario.noGaps) return;
 
-  const img = await inspectImage(editor, { points, colors });
+  const img = await inspectImage(editor, { points, colors, gaps: !!scenario.noGaps });
+
+  if (scenario.noGaps && img.gaps.count > 0) {
+    throw new Error(
+      `[${label}] ${img.gaps.count} pixels no tile ever painted, rows ${img.gaps.minY}..${img.gaps.maxY}` +
+        ' - the tiles did not land where the grid planned and left a hole between them'
+    );
+  }
 
   (scenario.points ?? []).forEach((check, i) => {
     const got = img.pixels[i];
