@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e shadow DOM fixture</title>
+  <style>
+    /* Shadow roots, where querySelectorAll does not reach. Three custom elements:
+       one with an open root holding a sticky header over slotted light-DOM content, one
+       with an open root holding its own scroller, and one with a closed root holding a
+       sticky header, which is the negative control - a closed root cannot be walked from
+       outside, so its header repeats down the image and this fixture records that as a
+       known limitation rather than leaving it to be discovered.
+       ?mode=scroller makes the page itself unscrollable so the scroller inside a shadow
+       root is the only thing holding content. */
+    body { margin: 0; font: 700 40px/1 system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    .band { height: 500px; display: flex; align-items: center; padding-left: 40px; }
+    html.locked, html.locked body { height: 100%; overflow: hidden; }
+    shadow-scroller { display: block; height: 100vh; }
+  </style>
+</head>
+<body>
+  <script>
+    const scrollerMode = new URLSearchParams(location.search).get('mode') === 'scroller';
+
+    class StickyPanel extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML =
+          '<style>' +
+          'header { position: sticky; top: 0; height: 60px; background: rgb(14, 165, 233); }' +
+          '</style><header></header><slot></slot>';
+      }
+    }
+    class ClosedPanel extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'closed' });
+        root.innerHTML =
+          '<style>' +
+          'header { position: sticky; top: 0; height: 60px; background: rgb(220, 38, 38); }' +
+          '.filler { height: 2000px; background: #e2e8f0; }' +
+          '</style><header></header><div class="filler"></div>';
+      }
+    }
+    class ShadowScroller extends HTMLElement {
+      connectedCallback() {
+        const root = this.attachShadow({ mode: 'open' });
+        const style = document.createElement('style');
+        style.textContent = '#sc { height: 100%; overflow-y: auto; } .row { height: 200px; padding-left: 40px; }';
+        const sc = document.createElement('div');
+        sc.id = 'sc';
+        // 10 × 200px = 2000px of content, reachable only through the shadow root.
+        for (let i = 0; i < 10; i++) {
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+          row.textContent = 'Shadow row ' + i;
+          sc.appendChild(row);
+        }
+        root.append(style, sc);
+      }
+    }
+    customElements.define('sticky-panel', StickyPanel);
+    customElements.define('closed-panel', ClosedPanel);
+    customElements.define('shadow-scroller', ShadowScroller);
+
+    if (scrollerMode) {
+      document.documentElement.classList.add('locked');
+      document.body.appendChild(document.createElement('shadow-scroller'));
+    } else {
+      const panel = document.createElement('sticky-panel');
+      // 6 × 500px of light-DOM content slotted into the open shadow root.
+      for (let i = 0; i < 6; i++) {
+        const band = document.createElement('div');
+        band.className = 'band';
+        band.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+        band.textContent = 'Slotted band ' + i;
+        panel.appendChild(band);
+      }
+      document.body.append(panel, document.createElement('closed-panel'));
+    }
+  </script>
+</body>
+</html>

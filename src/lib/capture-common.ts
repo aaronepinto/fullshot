@@ -157,6 +157,21 @@ export function shouldKeepSettling(
   return quietFrames < SETTLE.quietFrames || quietForMs < SETTLE.quietMs;
 }
 
+/**
+ * Waiting for images that are still arriving. A settle that only watches DOM mutations
+ * cannot see this: an <img> that has been asked for and not yet answered mutates nothing
+ * while it waits, so a lazy image on a slow connection lands in the tile as its
+ * placeholder. Both bounds exist so one dead image cannot stall a whole capture.
+ */
+export const IMAGE_WAIT = {
+  /** Ceiling for any one tile, ms. */
+  perTileMs: 3000,
+  /** Ceiling for the whole capture, ms, spent across however many tiles need it. */
+  totalMs: 8000,
+  /** Images inspected per tile; beyond this the page is too big to pay for the check. */
+  maxScanned: 1500,
+} as const;
+
 /** Viewport-relative box, matching the fields of a DOMRect that we care about. */
 export interface Box {
   top: number;
@@ -198,8 +213,123 @@ export function movedEnough(commanded: number, delta: number): boolean {
 export const HIJACK_NOTICE =
   'This page uses custom scrolling that blocks full-page capture; captured the visible area';
 
+/**
+ * A page reporting more height than this is reporting a broken measurement, not a long
+ * page: 2^25 px has been seen in the wild from a docs framework, and no real document is
+ * a thousand screens tall. Walking it would mean tens of thousands of tiles of nothing,
+ * so the capture stops at the visible area and says why.
+ */
+export const IMPLAUSIBLE_HEIGHT = 1_000_000;
+
+/**
+ * What to do about a page reporting an impossible height. The engine does not get to
+ * decide this on the user's behalf: the default is to ask, and the setting exists for
+ * people who have made their mind up.
+ */
+export type HugePageAction = 'ask' | 'limit' | 'visible';
+
+/** What the user chose at the prompt. */
+export type HugePageChoice = 'limit' | 'visible' | 'cancel';
+
+/** A CSS pixel count written the way a person reads it: 33554432 as 33,554,432 px. */
+export function formatPx(px: number): string {
+  return `${Math.round(px).toLocaleString('en-US')} px`;
+}
+
+/** Why a capture came back smaller than the whole page, when the reason is the page. */
+export type DegradeReason = 'huge' | 'clipped' | 'embed';
+
+/** What the editor tells the user for each of those reasons. */
+export const DEGRADED_NOTICE: Record<DegradeReason, string> = {
+  huge: 'This page reports an implausible height, so only the visible area was captured',
+  clipped:
+    'The content below the fold is inside a container that cannot be scrolled, so only the visible area could be captured',
+  embed:
+    'This page is an embedded viewer whose content the page cannot scroll, so only the visible area could be captured',
+};
+
+/**
+ * How much of the viewport a plugin-backed viewer must cover before the capture treats
+ * the page as being that viewer rather than a page that happens to contain one.
+ */
+export const OPAQUE_EMBED_COVERAGE = 0.6;
+
+/**
+ * How much clipped-away content a wrapper must be hiding before the capture mentions it,
+ * as a fraction of the viewport. A page with a small clipped carousel is not a page whose
+ * content went missing, and saying so on every such page would train the note out.
+ */
+export const CLIPPED_MIN_OVERFLOW = 0.5;
+
+/**
+ * Stopping a truncated capture once the page has stopped painting anything. A page that
+ * reports far more height than it has content leaves the tail of the grid as identical
+ * blank frames, and walking a ceiling's worth of those costs a minute for nothing.
+ * Only ever applied to a capture already cut short at the height ceiling: on a page whose
+ * real height is known, every tile of it was asked for and every tile of it is kept.
+ */
+export const BLANK_TRIM = {
+  /** Consecutive uniform tiles, after real content, before the walk gives up. */
+  runTiles: 3,
+  /** Edge of the square the tile is sampled down to before being called uniform. */
+  sampleSize: 16,
+  /** Per-channel spread across that sample that still counts as one flat colour. */
+  tolerance: 4,
+} as const;
+
+/** Shown when the walk stopped early because the page had stopped painting. */
+export const BLANK_TRIM_NOTICE =
+  'The page reported far more height than it painted; the capture stops at the last content found';
+
+/**
+ * True when every pixel of an RGBA sample is the same colour within a tolerance, which is
+ * what a tile of nothing looks like. Alpha is ignored: a screenshot is always opaque.
+ */
+export function isUniform(data: ArrayLike<number>, tolerance: number): boolean {
+  if (data.length < 4) return true;
+  for (let channel = 0; channel < 3; channel++) {
+    let min = 255;
+    let max = 0;
+    for (let i = channel; i < data.length; i += 4) {
+      const v = data[i]!;
+      if (v < min) min = v;
+      if (v > max) max = v;
+      if (max - min > tolerance) return false;
+    }
+  }
+  return true;
+}
+
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;
+
+/** Which edge a viewport-pinned element belongs to, and so which tiles it may appear on. */
+export type FixedEdge = 'top' | 'bottom' | 'rail';
+
+/**
+ * Sorts a fixed element by the edge it is pinned to, from its viewport box measured
+ * before the capture scrolls anywhere.
+ *
+ * A tall narrow element is a side rail: it is full height on every screen, so it belongs
+ * on every tile, and a rail that stopped after the first tile would leave a column of
+ * unrelated content down the rest of the image. Everything else belongs to whichever half
+ * of the viewport its middle sits in: a cookie bar, a bottom toolbar or a floating action
+ * button is furniture of the *foot* of the page and belongs on the last tile only, while a
+ * header or a nav belongs on the first. Treating them all as top-of-viewport overlays is
+ * the documented second-order bug in this area.
+ */
+export function fixedEdge(box: Box, vpW: number, vpH: number): FixedEdge {
+  const height = box.bottom - box.top;
+  const width = box.right - box.left;
+  if (height >= vpH * 0.8 && width <= vpW * 0.4) return 'rail';
+  return box.top + height / 2 > vpH / 2 ? 'bottom' : 'top';
+}
+
+/** Whether an element pinned to `edge` should be visible on this tile of the grid. */
+export function showsOnTile(edge: FixedEdge, firstTile: boolean, lastTile: boolean): boolean {
+  if (edge === 'rail') return true;
+  return edge === 'bottom' ? lastTile : firstTile;
+}
 
 /**
  * True when a computed background-attachment keeps any layer glued to the viewport.

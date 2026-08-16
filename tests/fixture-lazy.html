@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e lazy-image fixture</title>
+  <style>
+    /* Deferred media, the failure that separates a real capture extension from the
+       DevTools built-in command: an engine that resizes the viewport to the document
+       height, or scrolls faster than the network, comes back with a page of grey boxes.
+       Twenty images are native loading="lazy" and five are swapped in by an
+       IntersectionObserver, because engines that special-case the native attribute still
+       miss the hand-rolled kind. The server delays every image response by ?delay= ms
+       and logs which ones were ever asked for, so "did it ask" and "did it wait" are
+       separate questions. Each image is a solid colour encoding its own index. */
+    body { margin: 0; background: #fff; font: 20px/1 system-ui, sans-serif; }
+    section { height: 400px; padding: 50px 0; box-sizing: border-box; }
+    img { display: block; width: 800px; height: 300px; background: rgb(156, 163, 175); }
+  </style>
+</head>
+<body>
+  <script>
+    const delay = new URLSearchParams(location.search).get('delay') ?? '250';
+    const NATIVE = 20;
+    const OBSERVED = 5;
+
+    for (let i = 0; i < NATIVE + OBSERVED; i++) {
+      const s = document.createElement('section');
+      const img = document.createElement('img');
+      img.width = 800;
+      img.height = 300;
+      const src = '/img/' + i + '.png?delay=' + delay;
+      if (i < NATIVE) {
+        img.loading = 'lazy';
+        img.src = src;
+      } else {
+        img.dataset.src = src;
+      }
+      s.appendChild(img);
+      document.body.appendChild(s);
+    }
+
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const img = e.target;
+        if (img.dataset.src) {
+          img.src = img.dataset.src;
+          delete img.dataset.src;
+        }
+        io.unobserve(img);
+      }
+    });
+    for (const img of document.querySelectorAll('img[data-src]')) io.observe(img);
+  </script>
+</body>
+</html>

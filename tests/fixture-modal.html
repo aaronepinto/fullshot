@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e scroll-locked modal fixture</title>
+  <style>
+    /* The article overlay, image lightbox and checkout flow shape: the page behind is
+       long, the body gets its scroll locked by script the moment the overlay opens, and
+       what the user is actually reading is 2600px of content inside a fixed panel that
+       scrolls on its own. The trap is that the document still reports the height of the
+       page behind, which is not what anyone wants a picture of.
+       ?native=1 puts the panel in the top layer through dialog.showModal(), which is hit
+       tested and painted differently from an ordinary fixed div. */
+    body { margin: 0; font: 700 40px/1 system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    #behind div { height: 500px; background: rgb(120, 120, 120); border-bottom: 2px solid #444; }
+    #panel, dialog {
+      position: fixed; inset: 40px; margin: 0; padding: 0; border: 0;
+      /* The UA stylesheet sizes a dialog to fit-content, which would beat the insets and
+         leave a 2600px-tall panel with nothing to scroll. */
+      width: auto; height: auto; max-width: none; max-height: none;
+      overflow-y: auto; background: #fff; z-index: 10;
+    }
+    .band { height: 200px; }
+  </style>
+</head>
+<body>
+  <div id="behind"></div>
+  <script>
+    const native = new URLSearchParams(location.search).get('native') === '1';
+    const behind = document.getElementById('behind');
+    // 8 × 500px of page behind the overlay: tall, and not what the user wants.
+    for (let i = 0; i < 8; i++) behind.appendChild(document.createElement('div'));
+
+    const panel = document.createElement(native ? 'dialog' : 'div');
+    if (!native) {
+      panel.id = 'panel';
+      panel.setAttribute('role', 'dialog');
+    }
+    // 13 × 200px = 2600px of panel content, each band encoding its own index.
+    for (let i = 0; i < 13; i++) {
+      const band = document.createElement('div');
+      band.className = 'band';
+      band.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      band.textContent = 'Panel band ' + i;
+      panel.appendChild(band);
+    }
+    document.body.appendChild(panel);
+    if (native) panel.showModal();
+
+    // The real-world pattern: the lock goes on when the overlay opens, not in the stylesheet.
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  </script>
+</body>
+</html>

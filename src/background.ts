@@ -6,15 +6,20 @@
 import { getSettings } from './lib/settings';
 import { deleteTiles, putCapture, putTile, pruneHistory } from './lib/db';
 import {
+  BLANK_TRIM,
+  BLANK_TRIM_NOTICE,
+  DEGRADED_NOTICE,
   HIJACK,
   HIJACK_NOTICE,
   countdownSteps,
   dataUrlToBlob,
   gridPositions,
+  isUniform,
   makeRecord,
   mobileMetrics,
   newCaptureId,
 } from './lib/capture-common';
+import type { HugePageChoice } from './lib/capture-common';
 import {
   captureCrossOriginFrame,
   hasDebuggerPermission,
@@ -253,6 +258,13 @@ async function startCapture(
       const result = await stitchCapture(tab, capId, selection, pickedScroller, settings, (done, total) =>
         badge.set(`${Math.round((done / total) * 100)}%`)
       );
+      // Null means the user cancelled at the impossible-height prompt: nothing was
+      // captured and nothing was changed, so there is nothing to report either.
+      if (!result) {
+        await deleteTiles(capId).catch(() => undefined);
+        await badge.clear();
+        return;
+      }
       ({ clip, tileCount, truncated, notice } = result);
       title = result.title || title;
       url = result.url || url;
@@ -451,14 +463,42 @@ async function stitchCapture(
   pickedScroller: boolean,
   settings: Awaited<ReturnType<typeof getSettings>>,
   onProgress: (done: number, total: number) => void
-): Promise<StitchResult> {
+): Promise<StitchResult | null> {
   const tabId = tab.id!;
   await ensureContentScript(tabId, 'content-capture.js');
+  let allowHuge = false;
   let metrics = await sendToTab<PageMetrics>(tabId, {
     type: 'fs:measure',
     maxHeight: settings.maxCaptureHeight,
     usePicked: pickedScroller,
   });
+
+  // A page reporting a height nothing could walk is a decision, not a defect to route
+  // around: capturing the first screenful and capturing the ceiling's worth are both
+  // reasonable, and which one is right depends on what the page actually is. Ask before
+  // touching anything, unless the user has already said what they want.
+  if (metrics.degraded === 'huge') {
+    const choice: HugePageChoice =
+      settings.hugePageAction === 'ask'
+        ? await sendToTab<HugePageChoice>(tabId, {
+            type: 'fs:askHugePage',
+            reportedHeight: metrics.reportedH ?? 0,
+            limitHeight: settings.maxCaptureHeight,
+          })
+        : settings.hugePageAction;
+    if (choice === 'cancel') return null;
+    if (choice === 'limit') {
+      // Take the page at its word, capped at the ceiling, exactly like any other page
+      // taller than the limit. The blank-run trim below is what keeps that affordable.
+      allowHuge = true;
+      metrics = await sendToTab<PageMetrics>(tabId, {
+        type: 'fs:measure',
+        maxHeight: settings.maxCaptureHeight,
+        usePicked: pickedScroller,
+        allowHuge,
+      });
+    }
+  }
 
   const clipFor = (m: PageMetrics): Rect => {
     const page: Rect = { x: 0, y: 0, w: m.pageW, h: m.pageH };
@@ -489,16 +529,21 @@ async function stitchCapture(
       type: 'fs:measure',
       maxHeight: settings.maxCaptureHeight,
       usePicked: pickedScroller,
+      allowHuge,
     });
     clip = clipFor(metrics);
   };
 
   try {
+    // What is left after the decision above: the page limits the capture to the visible
+    // area on its own terms, and all the engine can do is say why.
+    let notice = metrics.degraded ? DEGRADED_NOTICE[metrics.degraded] : undefined;
+
     // Pages that drive their own scrolling report a tall page but never move, which
     // would stitch the same frame into every tile. The probe tries to get them moving
     // and, failing that, keeps the capture honest: the visible area plus a note.
-    let notice: string | undefined;
     if (
+      !notice &&
       !pickedScroller &&
       !metrics.containerRect &&
       clip.h > metrics.vpH + HIJACK.minOverflow
@@ -540,17 +585,28 @@ async function stitchCapture(
     const total = cols.length * rows.length;
     if (total > 600) throw new Error(`Page needs ${total} tiles - beyond the safety limit.`);
 
+    // A capture already cut short at the height ceiling is walking a page that claims
+    // more than it has, so a run of identical blank frames means the content ended and
+    // the rest of the grid is a minute spent on nothing. Pages whose real height is known
+    // are never trimmed: every tile of those was asked for and every tile is kept.
+    const trimBlank = metrics.truncated;
+    let blankRun = 0;
+    let contentBottom = clip.y;
+    let sawContent = false;
+
     let index = 0;
-    for (let r = 0; r < rows.length; r++) {
+    walk: for (let r = 0; r < rows.length; r++) {
       for (let c = 0; c < cols.length; c++) {
         const pos = await sendToTab<ScrollResult>(tabId, {
           type: 'fs:scrollTo',
           x: cols[c]!,
           y: rows[r]!,
           settleMs: settings.captureDelayMs,
-          hideFixed: r > 0 || c > 0,
+          firstTile: r === 0 && c === 0,
+          lastTile: r === rows.length - 1 && c === cols.length - 1,
         });
         const dataUrl = await captureVisibleThrottled(tab.windowId);
+        const blob = await dataUrlToBlob(dataUrl);
         await putTile({
           key: `${capId}:${index}`,
           capId,
@@ -560,10 +616,26 @@ async function stitchCapture(
           cssW: metrics.vpW,
           cssH: metrics.vpH,
           ...(crop ? { crop } : {}),
-          blob: await dataUrlToBlob(dataUrl),
+          blob,
         });
         index++;
         onProgress(index, total);
+
+        if (!trimBlank) continue;
+        if (await isBlankTile(blob)) {
+          blankRun++;
+          // Blank tiles before the trim point still have to be stored, or the composed
+          // image would have a hole where one was skipped.
+          if (sawContent && blankRun >= BLANK_TRIM.runTiles) {
+            clip = { ...clip, h: contentBottom - clip.y };
+            notice = BLANK_TRIM_NOTICE;
+            break walk;
+          }
+        } else {
+          blankRun = 0;
+          sawContent = true;
+          contentBottom = Math.min(pos.y + stepH, clip.y + clip.h);
+        }
       }
     }
     return {
@@ -576,6 +648,27 @@ async function stitchCapture(
     };
   } finally {
     await sendToTab(tabId, { type: 'fs:restore' }).catch(() => undefined);
+  }
+}
+
+/**
+ * Whether a tile holds nothing at all. The bitmap is drawn down to a small square first,
+ * so the question costs one downscale rather than a pass over two million pixels, and a
+ * page that only paints a flat colour there answers the same either way. A decode that
+ * fails answers "not blank", which keeps the walk going rather than cutting it short.
+ */
+async function isBlankTile(blob: Blob): Promise<boolean> {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const size = BLANK_TRIM.sampleSize;
+    const canvas = new OffscreenCanvas(size, size);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return false;
+    ctx.drawImage(bmp, 0, 0, bmp.width, bmp.height, 0, 0, size, size);
+    bmp.close();
+    return isUniform(ctx.getImageData(0, 0, size, size).data, BLANK_TRIM.tolerance);
+  } catch {
+    return false;
   }
 }
 

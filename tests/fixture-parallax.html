@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e parallax background fixture</title>
+  <style>
+    /* Viewport-glued backgrounds. A background-attachment: fixed layer is positioned
+       against the viewport, so it paints identically in every tile and the stitched image
+       gets the same slice of it over and over instead of the page's own artwork. The
+       engine pins such layers to scroll for the duration; this is that fix's witness.
+
+       The page background is eight hard-stop bands of 600px, one per section, each
+       encoding its own index, so the harness reads them straight back: pinned to scroll
+       they run 0 to 7 down the image, glued to the viewport they restart every tile.
+       html carries a background of its own so body's is not propagated to the canvas,
+       where the positioning area would be a different box again. */
+    html { background: #fff; }
+    body {
+      margin: 0; font: 700 40px/1 system-ui, sans-serif; color: rgba(255,255,255,.75);
+      background-attachment: fixed;
+      background-image: linear-gradient(
+        rgb(6, 90, 160) 0 600px, rgb(7, 90, 160) 600px 1200px,
+        rgb(8, 90, 160) 1200px 1800px, rgb(9, 90, 160) 1800px 2400px,
+        rgb(10, 90, 160) 2400px 3000px, rgb(11, 90, 160) 3000px 3600px,
+        rgb(12, 90, 160) 3600px 4200px, rgb(13, 90, 160) 4200px 4800px
+      );
+    }
+    section { height: 600px; padding-left: 460px; box-sizing: border-box; }
+    .own { width: 400px; height: 600px; margin-left: -460px; float: left; }
+    /* Its own viewport-glued layer, on top of the page's: two hard stops so where the
+       engine put the positioning area is a two-pixel question. */
+    #fixed-layer {
+      background-attachment: fixed;
+      background-image: linear-gradient(rgb(255, 0, 0) 0 300px, rgb(0, 0, 255) 300px 600px);
+    }
+    /* The control. background-attachment: local is not viewport-glued and must come out
+       of the capture untouched. */
+    #local-layer {
+      background-attachment: local;
+      background-image: linear-gradient(rgb(0, 200, 0) 0 300px, rgb(200, 200, 0) 300px 600px);
+    }
+    /* The hand-rolled kind: a sticky layer nudged by a scroll-driven custom property.
+       The offset is bounded to 60px so the layer always paints near its own section,
+       which makes "exactly one of it" a stable count. */
+    #parallax {
+      position: sticky; top: 0; width: 400px; height: 200px; margin-left: -460px;
+      background: rgb(255, 140, 0);
+      transform: translateY(calc(var(--p, 0) * 60px));
+    }
+  </style>
+</head>
+<body>
+  <script>
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement('section');
+      s.textContent = 'Section ' + i;
+      if (i === 2) s.insertAdjacentHTML('afterbegin', '<div class="own" id="fixed-layer"></div>');
+      if (i === 3) s.insertAdjacentHTML('afterbegin', '<div class="own" id="local-layer"></div>');
+      if (i === 4) s.insertAdjacentHTML('afterbegin', '<div id="parallax"></div>');
+      document.body.appendChild(s);
+    }
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      document.documentElement.style.setProperty('--p', max > 0 ? scrollY / max : 0);
+    };
+    addEventListener('scroll', onScroll);
+    onScroll();
+  </script>
+</body>
+</html>

@@ -87,11 +87,24 @@ async function composeFromTiles(record: CaptureRecord): Promise<BigImage> {
   const strips: { y: number; h: number; bmp: ImageBitmap }[] = [];
 
   // Decode tiles lazily per strip to keep peak memory bounded on huge pages.
+  // Both edges of a tile's box are rounded from its CSS coordinates rather than the box
+  // being sized from the bitmap, so a tile always starts exactly where the one above it
+  // ended. At a fractional device pixel ratio the two disagree by a pixel, and the
+  // difference is a row of nothing at every seam.
   const tileMeta = tiles.map((t, i) => {
+    // Cropped tiles (scroll-container captures) only place the crop rect, not the bitmap.
+    const cssW = t.crop?.w ?? t.cssW;
+    const cssH = t.crop?.h ?? t.cssH;
     const x = Math.round((t.x - record.clip.x) * scale);
     const y = Math.round((t.y - record.clip.y) * scale);
-    // Cropped tiles (scroll-container captures) only place the crop rect, not the bitmap.
-    return { index: i, tile: t, x, y, placedCssH: t.crop?.h ?? t.cssH };
+    return {
+      index: i,
+      tile: t,
+      x,
+      y,
+      w: Math.round((t.x - record.clip.x + cssW) * scale) - x,
+      h: Math.round((t.y - record.clip.y + cssH) * scale) - y,
+    };
   });
   const bitmaps = new Map<number, ImageBitmap>();
   bitmaps.set(0, first);
@@ -113,30 +126,25 @@ async function composeFromTiles(record: CaptureRecord): Promise<BigImage> {
     // the only one with fixed headers visible, and clamped last-row tiles must not
     // overwrite it with header-hidden pixels.
     for (const meta of [...tileMeta].reverse()) {
-      const bmpH = Math.round(meta.placedCssH * scale);
-      if (meta.y + bmpH <= stripY || meta.y >= stripY + stripH) continue;
+      if (meta.y + meta.h <= stripY || meta.y >= stripY + stripH) continue;
       const bmp = await getBmp(meta.index);
       const crop = meta.tile.crop;
-      if (crop) {
-        ctx.drawImage(
-          bmp,
-          crop.x * scale,
-          crop.y * scale,
-          crop.w * scale,
-          crop.h * scale,
-          meta.x,
-          meta.y - stripY,
-          Math.round(crop.w * scale),
-          bmpH
-        );
-      } else {
-        ctx.drawImage(bmp, meta.x, meta.y - stripY);
-      }
+      ctx.drawImage(
+        bmp,
+        crop ? crop.x * scale : 0,
+        crop ? crop.y * scale : 0,
+        crop ? crop.w * scale : bmp.width,
+        crop ? crop.h * scale : bmp.height,
+        meta.x,
+        meta.y - stripY,
+        meta.w,
+        meta.h
+      );
     }
     // Free bitmaps that can no longer intersect later strips.
     for (const [i, bmp] of [...bitmaps]) {
       const meta = tileMeta[i]!;
-      if (meta.y + Math.round(meta.placedCssH * scale) <= stripY + stripH) {
+      if (meta.y + meta.h <= stripY + stripH) {
         bmp.close();
         bitmaps.delete(i);
       }
