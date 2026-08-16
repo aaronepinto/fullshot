@@ -143,6 +143,12 @@ button:hover {
   background: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
   border-color: color-mix(in oklch, var(--accent) 86%, var(--surface-canvas));
 }
+/* Same answer as the editor's: nothing here loops, so collapsing the durations is
+   enough. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01s !important; }
+}
+
 .saved {
   position: fixed;
   bottom: 18px;

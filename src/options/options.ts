@@ -46,8 +46,11 @@ async function updateTurboUi() {
     $('#grantDebugger').hidden = true;
     return;
   }
+  // Chrome grants the permission at install, so the button is normally dead weight.
+  // It is here for the case it was written for: a packaging where the permission is
+  // missing and Turbo would otherwise fail with nothing on screen to fix it.
   const granted = await hasDebuggerPermission();
-  $('#grantDebugger').hidden = true;
+  $('#grantDebugger').hidden = granted;
 }
 
 async function load() {
