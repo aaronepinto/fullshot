@@ -131,7 +131,11 @@ export const FURNITURE_BOX = {
 const GAUNTLET_PAGES = {
   '/reveal': 'fixture-reveal.html',
   '/furniture': 'fixture-furniture.html',
+  '/lazy': 'fixture-lazy.html',
 };
+
+/** Every image path the lazy fixture is expected to have asked the server for. */
+const LAZY_IMAGES = Array.from({ length: 25 }, (_, i) => `/img/${i}.png`);
 
 /** Pixel counts the furniture fixture's geometry works out to, over a 1200px page. */
 const FURN = {
@@ -222,6 +226,34 @@ export const GAUNTLET = [
       { name: 'floating button', rgb: FURNITURE.fab, count: FURNITURE_BOX.fabW * FURNITURE_BOX.fabH, bottomY: -(FURNITURE_BOX.fabBottom + 1) },
       { name: 'cookie banner', rgb: FURNITURE.cookie, count: FURNITURE_BOX.cookieW * FURNITURE_BOX.cookieH, bottomY: -(FURNITURE_BOX.cookieBottom + 1) },
     ],
+  },
+  // Deferred media: 20 native loading="lazy" images and 5 swapped in by an
+  // IntersectionObserver, each a solid colour encoding its own index, each delayed by the
+  // server. The band sequence catches a placeholder as surely as a duplicated tile.
+  {
+    name: 'lazy',
+    path: '/lazy',
+    minW: 1200,
+    maxW: 1200,
+    minH: 10_000,
+    maxH: 10_000,
+    note: '',
+    maxMs: 90_000,
+    requested: LAZY_IMAGES,
+    sequence: { x: 400, y0: 200, dy: 400, count: 25 },
+  },
+  // The same page with responses 2s late, well past any per-tile settle: the engine has
+  // to hold the shot for content it can see is still on its way.
+  {
+    name: 'lazy-slow',
+    path: '/lazy?delay=2000',
+    minW: 1200,
+    maxW: 1200,
+    minH: 10_000,
+    maxH: 10_000,
+    maxMs: 120_000,
+    requested: LAZY_IMAGES,
+    sequence: { x: 400, y0: 200, dy: 400, count: 25 },
   },
 ];
 
