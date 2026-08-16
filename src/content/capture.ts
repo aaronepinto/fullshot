@@ -277,6 +277,12 @@ interface PinnedEl {
       html, body { scroll-behavior: auto !important; overscroll-behavior: none !important; }
       ::-webkit-scrollbar { display: none !important; }
       html { scrollbar-width: none !important; }
+      /* Snapping lets the browser overrule the offset each tile was scrolled to and land
+         on a snap point instead, which leaves a hole between one tile and the next. */
+      *, *::before, *::after {
+        scroll-snap-type: none !important;
+        scroll-snap-align: none !important;
+      }
       ${
         freezeAnimations
           ? `*, *::before, *::after {
