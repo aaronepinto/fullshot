@@ -53,23 +53,28 @@
         "privacyPolicy": "https://screencappy.smollet.app/privacy",
         "codeRepository": "https://github.com/smollet-app/screencappy",
         "programmingLanguage": "TypeScript",
-        "permissions": "activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage and debugger. No host permissions. The debugger permission is declared at install because Chrome does not allow it to be requested later. It powers the Turbo capture engine, searchable PDF export and mobile width capture, is only active while one of those captures is running, and Chrome shows a visible banner the whole time it is in use.",
+        "permissions": "activeTab, scripting, storage, downloads, contextMenus, unlimitedStorage and debugger. screencappy asks for no access to any website, so it cannot see any web page until the moment you ask it to take a screenshot. The debugger permission is declared at install because Chrome does not allow it to be requested later. It powers the Turbo capture engine, searchable PDF export and mobile width capture, is only active while one of those captures is running, and Chrome shows a visible banner the whole time it is in use.",
         "featureList": [
-          "Saves a picture of the whole page in one click, including everything below and to the side of what is on screen",
-          "Headers that stay put as you scroll appear only once in the finished picture",
-          "Capture just what is on screen, drag a box around one part, or point at a single item and click",
+          "Full page: saves a picture of the whole page in one click, including everything you would have to scroll to see",
+          "Menus and banners that normally follow you as you scroll appear just once, where they belong",
+          "Visible area: just what is on your screen right now",
+          "Select an area: drag a box around what you want, and keep scrolling while you drag to grab something taller than your screen",
+          "Pick one thing: point at a photo, a table or a post, then click to capture exactly that",
           "Panels with their own scrollbars are captured in full, not just the part showing",
           "Free drawing tools: crop, arrows, boxes, pen, highlighter, text and emoji",
-          "Blur out anything private before you save",
+          "Blur out names, faces or anything private before you share",
           "Every step can be undone and redone",
-          "Save as PNG, JPEG, WebP, or PDF as one long page or split into pages",
+          "Save as PNG, JPEG, WebP, or PDF as one long page or split into printable pages",
           "Copy straight to the clipboard, ready to paste",
-          "Set how your files get named",
-          "Handles pages that keep loading as you scroll",
+          "Files can be named automatically with the site and date",
+          "Save straight to your downloads without the editor opening, when that is all you want",
+          "Waits for photos to finish loading, so your screenshot has no empty grey boxes",
+          "Handles feeds that load more as you scroll",
           "Hold a capture back so a menu can be opened first",
           "Advanced captures: a page in its phone layout, and PDFs whose text you can search, with Chrome showing a banner while they run",
           "Keeps your recent captures on your own computer so you can reopen them",
           "Very long pages split neatly across files instead of failing",
+          "When a page truly cannot be captured in full, screencappy says why instead of quietly giving you half a picture",
           "No account, no cloud, no tracking, and no way to send anything anywhere"
         ],
         "offers": {
@@ -125,8 +130,8 @@
       <p class="tag">Save a picture of a whole web page in one click. Draw on it, hide anything private, and keep it wherever you like. Free, and nothing you capture ever leaves your computer.</p>
 
       <div class="cta">
-        <a class="btn primary" href="https://github.com/smollet-app/screencappy/releases/latest/download/screencappy.zip">Download for Chrome</a>
-        <p class="cta-note">Coming to the Chrome Web Store. Until then, early access takes about a minute to set up.</p>
+        <a class="btn primary" href="https://github.com/smollet-app/screencappy/releases/latest/download/screencappy.zip">Download the extension for Chrome</a>
+        <p class="cta-note">This installs the screencappy extension in your browser. It is coming to the Chrome Web Store; until then, early access takes about a minute to set up.</p>
       </div>
       <details class="cta-more">
         <summary>How the early access install works</summary>
@@ -162,14 +167,16 @@
 
       <p>Everything happens on your own computer. There is no account to make and no cloud service
       behind it. screencappy does not track you and has no way to send your pictures anywhere. It
-      asks for no access to any website, so it cannot see the page you are on until you ask it to.
+      asks for no access to any website, so it cannot see any web page until the moment you ask it
+      to take a screenshot, and your screenshots stay on your computer and are never sent anywhere.
       It does use Chrome's debugging tool for a few advanced captures, and Chrome shows a banner on
       screen the whole time that is running.</p>
 
-      <p>screencappy is completely free. There is no paid version and nothing is held back: drawing,
-      blurring, emoji stamps and saving as PDF are all included. It works with Chrome, Edge, Opera
-      and Brave, and there is a Firefox version too. The code is open for anyone to read, under the
-      Apache-2.0 licence.</p>
+      <p>screencappy is completely free, with nothing held back: drawing, blurring, emoji stamps and
+      saving as PDF are all included, and they are the features screenshot tools usually charge for.
+      No trial, no upgrade prompts, no watermarks. It works with Chrome, Edge, Opera and Brave, and
+      there is a Firefox version too. The code is open for anyone to read, under the Apache-2.0
+      licence.</p>
     </section>
 
     <section class="install" id="install">
@@ -231,20 +238,20 @@
     </section>
 
     <section class="grid">
-      <div class="card"><h3>The whole page, one click</h3><p>Not just the part on your screen. Everything further down the page and off to the side, joined into one clean picture, with headers that stay put appearing only once.</p></div>
-      <div class="card"><h3>Your pictures stay yours</h3><p>No account, no cloud, no tracking. screencappy has no way to send anything anywhere, so what you capture stays on your computer.</p></div>
-      <div class="card"><h3>Mark it up, free</h3><p>Crop it, add arrows, boxes, a highlighter, text or emoji, and blur out anything private. Change your mind as often as you like: every step can be undone.</p></div>
-      <div class="card"><h3>Save it your way</h3><p>PNG, JPEG, WebP or PDF, one long page or split into pages, or copied straight to your clipboard ready to paste. You can set how files get named.</p></div>
-      <div class="card"><h3>Capture just one part</h3><p>Point at what you want and click, or drag a box around it. Boxes with their own scrollbars get captured in full, not just the bit showing.</p></div>
-      <div class="card"><h3>Tricky pages handled</h3><p>Pages that keep loading as you scroll, pages that scroll inside a panel, and shots that need a menu held open. screencappy waits for the page to settle.</p></div>
+      <div class="card"><h3>The whole page, one click</h3><p>Not just the part on your screen. Everything you would have to scroll to see, joined into one tall picture, with menus and banners that normally follow you appearing just once.</p></div>
+      <div class="card"><h3>Your pictures stay yours</h3><p>No account, no cloud, no tracking. screencappy cannot see any web page until the moment you ask it to take a screenshot, and your screenshots stay on your computer.</p></div>
+      <div class="card"><h3>Mark it up, free</h3><p>Crop it, add arrows, boxes, a highlighter, text or emoji, and blur out names, faces or anything private. Changed your mind? Undo works for everything, at every step.</p></div>
+      <div class="card"><h3>Save it your way</h3><p>PNG, JPEG, WebP or PDF, one long page or split into printable pages, or copied straight to your clipboard. Files can be named automatically with the site and date, and you can skip the editor and save straight to your downloads.</p></div>
+      <div class="card"><h3>Capture just one part</h3><p>Select an area by dragging a box around it, even one taller than your screen. Or pick one thing: point at a photo, a table or a post and click to capture exactly that.</p></div>
+      <div class="card"><h3>Tricky pages handled</h3><p>Feeds that load more as you scroll, apps where only the middle of the window scrolls, and shots that need a menu held open. screencappy waits for photos to finish loading, so there are no empty grey boxes.</p></div>
       <div class="card"><h3>See it as a phone would</h3><p>Capture a page in its phone layout without resizing your window, and save PDFs whose text you can still search. Chrome shows a banner on screen while these run.</p></div>
-      <div class="card"><h3>Very long pages work</h3><p>Enormous pages defeat most screenshot tools. screencappy builds these in pieces, so a huge capture splits neatly across files instead of failing.</p></div>
+      <div class="card"><h3>Very long pages work</h3><p>Enormous pages defeat most screenshot tools. screencappy builds these in pieces, so a huge capture splits neatly across files. And when a page truly cannot be captured in full, it tells you why rather than quietly handing you half a picture.</p></div>
     </section>
 
     <p class="keys">
       Full page <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> &nbsp;·&nbsp;
       Visible area <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> &nbsp;·&nbsp;
-      Select a region <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
+      Select an area <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>
     </p>
 
     <footer>

@@ -141,8 +141,8 @@
             <td>No</td>
           </tr>
           <tr>
-            <th scope="row">Host permissions at install</th>
-            <td>None requested</td>
+            <th scope="row">Access to your pages at install</th>
+            <td>None asked for, only when you invoke it</td>
             <td>Not stated in a readable manifest</td>
           </tr>
           <tr>
@@ -152,7 +152,7 @@
           </tr>
           <tr>
             <th scope="row">Browsers</th>
-            <td>Chrome</td>
+            <td>Chrome, Edge, Opera and Brave, plus a Firefox build</td>
             <td>Chrome and Edge</td>
           </tr>
         </tbody>
@@ -205,17 +205,18 @@
 
     <h2>What does screencappy include that is usually a paid upgrade?</h2>
 
-    <p>Annotation, redaction and PDF export. screencappy ships a full vector annotation editor at no
-    cost: crop, arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps,
-    and blur or pixelate redaction. Annotations are non-destructive, with full undo and redo, zoom
-    and pan, so you can reopen a capture and change an arrow you drew earlier.</p>
+    <p>Annotation, redaction and PDF export. screencappy ships a full editor at no cost: crop,
+    arrows, lines, rectangles, ellipses, freehand pen, highlighter, text, emoji stamps, and blur or
+    pixelate redaction, all on a single row of tools with the colour choices in a small popover.
+    Nothing you draw is burnt into the picture, so you can reopen a capture and change an arrow you
+    drew earlier, and undo and redo cover every step.</p>
 
     <p>Export covers PNG, JPEG, WebP, PDF and the clipboard. PDFs can be a single tall page or
     paginated to A4 or Letter, and the PDF writer is hand-rolled with zero dependencies. With the
     Turbo engine switched on, screencappy can also save a PDF with real, selectable, searchable
     text rather than an image of the page.</p>
 
-    <p>There is no upgrade prompt anywhere in screencappy, because there is nothing to upgrade to.</p>
+    <p>No trial, no upgrade prompts, no watermarks. There is nothing in screencappy to upgrade to.</p>
 
     <h2>Does screencappy upload my screenshots anywhere?</h2>
 
@@ -228,8 +229,9 @@
 
     <p><code>activeTab</code>, <code>scripting</code>, <code>storage</code>,
     <code>downloads</code>, <code>contextMenus</code>, <code>unlimitedStorage</code> and
-    <code>debugger</code>. It requests no host permissions, which means it has no standing ability
-    to read any page. Access is granted by your click, for that tab, at that moment.</p>
+    <code>debugger</code>. It asks for no access to any website, which means it cannot see any web
+    page until the moment you ask it to take a screenshot, and then only the tab you are looking at,
+    only at that moment.</p>
 
     <p>The <code>debugger</code> permission is declared at install, because Chrome does not allow
     that one to be requested later. It powers the Turbo capture engine, searchable PDF export and
@@ -239,21 +241,25 @@
     <h2>Which pages does screencappy handle that a simple stitcher does not?</h2>
 
     <ul>
-      <li><strong>Sticky headers and fixed overlays.</strong> They are pinned or hidden after the
-      first tile, so a sticky nav bar appears exactly once instead of repeating down the image. The
-      same handling reaches inside open shadow DOM.</li>
-      <li><strong>Web apps that scroll in an inner container.</strong> When the window itself barely
-      scrolls, as in Gmail-style single page apps, screencappy finds the container holding the real
-      content and captures all of it.</li>
-      <li><strong>Iframes, in depth.</strong> Pick an iframe with the element picker and you get its
-      entire content, not just the part visible inside its box.</li>
-      <li><strong>Infinite scroll.</strong> Turn on auto-load and screencappy keeps scrolling until
-      the page stops growing, within a height and time budget, then captures the loaded page.</li>
-      <li><strong>Very long pages.</strong> The composed image is held as strips rather than one
-      canvas, which sidesteps the browser's canvas size limits. Captures too large for one file
-      split into numbered files or extra PDF pages instead of failing.</li>
-      <li><strong>Mobile layouts.</strong> Capture a page at a phone width through device emulation
-      without resizing your actual window.</li>
+      <li><strong>Menus and banners that follow you as you scroll.</strong> They are pinned or
+      hidden after the first shot, so a floating nav bar appears exactly once instead of repeating
+      down the image. The same handling reaches into a page's own self contained components.</li>
+      <li><strong>Web apps where only the middle of the window scrolls.</strong> When the window
+      itself barely moves, as in Gmail-style apps, screencappy finds the inner panel holding the
+      real content and captures all of it.</li>
+      <li><strong>Iframes, in depth.</strong> Point at an iframe with Pick one thing and you get its
+      entire content, not just the part showing inside its box.</li>
+      <li><strong>Feeds that load more as you scroll.</strong> Turn on auto-load and screencappy
+      keeps scrolling until the page stops growing, within a height and time budget, then captures
+      the loaded page.</li>
+      <li><strong>Very long pages.</strong> The picture is built and kept in strips rather than as
+      one enormous image, which sidesteps the size limit browsers put on a single image. Captures
+      too large for one file split into numbered files or extra PDF pages instead of failing.</li>
+      <li><strong>Pages that cannot be captured in full.</strong> When a page reports a height no
+      tool could handle, screencappy says why and lets you choose what to do, instead of quietly
+      giving you half a picture.</li>
+      <li><strong>Mobile layouts.</strong> Capture a page in its phone layout without resizing your
+      actual window.</li>
       <li><strong>Timing-sensitive shots.</strong> A delayed capture gives you a few seconds to open
       a menu or hold a hover state before the shot is taken.</li>
     </ul>
@@ -291,9 +297,10 @@
     <h2>Keyboard shortcuts</h2>
 
     <p>Full page: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>. Visible area:
-    <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>. Select a region:
-    <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. During a region selection you can scroll to grab
-    an area taller than the viewport.</p>
+    <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>. Select an area:
+    <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. While you drag out an area you can keep scrolling,
+    to grab something taller than your screen. Pick one thing has no shortcut by default, and every
+    shortcut can be changed at <code>chrome://extensions/shortcuts</code>.</p>
 
     <p class="trademark">GoFullPage is a trademark of its respective owner. screencappy is not affiliated with,
     endorsed by, or connected to GoFullPage in any way.</p>

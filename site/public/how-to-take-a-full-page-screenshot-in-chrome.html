@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>How to Take a Full Page Screenshot in Chrome (2 Ways)</title>
-  <meta name="description" content="Capture an entire web page in Chrome, including everything below the fold. Step by step with Chrome's built-in DevTools command, where it falls short, and how to do it in one click with a free extension." />
+  <meta name="description" content="Capture an entire web page in Chrome, including everything you would have to scroll to see. Step by step with Chrome's built-in DevTools command, where it falls short, and how to do it in one click with a free extension." />
   <link rel="canonical" href="https://screencappy.smollet.app/how-to-take-a-full-page-screenshot-in-chrome" />
 
   <meta name="theme-color" content="#faf6ec" media="(prefers-color-scheme: light)" />
@@ -78,7 +78,7 @@
     <h1>How to take a full page screenshot in Chrome</h1>
 
     <p class="lede">There are two reliable ways to capture an entire web page in Chrome, including
-    everything below the fold. Chrome has a built-in command hidden in DevTools that needs no
+    everything you would have to scroll to see. Chrome has a built-in command hidden in DevTools that needs no
     extension, and it works well for a quick, plain PNG. If you need annotation, PDF output, or a
     page that does anything unusual, an extension does the job in one click.</p>
 
@@ -117,9 +117,9 @@
       can end up repeated down the image, or stamped across the middle of it.</li>
       <li><strong>Very tall pages.</strong> Beyond a certain height the capture can come back
       truncated or blank, because the rendering has hard size limits.</li>
-      <li><strong>Web apps that scroll inside a panel.</strong> If the page body barely scrolls and
-      the real content lives in an inner container, as in many mail and chat apps, the capture is
-      effectively just the viewport.</li>
+      <li><strong>Web apps where only the middle of the window scrolls.</strong> If the page itself
+      barely moves and the real content lives in an inner panel, as in many mail and chat apps, the
+      capture is effectively just what was on your screen.</li>
       <li><strong>Repetition.</strong> Four keystrokes and a menu search, every single time.</li>
     </ul>
 
@@ -148,17 +148,18 @@
 
     <h2>How to screenshot only part of a page</h2>
 
-    <p>Three of screencappy's four capture modes take less than the whole page:</p>
+    <p>Three of screencappy's four ways to capture take less than the whole page:</p>
 
     <ul>
       <li><strong>Visible area</strong> (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>): exactly what
-      is on screen right now.</li>
-      <li><strong>Select a region</strong> (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>): drag a
-      box. You can scroll mid-selection, so the region can be taller than the viewport.</li>
-      <li><strong>Pick an element</strong>: hover to highlight the node under the cursor, the way
-      the DevTools inspector does, then click to capture exactly that element. A scrollable
-      container comes back with all of its content, and an iframe comes back in full rather than
-      just the part visible inside its box.</li>
+      is on your screen right now.</li>
+      <li><strong>Select an area</strong> (<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>): drag a box
+      around what you want. You can keep scrolling while you drag, so the area can be taller than
+      your screen.</li>
+      <li><strong>Pick one thing</strong>: point at a photo, a table or a post and screencappy
+      highlights it as you move, then click to capture exactly that with nothing around it. A panel
+      with its own scrollbar comes back with all of its content, and an iframe comes back in full
+      rather than just the part showing inside its box.</li>
     </ul>
 
     <h2>How to save a full page screenshot as a PDF</h2>
@@ -175,14 +176,20 @@
 
     <h2>How to capture a page that is extremely long</h2>
 
-    <p>Very tall pages are where most screenshot tools break, because browsers cap how large a single
-    canvas can be. screencappy holds the composed image as strips rather than one canvas, so pages
-    past that ceiling still render. If the result is too large for one file, the export splits into
-    numbered files or additional PDF pages instead of failing.</p>
+    <p>Very tall pages are where most screenshot tools break, because there is a limit to how large
+    a browser will let a single image be. screencappy builds and keeps the picture in strips rather
+    than as one enormous image, so pages past that ceiling still work. If the result is too large
+    for one file, the export splits into numbered files or additional PDF pages instead of
+    failing.</p>
 
     <p>For pages that load more content as you scroll, turn on auto-load in Settings. screencappy
     keeps scrolling until the page stops growing, within a height and time budget, and captures what
     has loaded.</p>
+
+    <p>Occasionally a page reports a height so large that no tool could capture all of it, usually
+    because of a layout mistake rather than real content. screencappy stops and tells you why, then
+    lets you capture as much as it can, capture only what is on your screen, or cancel, rather than
+    quietly handing you half a picture.</p>
 
     <h2>How to capture a page at mobile width</h2>
 

@@ -82,7 +82,7 @@
     <p>screencappy collects nothing. There is no network code in the extension at all: no analytics, no telemetry, no accounts, no cloud storage, and no third-party services.</p>
 
     <h2>What happens to your screenshots</h2>
-    <p>Captures, annotations, and capture history are stored locally in your browser (IndexedDB) on your device. They are deleted when you delete them, when history pruning removes old captures, or when you uninstall the extension. They are never transmitted anywhere.</p>
+    <p>Your screenshots stay on your computer and are never sent anywhere. Captures, annotations, and capture history are stored locally in your browser (IndexedDB) on your own device. They are deleted when you delete them, when history pruning removes old captures, or when you uninstall the extension.</p>
 
     <h2>Settings</h2>
     <p>Your preferences (output format, filename template, and similar) are stored with your browser profile using your browser's extension storage. If you have browser sync enabled, your browser may sync these preferences between your own devices. This is browser functionality under your control; screencappy has no server involved.</p>
@@ -93,9 +93,9 @@
       <li><strong>downloads</strong>: saves exported images and PDFs to your computer.</li>
       <li><strong>storage, unlimitedStorage</strong>: stores settings and local capture history.</li>
       <li><strong>contextMenus</strong>: adds the right-click capture options.</li>
-      <li><strong>debugger</strong> (power build only): the version downloaded from GitHub declares this permission for its advanced captures. It attaches only while one of those captures runs, and your browser shows a banner the whole time. The store version does not include this permission at all.</li>
+      <li><strong>debugger</strong> (power build only): the version downloaded from GitHub declares this permission for its advanced captures. It attaches only while one of those captures runs, and your browser shows a banner the whole time. The store version does not include this permission at all, and requests only the six above.</li>
     </ul>
-    <p>screencappy requests no host permissions and cannot read any page until you invoke it.</p>
+    <p>screencappy asks for no access to any website. It cannot see any web page until the moment you ask it to take a screenshot, and that access covers only the tab you are looking at, only at that moment.</p>
 
     <h2>Changes</h2>
     <p>Any change to this policy will be published at this address, with the source history visible in the public repository.</p>

@@ -91,7 +91,7 @@
             "name": "What are the downsides of the DevTools method?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "Three, and the first is the one that sends most people looking for something else. It takes six interactions every time, including opening developer tooling and switching the page into a simulated device viewport, which can change how the page renders. It has no annotation, no cropping and no blur, so anything you need to mark up goes into a separate editor. And Chrome does not document how it handles lazy loaded images, sticky headers or very tall pages, which are exactly the cases where full page capture tends to go wrong."
+              "text": "Three, and the first is the one that sends most people looking for something else. It takes six interactions every time, including opening developer tooling and switching the page into a simulated phone or tablet screen, which can change how the page looks. It has no annotation, no cropping and no blur, so anything you need to mark up goes into a separate editor. And Chrome does not document how it handles photos that only load once you scroll to them, menus that follow you down the page, or very tall pages, which are exactly the cases where full page capture tends to go wrong."
             }
           },
           {
@@ -156,10 +156,11 @@
     <p>Three, and the first is the one that sends most people looking for something else.</p>
 
     <p>It takes six interactions every time, including opening developer tooling and switching the
-    page into a simulated device viewport, which can change how the page renders. It has no
+    page into a simulated phone or tablet screen, which can change how the page looks. It has no
     annotation, no cropping and no blur, so anything you need to mark up goes into a separate
-    editor. And Chrome does not document how it handles lazy loaded images, sticky headers or very
-    tall pages, which are exactly the cases where full page capture tends to go wrong.</p>
+    editor. And Chrome does not document how it handles photos that only load once you scroll to
+    them, menus that follow you down the page, or very tall pages, which are exactly the cases where
+    full page capture tends to go wrong.</p>
 
     <h2>Does Firefox have this built in?</h2>
 
@@ -223,9 +224,9 @@
             <td>None</td>
           </tr>
           <tr>
-            <th scope="row">Host permissions</th>
-            <td>Not applicable</td>
-            <td>None requested</td>
+            <th scope="row">Access to your pages</th>
+            <td>Not applicable, it is part of Chrome</td>
+            <td>None asked for, only when you invoke it</td>
           </tr>
         </tbody>
       </table>
