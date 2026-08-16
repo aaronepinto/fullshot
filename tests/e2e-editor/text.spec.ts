@@ -176,7 +176,7 @@ test.describe('Item 2: style capture and toolbar focus safety', () => {
     await editor.tool('text');
     await editor.click(200, 200);
     await page.keyboard.type('coloured');
-    await page.click('.swatch[title="#22c55e"]');
+    await page.click('.swatch[data-color="#22c55e"]');
     await page.keyboard.press('Enter');
 
     const state = await editor.state();
@@ -190,7 +190,7 @@ test.describe('Item 2: style capture and toolbar focus safety', () => {
     await editor.click(200, 200);
     await page.keyboard.type('focus');
 
-    await page.click('.swatch[title="#3b82f6"]');
+    await page.click('.swatch[data-color="#3b82f6"]');
     expect(await editor.activeTestId()).toBe('text-input');
     await page.selectOption('#fontSize', '24');
     expect(await editor.activeTestId()).toBe('text-input');

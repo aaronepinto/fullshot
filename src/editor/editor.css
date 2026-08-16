@@ -234,7 +234,10 @@ svg {
 .menu button { text-align: left; border-radius: var(--radius-xs); color: var(--text-secondary); }
 .menu button:hover { color: var(--text-primary); }
 .menu hr { border: none; border-top: 1px solid var(--border-hairline); margin: 4px 0; }
-.actions { display: flex; align-items: center; gap: 4px; position: relative; }
+/* margin-left rather than only the spacer: when the bar wraps, the spacer stays on
+   the first row and the actions would otherwise start hard against the left edge of
+   the second, reading as a separate toolbar. */
+.actions { display: flex; align-items: center; gap: 4px; position: relative; margin-left: auto; }
 .split { display: flex; position: relative; }
 .split .primary:first-child { border-radius: var(--radius-xs) 0 0 var(--radius-xs); }
 .split .caret {
@@ -299,7 +302,10 @@ kbd {
   color: var(--text-primary);
 }
 
-#canvas:focus { outline: none; }
+/* The canvas is a tab stop, so a keyboard focus has to be visible on it; only the
+   ring a pointer press would have drawn is suppressed. */
+#canvas:focus:not(:focus-visible) { outline: none; }
+#canvas:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 
 /* Only the textarea takes clicks: the overlay's padding and its hint line must not
    swallow a click meant for the canvas underneath. */
@@ -379,6 +385,12 @@ kbd {
 .zoomctl button { padding: 2px 8px; color: var(--text-secondary); }
 .zoomctl button:hover { color: var(--text-primary); }
 #statZoom { min-width: 44px; text-align: right; }
+#statDims { white-space: nowrap; }
+/* Narrow enough that everything in the bar wraps onto a second line: the hint is
+   the one item that can go, rather than every item losing its place. */
+@media (max-width: 1100px) {
+  .statusbar .hint { display: none; }
+}
 
 /* ---- Right-hand drawers ---- */
 /* Inside the viewport rather than fixed to the window, so the toolbars and the
@@ -388,7 +400,9 @@ kbd {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 300px;
+  /* The same width as the history drawer: two drawers that open into the same slot
+     must not resize it as you switch between them. */
+  width: 320px;
   z-index: 60;
   background: var(--surface-raised);
   border-left: 1px solid var(--border-hairline);
@@ -411,10 +425,12 @@ kbd {
   text-transform: uppercase;
   color: var(--text-tertiary);
 }
+/* 6px of gutter plus the row's own 8px puts a row's text on the same 14px line as
+   the drawer title and its hint, instead of 4px inside them. */
 #annoList {
   list-style: none;
   margin: 0;
-  padding: 0 10px 10px;
+  padding: 0 6px 10px;
   overflow-y: auto;
   flex: 1;
 }
@@ -521,7 +537,7 @@ kbd {
 #historyList {
   list-style: none;
   margin: 0;
-  padding: 0 10px 10px;
+  padding: 0 6px 10px;
   overflow-y: auto;
   flex: 1;
 }
