@@ -222,14 +222,22 @@ export const HIJACK_NOTICE =
 export const IMPLAUSIBLE_HEIGHT = 1_000_000;
 
 /** Why a capture came back smaller than the whole page, when the reason is the page. */
-export type DegradeReason = 'huge' | 'clipped';
+export type DegradeReason = 'huge' | 'clipped' | 'embed';
 
 /** What the editor tells the user for each of those reasons. */
 export const DEGRADED_NOTICE: Record<DegradeReason, string> = {
   huge: 'This page reports an implausible height, so a full-page capture would never finish; captured the visible area',
   clipped:
     'The content below the fold is inside a container that cannot be scrolled, so only the visible area could be captured',
+  embed:
+    'This page is an embedded viewer whose content the page cannot scroll, so only the visible area could be captured',
 };
+
+/**
+ * How much of the viewport a plugin-backed viewer must cover before the capture treats
+ * the page as being that viewer rather than a page that happens to contain one.
+ */
+export const OPAQUE_EMBED_COVERAGE = 0.6;
 
 /**
  * How much clipped-away content a wrapper must be hiding before the capture mentions it,

@@ -59,7 +59,9 @@ const ROOT = new URL('..', import.meta.url).pathname;
  * @property {string} [note] Substring the editor's status note must show; '' asserts none.
  * @property {{ width: number, height: number }} [viewport] Non-default window size.
  * @property {Record<string, unknown>} [settings] Extension settings to apply for this run.
- * @property {number} [maxMs] Wall-clock ceiling for the whole run, ms.
+ * @property {number} [maxMs] Wall-clock ceiling for the whole run, ms. Generous unless the
+ *   time is the point of the scenario: this guards against a hang, not against a busy
+ *   machine, and a run competing with other browsers on the host is several times slower.
  * @property {ColorCheck[]} [colors] Per-colour pixel-count assertions.
  * @property {PointCheck[]} [points] Exact colours at fixed composed coordinates.
  * @property {SequenceCheck} [sequence] Index-encoded bands read down one column.
@@ -233,7 +235,7 @@ export const GAUNTLET = [
     minH: 800,
     maxH: 800,
     note: '',
-    maxMs: 30_000,
+    maxMs: 60_000,
     colors: [
       { name: 'sticky header', rgb: FURNITURE.header, count: FURN.full(FURNITURE_BOX.headerH), topY: 0 },
       { name: 'bottom bar', rgb: FURNITURE.bottomBar, count: FURN.full(FURNITURE_BOX.barH), bottomY: -1 },
@@ -352,7 +354,7 @@ export const GAUNTLET = [
     minH: 2600,
     maxH: 2600,
     note: '',
-    maxMs: 60_000,
+    maxMs: 120_000,
     sequence: { x: 560, y0: 100, dy: 200, count: 13 },
     colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
   },
@@ -365,7 +367,7 @@ export const GAUNTLET = [
     minH: 2600,
     maxH: 2600,
     note: '',
-    maxMs: 60_000,
+    maxMs: 120_000,
     sequence: { x: 560, y0: 100, dy: 200, count: 13 },
     colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
   },
@@ -380,7 +382,7 @@ export const GAUNTLET = [
     minH: 800,
     maxH: 800,
     note: 'cannot be scrolled',
-    maxMs: 30_000,
+    maxMs: 60_000,
     points: [{ name: 'first band', x: 600, y: 200, rgb: indexColor(0) }],
   },
   // The same page with a scrollable wrapper: all 4000px, and nothing to warn about.
@@ -405,7 +407,7 @@ export const GAUNTLET = [
     minH: 5000,
     maxH: 5000,
     note: '',
-    maxMs: 60_000,
+    maxMs: 180_000,
     sequence: { x: 600, y0: 100, dy: 200, count: 25 },
   },
   // The same document behind an <embed>, which is what Chrome's PDF viewer uses and which
@@ -419,7 +421,7 @@ export const GAUNTLET = [
     minH: 800,
     maxH: 800,
     note: 'embedded viewer',
-    maxMs: 30_000,
+    maxMs: 60_000,
     gap: 'the scroll-and-stitch engine cannot reach inside <embed>',
   },
 ];
