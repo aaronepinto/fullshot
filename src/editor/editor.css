@@ -460,11 +460,13 @@ kbd {
   color: var(--text-tertiary);
 }
 /* 6px of gutter plus the row's own 8px puts a row's text on the same 14px line as
-   the drawer title and its hint, instead of 4px inside them. */
+   the drawer title and its hint, instead of 4px inside them. The 6px top gutter is
+   load-bearing too: the selection and focus rings draw up to 4px outside a row, and
+   this is a scroll container, so a flush first row gets its ring cropped. */
 #annoList {
   list-style: none;
   margin: 0;
-  padding: 0 6px 10px;
+  padding: 6px 6px 10px;
   overflow-y: auto;
   flex: 1;
 }
@@ -575,7 +577,8 @@ kbd {
 #historyList {
   list-style: none;
   margin: 0;
-  padding: 0 6px 10px;
+  /* Top gutter for the same reason as #annoList: rings crop in a scroll box. */
+  padding: 6px 6px 10px;
   overflow-y: auto;
   flex: 1;
 }

@@ -78,3 +78,27 @@ test('the panel follows undo and redo', async ({ editor, page }) => {
   await page.click('#btnRedo');
   await expect(rows).toHaveCount(3);
 });
+
+test('the first row\'s rings are never cropped by the scroll box', async ({ editor, page }) => {
+  await threeShapes(editor);
+
+  // The selection ring and the focus ring draw up to 4px outside a row. Both
+  // lists scroll, and a scroll box crops anything outside its padding edge, so
+  // the first row must sit at least that far inside on the top and both sides.
+  for (const [openBtn, listSel] of [
+    ['#btnAnnos', '#annoList'],
+    ['#btnHistory', '#historyList'],
+  ] as const) {
+    if (!(await page.locator(listSel).isVisible())) await page.click(openBtn);
+    const gap = await page.evaluate((sel) => {
+      const list = document.querySelector(sel)!;
+      const row = list.querySelector('li')!;
+      const a = list.getBoundingClientRect();
+      const b = row.getBoundingClientRect();
+      return { top: b.top - a.top, left: b.left - a.left, right: a.right - b.right };
+    }, listSel);
+    expect(gap.top, `${listSel} top`).toBeGreaterThanOrEqual(4);
+    expect(gap.left, `${listSel} left`).toBeGreaterThanOrEqual(4);
+    expect(gap.right, `${listSel} right`).toBeGreaterThanOrEqual(4);
+  }
+});
