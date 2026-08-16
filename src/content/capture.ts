@@ -11,6 +11,7 @@ import {
   IMAGE_WAIT,
   IMPLAUSIBLE_HEIGHT,
   MAX_SCAN_NODES,
+  OPAQUE_EMBED_COVERAGE,
   SETTLE,
   fixedEdge,
   hasFixedBackground,
@@ -94,6 +95,24 @@ interface PinnedEl {
    * measuring the page correctly still loses everything below the fold. Only asked when
    * the page is one viewport and no scroller was found, so it costs nothing on long pages.
    */
+  /**
+   * A plugin-backed viewer filling the window, a PDF above all. There is no document
+   * behind an <embed> to scroll, so the visible area is all the stitch engine can honestly
+   * offer, and it says so rather than handing back page one of forty.
+   */
+  function opaqueEmbed(): DegradeReason | undefined {
+    for (const el of document.querySelectorAll<HTMLElement>('embed, object')) {
+      const r = el.getBoundingClientRect();
+      if (
+        r.width >= window.innerWidth * OPAQUE_EMBED_COVERAGE &&
+        r.height >= window.innerHeight * OPAQUE_EMBED_COVERAGE
+      ) {
+        return 'embed';
+      }
+    }
+    return undefined;
+  }
+
   function clippedAway(): DegradeReason | undefined {
     const el = findScrollContainer(true);
     const hidden = el ? el.scrollHeight - el.clientHeight : 0;
@@ -161,7 +180,8 @@ interface PinnedEl {
       };
     }
 
-    const degraded = degradeFor(rawH) ?? (shortPage ? clippedAway() : undefined);
+    const degraded =
+      degradeFor(rawH) ?? (shortPage ? (opaqueEmbed() ?? clippedAway()) : undefined);
     const truncated = !degraded && rawH > maxHeight;
     return {
       pageW,
@@ -178,6 +198,19 @@ interface PinnedEl {
     };
   }
 
+  /**
+   * Content height an element has to offer. A same-origin iframe reports its own border
+   * box as its scrollHeight, so an app or a document living entirely inside one looks flat
+   * from out here; what it actually holds is its document's height. This is what lets the
+   * viewer-shaped page (a paginated document filling the window) be captured whole.
+   */
+  function contentHeight(el: HTMLElement): number {
+    if (!(el instanceof HTMLIFrameElement)) return el.scrollHeight;
+    const doc = accessibleFrameDoc(el);
+    const se = doc?.scrollingElement ?? doc?.documentElement;
+    return se ? se.scrollHeight : el.scrollHeight;
+  }
+
   function findScrollContainer(ignoreOverflow = false): HTMLElement | null {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
@@ -189,11 +222,14 @@ interface PinnedEl {
       const el = all[i]!;
       const ch = el.clientHeight;
       // Cheap geometry pre-filter before the expensive computed-style read.
-      if (ch === 0 || el.scrollHeight <= ch + 100 || el.clientWidth * ch < minArea) continue;
+      if (ch === 0 || el.clientWidth * ch < minArea) continue;
+      const scrollHeight = contentHeight(el);
+      if (scrollHeight <= ch + 100) continue;
       candidates.push({
         el,
-        overflowY: getComputedStyle(el).overflowY,
-        scrollHeight: el.scrollHeight,
+        // A frame scrolls its own document, whatever the frame element's own overflow says.
+        overflowY: el instanceof HTMLIFrameElement ? 'auto' : getComputedStyle(el).overflowY,
+        scrollHeight,
         clientWidth: el.clientWidth,
         clientHeight: ch,
       });
