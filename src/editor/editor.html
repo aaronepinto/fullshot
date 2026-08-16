@@ -11,53 +11,61 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand" title="screencappy">
+    <div class="brand">
       <img src="icons/icon32.png" alt="" width="22" height="22" />
       <span>screencappy</span>
     </div>
 
     <!-- Icons throughout this page are Lucide (lucide.dev), ISC licensed. -->
     <div class="toolgroup" id="tools" role="toolbar" aria-label="Annotation tools">
-      <button data-tool="select" class="tool active" title="Select / move (V)" aria-label="Select / move" aria-pressed="true">
+      <button data-tool="select" class="tool active" title="Select / move (V)" aria-label="Select / move" aria-pressed="true" tabindex="0">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
       </button>
-      <button data-tool="crop" class="tool" title="Crop (C)" aria-label="Crop" aria-pressed="false">
+      <button data-tool="crop" class="tool" title="Crop (C)" aria-label="Crop" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
       </button>
       <span class="sep"></span>
-      <button data-tool="arrow" class="tool" title="Arrow (A)" aria-label="Arrow" aria-pressed="false">
+      <button data-tool="arrow" class="tool" title="Arrow (A)" aria-label="Arrow" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5H19V11"/><path d="M19 5L5 19"/></svg>
       </button>
-      <button data-tool="line" class="tool" title="Line (L)" aria-label="Line" aria-pressed="false">
+      <button data-tool="line" class="tool" title="Line (L)" aria-label="Line" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 2 22"/></svg>
       </button>
-      <button data-tool="rect" class="tool" title="Rectangle (R)" aria-label="Rectangle" aria-pressed="false">
+      <button data-tool="rect" class="tool" title="Rectangle (R)" aria-label="Rectangle" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
       </button>
-      <button data-tool="ellipse" class="tool" title="Ellipse (O)" aria-label="Ellipse" aria-pressed="false">
+      <button data-tool="ellipse" class="tool" title="Ellipse (O)" aria-label="Ellipse" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
       </button>
-      <button data-tool="pen" class="tool" title="Pen (P)" aria-label="Pen" aria-pressed="false">
+      <button data-tool="pen" class="tool" title="Pen (P)" aria-label="Pen" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
       </button>
-      <button data-tool="highlight" class="tool" title="Highlighter (H)" aria-label="Highlighter" aria-pressed="false">
+      <button data-tool="highlight" class="tool" title="Highlighter (H)" aria-label="Highlighter" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
       </button>
-      <button data-tool="text" class="tool" title="Text (T)" aria-label="Text" aria-pressed="false">
+      <button data-tool="text" class="tool" title="Text (T)" aria-label="Text" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg>
       </button>
       <!-- lucide/eye-off: the clearest "hide this" of the family. droplets reads as
            water and scan-face as face detection, but the tool redacts any region. -->
-      <button data-tool="blur" class="tool" title="Blur / redact (B)" aria-label="Blur / redact" aria-pressed="false">
+      <button data-tool="blur" class="tool" title="Blur / redact (B)" aria-label="Blur / redact" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
       </button>
-      <button data-tool="emoji" class="tool" title="Emoji stamp (E)" aria-label="Emoji stamp" aria-pressed="false">
+      <button data-tool="emoji" class="tool" title="Emoji stamp (E)" aria-label="Emoji stamp" aria-pressed="false" tabindex="-1">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10V9"/><path d="M16.472 15a6 6 0 01-8.943 0"/><path d="M9 10V9"/><circle cx="12" cy="12" r="10"/></svg>
       </button>
     </div>
 
     <div class="stylebar" id="stylebar">
-      <div class="swatches" id="swatches" role="group" aria-label="Annotation colour"></div>
+      <!-- The tool row ends here: without it the colour button reads as a twelfth tool. -->
+      <span class="sep"></span>
+      <div class="anchor">
+        <button class="ctl" id="colorCurrent" title="Annotation colour" aria-label="Annotation colour" aria-expanded="false" aria-haspopup="true">
+          <span class="swatch-dot" id="colorDot"></span>
+        </button>
+        <!-- Nine swatches inline pushed the toolbar onto a second row below 1340px. -->
+        <div class="swatches popover" id="swatches" role="toolbar" aria-orientation="horizontal" aria-label="Annotation colour" hidden></div>
+      </div>
       <label class="ctl" id="ctlWidth" title="Stroke width">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3.5c5-2 7 2.5 3 4C1.5 10 2 15 5 16c5 2 9-10 14-7s.5 13.5-4 12c-5-2.5.5-11 6-2"/></svg>
         <select id="strokeWidth">
@@ -79,8 +87,10 @@
       <label class="ctl checkbox" id="ctlFill" title="Fill shape">
         <input type="checkbox" id="fillShape" /><span>Fill</span>
       </label>
-      <button class="ctl" id="emojiCurrent" title="Pick emoji" aria-label="Pick emoji" aria-expanded="false" hidden>😀</button>
-      <div id="emojiPicker" class="popover" role="group" aria-label="Emoji stamps" hidden></div>
+      <div class="anchor" id="emojiAnchor" hidden>
+        <button class="ctl" id="emojiCurrent" title="Pick emoji" aria-label="Pick emoji" aria-expanded="false" aria-haspopup="true">😀</button>
+        <div id="emojiPicker" class="popover" role="group" aria-label="Emoji stamps" hidden></div>
+      </div>
     </div>
 
     <div class="spacer"></div>
@@ -175,10 +185,10 @@
     <span class="spacer"></span>
     <a id="statUrl" target="_blank" rel="noreferrer" hidden></a>
     <span class="sep"></span>
-    <div class="zoomctl" role="group" aria-label="Zoom">
+    <div class="zoomctl" id="zoomctl" role="group" aria-label="Zoom">
       <button id="zoomOut" title="Zoom out (⌘−)">−</button>
       <button id="zoomFit" title="Fit width (⌘9)">Fit</button>
-      <button id="zoom100" title="Actual size (⌘0)">100%</button>
+      <button id="zoom100" title="Actual size (⌘0)">1:1</button>
       <button id="zoomIn" title="Zoom in (⌘+)">+</button>
       <span id="statZoom" data-testid="stat-zoom"></span>
     </div>

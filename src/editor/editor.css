@@ -160,7 +160,10 @@ svg {
 }
 .brand img { border-radius: 6px; }
 .toolgroup { display: flex; align-items: center; gap: 2px; }
-.tool { color: var(--text-secondary); }
+/* Between the 24px of a text button and the 12px of an icon action: the tools stay
+   the visually heavier row without spending 132px of the bar on padding, which is
+   what pushed the bar onto a second line as soon as a tool showed its own controls. */
+.tool { color: var(--text-secondary); padding: 6px 9px; }
 .tool:hover { color: var(--text-primary); }
 .tool.active {
   background: var(--accent-quiet);
@@ -169,8 +172,25 @@ svg {
 }
 
 /* ---- Style bar ---- */
-.stylebar { display: flex; align-items: center; gap: 8px; margin-left: 10px; position: relative; }
+.stylebar { display: flex; align-items: center; gap: 8px; margin-left: 10px; }
+/* Popovers hang from the control that opens them rather than from the end of the
+   bar, so the panel points at what it belongs to. */
+.anchor { position: relative; display: inline-flex; }
 .swatches { display: flex; gap: 5px; }
+#colorCurrent {
+  padding: 3px;
+  line-height: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xs);
+}
+/* The ring keeps the white and ink swatches visible against the raised surface. */
+.swatch-dot {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
 /* Annotation colours are the user's content rather than page chrome, so the
    functional palette stays exactly as it is; only the ring around the active
    one belongs to the system. */
@@ -181,8 +201,14 @@ svg {
   border: 2px solid transparent;
   padding: 0;
   cursor: pointer;
+  /* The ink swatch is within a few percent of the surface it sits on, so without a
+     ring it reads as an empty hole in the row. */
+  box-shadow: inset 0 0 0 1px var(--border-default);
 }
-.swatch:hover { background: none; box-shadow: 0 0 0 2px var(--border-default); }
+.swatch:hover {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--border-default), 0 0 0 2px var(--border-default);
+}
 .swatch.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--surface-raised) inset;
@@ -215,7 +241,7 @@ svg {
 .popover {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 50;
   background: var(--surface-raised);
   border: 1px solid var(--border-hairline);
@@ -224,13 +250,15 @@ svg {
   padding: 6px;
 }
 #emojiPicker {
-  left: auto;
   display: grid;
   grid-template-columns: repeat(6, 34px);
 }
 #emojiPicker button { font-size: 20px; padding: 4px; }
 .menu { display: flex; flex-direction: column; min-width: 180px; }
-#ctxMenu { top: 0; right: auto; z-index: 70; min-width: 150px; }
+#ctxMenu { top: 0; z-index: 70; min-width: 150px; }
+/* The one popover that belongs to the right end of the bar rather than to a
+   button in the middle of it. */
+#formatMenu { left: auto; right: 0; }
 .menu button { text-align: left; border-radius: var(--radius-xs); color: var(--text-secondary); }
 .menu button:hover { color: var(--text-primary); }
 .menu hr { border: none; border-top: 1px solid var(--border-hairline); margin: 4px 0; }
@@ -439,7 +467,7 @@ kbd {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 #annoList li:hover { background: var(--surface-raised-hover); }
@@ -460,8 +488,12 @@ kbd {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#annoList .del { padding: 2px 7px; color: var(--text-tertiary); }
-#annoList .del:hover { color: var(--danger); background: transparent; }
+#annoList .del,
+#historyList .del { padding: 4px; line-height: 0; color: var(--text-tertiary); flex: none; }
+#annoList .del:hover,
+#historyList .del:hover { color: var(--danger); background: transparent; }
+#annoList .del svg,
+#historyList .del svg { width: 14px; height: 14px; }
 #annoList .empty-row { color: var(--text-tertiary); cursor: default; }
 /* The crop is a property of the whole image rather than one more drawn object, so
    it reads as a header for the list rather than another row in it. */
@@ -568,8 +600,7 @@ kbd {
   text-overflow: ellipsis;
 }
 #historyList .meta .d { color: var(--text-tertiary); font-size: 11px; }
-#historyList .del { padding: 2px 7px; color: var(--text-tertiary); }
-#historyList .del:hover { color: var(--danger); background: transparent; }
+
 
 /* ---- Toast ---- */
 .toast {
