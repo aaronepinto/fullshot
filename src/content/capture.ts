@@ -9,6 +9,7 @@ import {
   HIJACK,
   MAX_SCAN_NODES,
   SETTLE,
+  fixedEdge,
   hasFixedBackground,
   intersectsViewport,
   movedEnough,
@@ -16,8 +17,10 @@ import {
   settleWatchMs,
   shouldContinueAutoLoad,
   shouldKeepSettling,
+  showsOnTile,
   walkShadowTree,
 } from '../lib/capture-common';
+import type { FixedEdge } from '../lib/capture-common';
 import type {
   CaptureContentMsg,
   PageMetrics,
@@ -33,6 +36,13 @@ interface SavedInline {
   priority: string;
 }
 
+/** A viewport-pinned element, the edge it is pinned to, and whether it is hidden now. */
+interface PinnedEl {
+  el: HTMLElement;
+  edge: FixedEdge;
+  hidden: boolean;
+}
+
 (() => {
   const w = window as typeof window & {
     __screencappyCapture?: boolean;
@@ -43,9 +53,8 @@ interface SavedInline {
   w.__screencappyCapture = true;
 
   let styleEls: HTMLStyleElement[] = [];
-  let fixedEls: HTMLElement[] = [];
+  let fixedEls: PinnedEl[] = [];
   let savedInline: SavedInline[] = [];
-  let fixedHidden = false;
   let originalScroll = { x: 0, y: 0 };
   let containerEl: HTMLElement | null = null;
   /** Set when the picked element is a same-origin iframe: scrolling happens in here. */
@@ -243,7 +252,13 @@ interface SavedInline {
         (el) => {
           const style = view.getComputedStyle(el);
           if (style.position === 'fixed') {
-            fixedEls.push(el as HTMLElement);
+            // Measured now, before anything scrolls, so the box is where the user sees it.
+            const edge = fixedEdge(
+              el.getBoundingClientRect(),
+              window.innerWidth,
+              window.innerHeight
+            );
+            fixedEls.push({ el: el as HTMLElement, edge, hidden: false });
           } else if (hideSticky && style.position === 'sticky') {
             setInline(el as HTMLElement, 'position', 'static');
           }
@@ -260,17 +275,25 @@ interface SavedInline {
     watcher = watchMutations();
   }
 
-  function setFixedHidden(hide: boolean) {
-    if (hide === fixedHidden) return;
-    fixedHidden = hide;
-    for (const el of fixedEls) {
+  /**
+   * Hides the pinned furniture that does not belong on this tile: a header shows on the
+   * first, a bottom bar or floating button on the last, a full-height rail on every one.
+   * The scroll container itself is never hidden - on a page whose real content lives in a
+   * fixed panel (a modal, an app shell) that panel *is* the capture.
+   */
+  function setFixedForTile(firstTile: boolean, lastTile: boolean) {
+    for (const pinned of fixedEls) {
+      if (pinned.el === containerEl || pinned.el.contains(containerEl)) continue;
+      const hide = !showsOnTile(pinned.edge, firstTile, lastTile);
+      if (hide === pinned.hidden) continue;
+      pinned.hidden = hide;
       if (hide) {
-        setInline(el, 'visibility', 'hidden');
+        setInline(pinned.el, 'visibility', 'hidden');
       } else {
         // restore just the visibility entries for this element
         for (let i = savedInline.length - 1; i >= 0; i--) {
           const s = savedInline[i]!;
-          if (s.el === el && s.prop === 'visibility') {
+          if (s.el === pinned.el && s.prop === 'visibility') {
             applySaved(s);
             savedInline.splice(i, 1);
           }
@@ -496,8 +519,14 @@ interface SavedInline {
     renderLatency = Math.max(renderLatency, watcher.lastAt - lastScrollAt);
   }
 
-  async function scrollTo(x: number, y: number, settleMs: number, hideFixed: boolean): Promise<ScrollResult> {
-    setFixedHidden(hideFixed);
+  async function scrollTo(
+    x: number,
+    y: number,
+    settleMs: number,
+    firstTile: boolean,
+    lastTile: boolean
+  ): Promise<ScrollResult> {
+    setFixedForTile(firstTile, lastTile);
     const s = scroller();
     noteRenderLatency();
     const watchMs = settleWatchMs(renderLatency);
@@ -537,7 +566,6 @@ interface SavedInline {
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);
     savedInline = [];
     fixedEls = [];
-    fixedHidden = false;
     const s = scroller();
     s.scrollLeft = originalScroll.x;
     s.scrollTop = originalScroll.y;
@@ -569,7 +597,7 @@ interface SavedInline {
       case 'fs:probeScroll':
         return probeScroll(msg.maxY);
       case 'fs:scrollTo':
-        return scrollTo(msg.x, msg.y, msg.settleMs, msg.hideFixed);
+        return scrollTo(msg.x, msg.y, msg.settleMs, msg.firstTile, msg.lastTile);
       case 'fs:restore':
         restore();
         return { ok: true };

@@ -481,7 +481,8 @@ async function stitchCapture(
           x: cols[c]!,
           y: rows[r]!,
           settleMs: settings.captureDelayMs,
-          hideFixed: r > 0 || c > 0,
+          firstTile: r === 0 && c === 0,
+          lastTile: r === rows.length - 1 && c === cols.length - 1,
         });
         const dataUrl = await captureVisibleThrottled(tab.windowId);
         await putTile({
