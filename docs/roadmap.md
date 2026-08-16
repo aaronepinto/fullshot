@@ -20,6 +20,11 @@ correctly today. Order within a section is rough priority, not commitment.
 
 ## later
 
+- **Agent bridge (MCP).** A local MCP server bridging to the extension over
+  native messaging, so coding agents can capture pages, including pages behind
+  the user's own logins, under a default-deny per-origin allowlist. Fully
+  specified in [agent-bridge.md](agent-bridge.md); estimated four to five
+  focused weeks across four milestones.
 - **Batch export to one PDF.** Combine several history captures into a single
   PDF document.
 - **AVIF export.** Alongside PNG, JPEG and WebP, once encoder support in
