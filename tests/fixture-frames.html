@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e nested frames fixture</title>
+  <style>
+    /* Frames, which competitors report as a family: single nesting works, double nesting
+       does not, framesets do not scroll at all, and a cross-origin frame raises the
+       question of canvas tainting. Here the outer page scrolls normally and holds a
+       same-origin frame, that frame holds a further same-origin frame, and beside them
+       sits a frame served from a second port on loopback, which is a genuinely foreign
+       origin without the browser leaving the machine.
+       Scrolling a frame's own overflow is the element picker's job, not full-page
+       capture's: what full-page capture owes here is the frames as the user sees them,
+       at the right offsets, with the cross-origin one neither blank nor fatal. */
+    body { margin: 0; font: 700 32px/200px system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    #head, #foot { height: 200px; padding-left: 40px; }
+    #head { background: rgb(6, 90, 160); }
+    #foot { background: rgb(7, 90, 160); }
+    #row { height: 400px; }
+    iframe { position: absolute; border: 0; height: 400px; }
+    #near { left: 40px; width: 600px; }
+    #far { left: 680px; width: 500px; }
+    #spacer { height: 800px; background: repeating-linear-gradient(#f8fafc 0 40px, #e2e8f0 40px 80px); }
+  </style>
+</head>
+<body>
+  <div id="head">Outer page, above the frames</div>
+  <div id="row" style="position: relative">
+    <iframe id="near" src="/frames-inner"></iframe>
+    <iframe id="far" src="__ALT_ORIGIN__/frames-foreign"></iframe>
+  </div>
+  <div id="spacer"></div>
+  <div id="foot">Outer page, below the frames</div>
+</body>
+</html>
