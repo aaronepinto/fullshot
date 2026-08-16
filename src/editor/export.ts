@@ -98,6 +98,7 @@ export async function copyToClipboard(src: ExportSource): Promise<'ok' | 'split'
   return all.length > 1 ? 'split' : 'ok';
 }
 
+/** Downloads the blobs and returns the download ids, in the order they started. */
 export async function downloadBlobs(
   blobs: Blob[],
   baseName: string,

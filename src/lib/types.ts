@@ -120,7 +120,13 @@ export type RuntimeMsg =
       /** Set when the picked element is a cross-origin iframe: its resolved src URL. */
       frameUrl?: string;
     }
-  | { type: 'fs:element-cancel' };
+  | { type: 'fs:element-cancel' }
+  /**
+   * Sent by the editor once an automatic download has been kicked off, with the
+   * ids of the downloads it started. An empty list means the export failed or the
+   * user dismissed the Save As dialog, and the tab has to stay open.
+   */
+  | { type: 'fs:autodownload'; ids: number[] };
 
 export const EDITOR_LIMITS = {
   /** Max safe canvas dimension we will ever allocate. */
