@@ -7,6 +7,7 @@
 import {
   AUTO_LOAD,
   HIJACK,
+  IMAGE_WAIT,
   MAX_SCAN_NODES,
   SETTLE,
   fixedEdge,
@@ -66,6 +67,8 @@ interface PinnedEl {
   let lastScrollAt = 0;
   /** Slowest reaction to a scroll seen in this run, ms: how long the next tile waits. */
   let renderLatency = 0;
+  /** What is left of the run's budget for waiting on images still on the wire, ms. */
+  let imageBudgetMs = IMAGE_WAIT.totalMs;
 
   const scroller = () =>
     frameDoc
@@ -509,6 +512,58 @@ interface PinnedEl {
     };
   }
 
+  /** Images on screen that have been asked for and have not arrived yet. */
+  function pendingImages(): HTMLImageElement[] {
+    const vpW = window.innerWidth;
+    const vpH = window.innerHeight;
+    const out: HTMLImageElement[] = [];
+    let scanned = 0;
+    for (const doc of frameDoc ? [document, frameDoc] : [document]) {
+      const images = doc.images;
+      for (let i = 0; i < images.length && scanned < IMAGE_WAIT.maxScanned; i++, scanned++) {
+        const img = images[i]!;
+        if (img.complete) continue;
+        if (!intersectsViewport(img.getBoundingClientRect(), vpW, vpH)) continue;
+        out.push(img);
+      }
+    }
+    return out;
+  }
+
+  function imageSettled(img: HTMLImageElement): Promise<void> {
+    return new Promise((resolve) => {
+      const done = () => {
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+        resolve();
+      };
+      img.addEventListener('load', done);
+      img.addEventListener('error', done);
+    });
+  }
+
+  /**
+   * Holds the shot while images this tile will show are still on their way. The mutation
+   * settle cannot cover this: a requested image mutates nothing while it waits, so a
+   * page of lazy images on a slow connection stitches together out of placeholders.
+   */
+  async function awaitImages() {
+    if (imageBudgetMs <= 0) return;
+    const startedAt = Date.now();
+    const deadline = startedAt + Math.min(imageBudgetMs, IMAGE_WAIT.perTileMs);
+    for (;;) {
+      const pending = pendingImages();
+      const left = deadline - Date.now();
+      if (!pending.length || left <= 0) break;
+      // Racing the sleep bounds the wait; looping again picks up images that only
+      // started loading once the ones ahead of them finished.
+      await Promise.race([Promise.all(pending.map(imageSettled)), sleep(left)]);
+    }
+    imageBudgetMs -= Date.now() - startedAt;
+    // One frame for the decoded image to actually paint.
+    await nextFrame();
+  }
+
   /**
    * Folds the previous tile's reaction into the run's render latency. The observer keeps
    * running while the tile is shot and stored, so a page that reacted only after the
@@ -553,6 +608,7 @@ interface PinnedEl {
       quiet = count === seen ? quiet + 1 : 0;
       seen = count;
     }
+    await awaitImages();
     return { x: s.scrollLeft, y: s.scrollTop };
   }
 
@@ -561,6 +617,7 @@ interface PinnedEl {
     watcher = null;
     lastScrollAt = 0;
     renderLatency = 0;
+    imageBudgetMs = IMAGE_WAIT.totalMs;
     for (const styleEl of styleEls) styleEl.remove();
     styleEls = [];
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);
