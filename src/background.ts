@@ -615,6 +615,7 @@ async function stitchCapture(
           y: pos.y,
           cssW: metrics.vpW,
           cssH: metrics.vpH,
+          dpr: metrics.dpr,
           ...(crop ? { crop } : {}),
           blob,
         });

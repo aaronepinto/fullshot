@@ -751,7 +751,10 @@ async function runDprAxis(base) {
       defaultViewport: null,
       args: [
         '--no-first-run',
-        '--window-size=1200,800',
+        // An odd width on purpose: at 1.25x a viewport of 1200 CSS px lands on a whole
+        // number of device pixels and hides every rounding question this axis exists to
+        // ask, while a hosted runner's window chrome makes the width odd by accident.
+        '--window-size=1199,800',
         `--force-device-scale-factor=${dsf}`,
         ...(process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
       ],

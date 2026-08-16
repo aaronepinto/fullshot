@@ -10,6 +10,7 @@ import {
   putCapture,
   putStrip,
 } from '../lib/db';
+import { pixelScale } from '../lib/capture-common';
 import { EDITOR_LIMITS, type CaptureRecord } from '../lib/types';
 
 export interface BigImage {
@@ -76,10 +77,11 @@ async function composeFromTiles(record: CaptureRecord): Promise<BigImage> {
   const tiles = await getTiles(record.id);
   if (!tiles.length) throw new Error('Capture data not found - it may have been pruned.');
 
-  // Derive the device-pixel scale from the first tile's actual bitmap size. Browser
-  // zoom and DPR are both captured by this single factor.
+  // Browser zoom and DPR both land in this one factor; see pixelScale for why the page's
+  // own number beats the one the bitmap implies.
   const first = await createImageBitmap(tiles[0]!.blob);
-  const scale = tiles[0]!.cssW > 0 ? first.width / tiles[0]!.cssW : 1;
+  const measured = tiles[0]!.cssW > 0 ? first.width / tiles[0]!.cssW : 1;
+  const scale = pixelScale(measured, tiles[0]!.dpr ?? 0);
   const width = Math.max(1, Math.round(record.clip.w * scale));
   const height = Math.max(1, Math.round(record.clip.h * scale));
 
