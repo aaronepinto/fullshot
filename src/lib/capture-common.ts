@@ -157,6 +157,21 @@ export function shouldKeepSettling(
   return quietFrames < SETTLE.quietFrames || quietForMs < SETTLE.quietMs;
 }
 
+/**
+ * Waiting for images that are still arriving. A settle that only watches DOM mutations
+ * cannot see this: an <img> that has been asked for and not yet answered mutates nothing
+ * while it waits, so a lazy image on a slow connection lands in the tile as its
+ * placeholder. Both bounds exist so one dead image cannot stall a whole capture.
+ */
+export const IMAGE_WAIT = {
+  /** Ceiling for any one tile, ms. */
+  perTileMs: 3000,
+  /** Ceiling for the whole capture, ms, spent across however many tiles need it. */
+  totalMs: 8000,
+  /** Images inspected per tile; beyond this the page is too big to pay for the check. */
+  maxScanned: 1500,
+} as const;
+
 /** Viewport-relative box, matching the fields of a DOMRect that we care about. */
 export interface Box {
   top: number;
