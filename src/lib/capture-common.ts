@@ -221,12 +221,27 @@ export const HIJACK_NOTICE =
  */
 export const IMPLAUSIBLE_HEIGHT = 1_000_000;
 
+/**
+ * What to do about a page reporting an impossible height. The engine does not get to
+ * decide this on the user's behalf: the default is to ask, and the setting exists for
+ * people who have made their mind up.
+ */
+export type HugePageAction = 'ask' | 'limit' | 'visible';
+
+/** What the user chose at the prompt. */
+export type HugePageChoice = 'limit' | 'visible' | 'cancel';
+
+/** A CSS pixel count written the way a person reads it: 33554432 as 33,554,432 px. */
+export function formatPx(px: number): string {
+  return `${Math.round(px).toLocaleString('en-US')} px`;
+}
+
 /** Why a capture came back smaller than the whole page, when the reason is the page. */
 export type DegradeReason = 'huge' | 'clipped' | 'embed';
 
 /** What the editor tells the user for each of those reasons. */
 export const DEGRADED_NOTICE: Record<DegradeReason, string> = {
-  huge: 'This page reports an implausible height, so a full-page capture would never finish; captured the visible area',
+  huge: 'This page reports an implausible height, so only the visible area was captured',
   clipped:
     'The content below the fold is inside a container that cannot be scrolled, so only the visible area could be captured',
   embed:
@@ -245,6 +260,45 @@ export const OPAQUE_EMBED_COVERAGE = 0.6;
  * content went missing, and saying so on every such page would train the note out.
  */
 export const CLIPPED_MIN_OVERFLOW = 0.5;
+
+/**
+ * Stopping a truncated capture once the page has stopped painting anything. A page that
+ * reports far more height than it has content leaves the tail of the grid as identical
+ * blank frames, and walking a ceiling's worth of those costs a minute for nothing.
+ * Only ever applied to a capture already cut short at the height ceiling: on a page whose
+ * real height is known, every tile of it was asked for and every tile of it is kept.
+ */
+export const BLANK_TRIM = {
+  /** Consecutive uniform tiles, after real content, before the walk gives up. */
+  runTiles: 3,
+  /** Edge of the square the tile is sampled down to before being called uniform. */
+  sampleSize: 16,
+  /** Per-channel spread across that sample that still counts as one flat colour. */
+  tolerance: 4,
+} as const;
+
+/** Shown when the walk stopped early because the page had stopped painting. */
+export const BLANK_TRIM_NOTICE =
+  'The page reported far more height than it painted; the capture stops at the last content found';
+
+/**
+ * True when every pixel of an RGBA sample is the same colour within a tolerance, which is
+ * what a tile of nothing looks like. Alpha is ignored: a screenshot is always opaque.
+ */
+export function isUniform(data: ArrayLike<number>, tolerance: number): boolean {
+  if (data.length < 4) return true;
+  for (let channel = 0; channel < 3; channel++) {
+    let min = 255;
+    let max = 0;
+    for (let i = channel; i < data.length; i += 4) {
+      const v = data[i]!;
+      if (v < min) min = v;
+      if (v > max) max = v;
+      if (max - min > tolerance) return false;
+    }
+  }
+  return true;
+}
 
 /** Cap on elements visited by the prepare() sticky/fixed scan, across all documents. */
 export const MAX_SCAN_NODES = 80_000;

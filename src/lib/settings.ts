@@ -1,4 +1,5 @@
 import type { Engine } from './types';
+import type { HugePageAction } from './capture-common';
 
 export interface Settings {
   engine: Engine;
@@ -11,6 +12,7 @@ export interface Settings {
   freezeAnimations: boolean;
   prescroll: boolean;
   autoLoadMore: boolean; // keep scrolling to the bottom so infinite-scroll pages load first
+  hugePageAction: HugePageAction; // what to do when a page reports an impossible height
   afterCapture: 'editor' | 'download' | 'both';
   pdfPageMode: 'single' | 'a4' | 'letter';
   saveAs: boolean;
@@ -30,6 +32,7 @@ export const DEFAULTS: Settings = {
   freezeAnimations: true,
   prescroll: true,
   autoLoadMore: false,
+  hugePageAction: 'ask',
   afterCapture: 'editor',
   pdfPageMode: 'single',
   saveAs: false,

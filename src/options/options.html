@@ -80,6 +80,22 @@
       <div class="field checkbox"><label><input type="checkbox" id="freezeAnimations" /> Pause CSS animations during capture</label></div>
 
       <div class="field">
+        <label for="hugePageAction">When a page reports an impossible height</label>
+        <div class="control">
+          <select id="hugePageAction">
+            <option value="ask">Ask me what to capture (default)</option>
+            <option value="limit">Capture up to the max height below</option>
+            <option value="visible">Capture the visible area only</option>
+          </select>
+          <p class="hint">
+            Some sites report a document height of millions of pixels, which is a
+            measurement bug rather than real content. Walking all of it would take minutes
+            and produce mostly blank image.
+          </p>
+        </div>
+      </div>
+
+      <div class="field">
         <label for="maxCaptureHeight">Max capture height</label>
         <div class="control">
           <select id="maxCaptureHeight">

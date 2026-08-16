@@ -179,6 +179,13 @@ const FOREIGN = /** @type {[number, number, number]} */ ([200, 30, 90]);
 /** The page behind the modal, which must not reach the composed image at all. */
 const MODAL_BEHIND = /** @type {[number, number, number]} */ ([120, 120, 120]);
 
+/**
+ * The impossible-height page, with two screens of real content above its phantom spacer
+ * so "stopped at the last content" and "took the visible area" are different heights.
+ * Exported because the harness drives the in-page prompt over this page too.
+ */
+export const HUGE_PAGE_PATH = '/tall?h=33554432&content=1600';
+
 /** The bands at each end of the tall fixture. */
 const TALL = {
   top: /** @type {[number, number, number]} */ ([14, 165, 233]),
@@ -318,7 +325,7 @@ export const GAUNTLET = [
     note: '',
     maxMs: 300_000,
     points: [
-      { name: 'top band', x: 600, y: 100, rgb: TALL.top },
+      { name: 'top band', x: 700, y: 100, rgb: TALL.top },
       { name: 'bottom band', x: 600, y: -100, rgb: TALL.bottom },
       { name: 'last row', x: 600, y: -2, rgb: TALL.bottom },
     ],
@@ -335,23 +342,42 @@ export const GAUNTLET = [
     note: '',
     maxMs: 600_000,
     points: [
-      { name: 'top band', x: 600, y: 100, rgb: TALL.top },
+      { name: 'top band', x: 700, y: 100, rgb: TALL.top },
       { name: 'last row', x: 600, y: -2, rgb: TALL.bottom },
     ],
   },
-  // 2^25 px, the height a real docs site was observed reporting. There is no honest
-  // capture of a page like this, so the contract is a fast, explained degradation
-  // rather than forty seconds of walking a spacer.
+  // 2^25 px, the height a real docs site was observed reporting. What to capture there is
+  // the user's call, so these two register the settings that skip the prompt; the prompt
+  // itself, and cancelling, are driven through the real overlay in tests/e2e.mjs.
+  //
+  // Taking the page at its word must not mean walking a ceiling's worth of blank spacer:
+  // the capture stops once the page has stopped painting, and lands on the last content.
   {
-    name: 'tall-implausible',
-    path: '/tall?h=33554432',
+    name: 'tall-implausible-limit',
+    path: HUGE_PAGE_PATH,
+    settings: { hugePageAction: 'limit' },
     minW: 1200,
     maxW: 1200,
-    minH: 700,
-    maxH: 900,
+    minH: 1600,
+    maxH: 1600,
+    note: 'stops at the last content',
+    maxMs: 60_000,
+    points: [
+      { name: 'top band', x: 700, y: 100, rgb: TALL.top },
+      { name: 'last content row', x: 700, y: 1500, rgb: TALL.top },
+    ],
+  },
+  {
+    name: 'tall-implausible-visible',
+    path: HUGE_PAGE_PATH,
+    settings: { hugePageAction: 'visible' },
+    minW: 1200,
+    maxW: 1200,
+    minH: 800,
+    maxH: 800,
     note: 'implausible height',
-    maxMs: 30_000,
-    points: [{ name: 'top band', x: 600, y: 100, rgb: TALL.top }],
+    maxMs: 60_000,
+    points: [{ name: 'top band', x: 700, y: 100, rgb: TALL.top }],
   },
   // Viewport-glued backgrounds, the witness for the shipped fix. The page background is
   // eight index-encoded bands: pinned to scroll they run 0 to 7 down the image, glued to
