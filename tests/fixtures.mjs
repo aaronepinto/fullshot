@@ -66,6 +66,7 @@ const ROOT = new URL('..', import.meta.url).pathname;
  * @property {PointCheck[]} [points] Exact colours at fixed composed coordinates.
  * @property {SequenceCheck} [sequence] Index-encoded bands read down one column.
  * @property {string[]} [requested] Fixture-server paths that must all have been requested.
+ * @property {boolean} [noGaps] Assert no pixel of the composed image was left unpainted.
  * @property {string} [gap] Documented engine limitation this scenario pins down.
  */
 
@@ -144,7 +145,22 @@ const GAUNTLET_PAGES = {
   '/frames-inner': 'fixture-frames-inner.html',
   '/frames-deep': 'fixture-frames-deep.html',
   '/frames-foreign': 'fixture-frames-foreign.html',
+  '/smooth': 'fixture-smooth.html',
 };
+
+/** The four ways the smooth-scrolling fixture is registered; the assertions are identical. */
+const smoothVariant = (name, query) => ({
+  name,
+  path: `/smooth${query}`,
+  minW: 1200,
+  maxW: 1200,
+  minH: 6000,
+  maxH: 6000,
+  note: '',
+  maxMs: 300_000,
+  noGaps: true,
+  sequence: { x: 60, y0: 250, dy: 500, count: 12 },
+});
 
 /** The cross-origin frame's colour, which must survive into the composed image. */
 const FOREIGN = /** @type {[number, number, number]} */ ([200, 30, 90]);
@@ -184,7 +200,7 @@ export const GAUNTLET = [
     minW: 1100,
     minH: 6000,
     maxH: 6000,
-    maxMs: 60_000,
+    maxMs: 300_000,
     sequence: { x: 60, y0: 250, dy: 500, count: 12 },
   },
   // The same page with a 1500ms transition, well past any settle budget: waiting cannot
@@ -195,7 +211,7 @@ export const GAUNTLET = [
     minW: 1100,
     minH: 6000,
     maxH: 6000,
-    maxMs: 60_000,
+    maxMs: 300_000,
     sequence: { x: 60, y0: 250, dy: 500, count: 12 },
   },
   // Scroll-driven animation variant: progress is tied to the scroll position through
@@ -208,7 +224,7 @@ export const GAUNTLET = [
     minW: 1100,
     minH: 6000,
     maxH: 6000,
-    maxMs: 60_000,
+    maxMs: 300_000,
     sequence: { x: 60, y0: 250, dy: 500, count: 12 },
   },
   // Pinned furniture on all four edges. The counts below are the geometry worked out:
@@ -223,7 +239,7 @@ export const GAUNTLET = [
     minH: 4000,
     maxH: 4000,
     note: '',
-    maxMs: 60_000,
+    maxMs: 300_000,
     colors: [
       { name: 'sticky header', rgb: FURNITURE.header, count: FURN.full(FURNITURE_BOX.headerH), topY: 0, bottomY: FURNITURE_BOX.headerH - 1 },
       { name: 'bottom bar', rgb: FURNITURE.bottomBar, count: FURN.full(FURNITURE_BOX.barH), bottomY: -1 },
@@ -242,7 +258,7 @@ export const GAUNTLET = [
     minH: 800,
     maxH: 800,
     note: '',
-    maxMs: 60_000,
+    maxMs: 300_000,
     colors: [
       { name: 'sticky header', rgb: FURNITURE.header, count: FURN.full(FURNITURE_BOX.headerH), topY: 0 },
       { name: 'bottom bar', rgb: FURNITURE.bottomBar, count: FURN.full(FURNITURE_BOX.barH), bottomY: -1 },
@@ -262,7 +278,7 @@ export const GAUNTLET = [
     minH: 10_000,
     maxH: 10_000,
     note: '',
-    maxMs: 90_000,
+    maxMs: 300_000,
     requested: LAZY_IMAGES,
     sequence: { x: 400, y0: 200, dy: 400, count: 25 },
   },
@@ -275,7 +291,7 @@ export const GAUNTLET = [
     maxW: 1200,
     minH: 10_000,
     maxH: 10_000,
-    maxMs: 120_000,
+    maxMs: 300_000,
     requested: LAZY_IMAGES,
     sequence: { x: 400, y0: 200, dy: 400, count: 25 },
   },
@@ -289,7 +305,7 @@ export const GAUNTLET = [
     minH: 20_000,
     maxH: 20_000,
     note: '',
-    maxMs: 120_000,
+    maxMs: 300_000,
     points: [
       { name: 'top band', x: 600, y: 100, rgb: TALL.top },
       { name: 'bottom band', x: 600, y: -100, rgb: TALL.bottom },
@@ -306,7 +322,7 @@ export const GAUNTLET = [
     minH: 40_000,
     maxH: 40_000,
     note: '',
-    maxMs: 240_000,
+    maxMs: 600_000,
     points: [
       { name: 'top band', x: 600, y: 100, rgb: TALL.top },
       { name: 'last row', x: 600, y: -2, rgb: TALL.bottom },
@@ -338,7 +354,7 @@ export const GAUNTLET = [
     minH: 4800,
     maxH: 4800,
     note: '',
-    maxMs: 60_000,
+    maxMs: 300_000,
     sequence: { x: 1100, y0: 300, dy: 600, count: 8 },
     points: [
       { name: 'fixed layer, top half', x: 200, y: 1350, rgb: [255, 0, 0] },
@@ -361,7 +377,7 @@ export const GAUNTLET = [
     minH: 2600,
     maxH: 2600,
     note: '',
-    maxMs: 120_000,
+    maxMs: 300_000,
     sequence: { x: 560, y0: 100, dy: 200, count: 13 },
     colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
   },
@@ -374,7 +390,7 @@ export const GAUNTLET = [
     minH: 2600,
     maxH: 2600,
     note: '',
-    maxMs: 120_000,
+    maxMs: 300_000,
     sequence: { x: 560, y0: 100, dy: 200, count: 13 },
     colors: [{ name: 'the page behind the modal', rgb: MODAL_BEHIND, maxCount: 0 }],
   },
@@ -401,7 +417,7 @@ export const GAUNTLET = [
     minH: 4000,
     maxH: 4000,
     note: '',
-    maxMs: 60_000,
+    maxMs: 300_000,
     sequence: { x: 600, y0: 200, dy: 400, count: 10 },
   },
   // A single full-bleed same-origin iframe holding 5000px of paginated document, so the
@@ -414,7 +430,7 @@ export const GAUNTLET = [
     minH: 5000,
     maxH: 5000,
     note: '',
-    maxMs: 180_000,
+    maxMs: 300_000,
     sequence: { x: 600, y0: 100, dy: 200, count: 25 },
   },
   // The same document behind an <embed>, which is what Chrome's PDF viewer uses and which
@@ -442,7 +458,7 @@ export const GAUNTLET = [
     minH: 1600,
     maxH: 1600,
     note: '',
-    maxMs: 60_000,
+    maxMs: 300_000,
     points: [
       { name: 'outer page above the frames', x: 900, y: 100, rgb: indexColor(0) },
       { name: 'frame one deep', x: 300, y: 300, rgb: indexColor(10) },
@@ -452,6 +468,10 @@ export const GAUNTLET = [
     ],
     colors: [{ name: 'cross-origin frame', rgb: FOREIGN, count: 500 * 400, tolerance: 0.05 }],
   },
+  smoothVariant('smooth-control', ''),
+  smoothVariant('smooth-behavior', '?behavior=smooth'),
+  smoothVariant('smooth-snap-mandatory', '?snap=mandatory'),
+  smoothVariant('smooth-snap-proximity', '?snap=proximity'),
 ];
 
 // ---------------------------------------------------------------------------

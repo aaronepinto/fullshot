@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e smooth scrolling and snapping fixture</title>
+  <style>
+    /* Two lines of CSS that each break a naive stitch in the same total-loss way.
+       ?behavior=smooth makes a programmatic scrollTo animate, so an engine that shoots on
+       the next frame shoots the old position and the same viewport lands in the image
+       twice. ?snap=mandatory (or proximity) lets the browser overrule the offset the
+       engine asked for and land on a snap point instead, which leaves a gap between one
+       tile and the next.
+       Each section paints the colour that encodes its index, so both failures are the
+       same assertion: the indices down a column must read 0 to 11 with nothing repeated,
+       skipped or missing. */
+    body { margin: 0; font: 700 96px/500px system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    section { height: 500px; text-align: center; }
+  </style>
+</head>
+<body>
+  <script>
+    const params = new URLSearchParams(location.search);
+    if (params.get('behavior') === 'smooth') {
+      document.documentElement.style.scrollBehavior = 'smooth';
+    }
+    const snap = params.get('snap');
+    if (snap) {
+      document.documentElement.style.scrollSnapType = 'y ' + snap;
+      document.write('<style>section { scroll-snap-align: start; }</style>');
+    }
+    for (let i = 0; i < 12; i++) {
+      const s = document.createElement('section');
+      s.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      s.textContent = i;
+      document.body.appendChild(s);
+    }
+  </script>
+</body>
+</html>
