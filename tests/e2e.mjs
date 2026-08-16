@@ -221,6 +221,31 @@ function inspectImage(editor, spec) {
 const fmt = (rgb) => (rgb ? `rgb(${rgb.join(',')})` : 'none');
 
 /**
+ * The stored capture record. Tile count and engine are what explain a slow or
+ * wrong-shaped run, and neither is visible in the editor's own UI.
+ * @param {import('puppeteer-core').Page} editor
+ */
+function readRecord(editor) {
+  return editor.evaluate(async () => {
+    const id = new URLSearchParams(location.search).get('id');
+    const db = /** @type {IDBDatabase} */ (
+      await new Promise((resolve, reject) => {
+        const open = indexedDB.open('screencappy');
+        open.onsuccess = () => resolve(open.result);
+        open.onerror = () => reject(open.error);
+      })
+    );
+    const rec = await new Promise((resolve, reject) => {
+      const get = db.transaction(['captures'], 'readonly').objectStore('captures').get(id);
+      get.onsuccess = () => resolve(get.result);
+      get.onerror = () => reject(get.error);
+    });
+    const r = /** @type {{ engine: string, tileCount: number, truncated: boolean }} */ (rec);
+    return { engine: r.engine, tileCount: r.tileCount, truncated: r.truncated };
+  });
+}
+
+/**
  * Runs a scenario's pixel-level checks: exact colours at fixed points, per-colour pixel
  * counts and extents, and the index-encoded band sequence.
  * @param {string} label
@@ -360,8 +385,13 @@ async function runScenario(browser, url, scenario, fixtures) {
   const elapsed = Date.now() - startedAt;
 
   const dims = await editor.$eval('#statDims', (el) => el.textContent);
+  const record = await readRecord(editor);
 
-  console.log(`[${label}] editor reports:`, dims, `after ${elapsed}ms`);
+  console.log(
+    `[${label}] editor reports:`,
+    dims,
+    `after ${elapsed}ms (${record.engine}, ${record.tileCount} tiles${record.truncated ? ', truncated' : ''})`
+  );
   const { w, h } = assertComposed(label, dims, scenario);
 
   if (scenario.maxMs && elapsed > scenario.maxMs) {
