@@ -103,13 +103,41 @@ export async function downloadBlobs(
   baseName: string,
   ext: string,
   saveAs: boolean
-): Promise<void> {
+): Promise<number[]> {
+  const ids: number[] = [];
   for (let i = 0; i < blobs.length; i++) {
     const suffix = blobs.length > 1 ? `-${i + 1}` : '';
-    await chrome.downloads.download({
-      url: URL.createObjectURL(blobs[i]!),
-      filename: `${baseName}${suffix}.${ext}`,
-      saveAs: saveAs && i === 0,
-    });
+    ids.push(
+      await chrome.downloads.download({
+        url: URL.createObjectURL(blobs[i]!),
+        filename: `${baseName}${suffix}.${ext}`,
+        saveAs: saveAs && i === 0,
+      })
+    );
   }
+  return ids;
+}
+
+/**
+ * Where a download actually landed, as an absolute path.
+ *
+ * "Saved" on its own is the complaint the whole category collects: the browser
+ * decides the folder, may rename around a collision, and the Save As dialog can
+ * move it anywhere, so the only honest answer comes from asking afterwards. The
+ * item exists as soon as the download starts, but its filename is not final until
+ * it does, so this waits briefly for the real one.
+ */
+export async function downloadPath(id: number | undefined): Promise<string | null> {
+  if (id === undefined || !chrome.downloads?.search) return null;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    try {
+      const [item] = await chrome.downloads.search({ id });
+      if (item?.filename && item.state !== 'in_progress') return item.filename;
+      if (item?.filename && attempt === 9) return item.filename;
+    } catch {
+      return null;
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  return null;
 }

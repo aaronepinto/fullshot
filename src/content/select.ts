@@ -39,6 +39,9 @@ import type { RuntimeMsg } from '../lib/types';
         font: 600 11px/1 system-ui, sans-serif; padding: 5px 8px; border-radius: 6px;
         white-space: nowrap;
       }
+      /* A selection dragged to the bottom edge would otherwise read its own size
+         off the bottom of the window. The element picker's chip already flips. */
+      .size.above { bottom: auto; top: -26px; }
     </style>
     <div class="hint">Drag to select a region &nbsp;·&nbsp; scroll to move the page &nbsp;·&nbsp; <b>Esc</b> to cancel</div>
     <div class="box"><div class="size"></div></div>
@@ -48,6 +51,8 @@ import type { RuntimeMsg } from '../lib/types';
 
   const box = root.querySelector<HTMLDivElement>('.box')!;
   const sizeLabel = root.querySelector<HTMLDivElement>('.size')!;
+  /** Room the size chip needs below the selection before it has to flip inside. */
+  const LABEL_CLEARANCE = 30;
 
   // Anchor is stored in page coordinates so the selection stays glued to content
   // even when the user scrolls mid-drag.
@@ -72,6 +77,8 @@ import type { RuntimeMsg } from '../lib/types';
     box.style.width = `${r.w}px`;
     box.style.height = `${r.h}px`;
     sizeLabel.textContent = `${Math.round(r.w)} × ${Math.round(r.h)}`;
+    const bottom = r.y - window.scrollY + r.h;
+    sizeLabel.classList.toggle('above', bottom + LABEL_CLEARANCE > window.innerHeight);
   };
 
   const finish = (msg: RuntimeMsg) => {
