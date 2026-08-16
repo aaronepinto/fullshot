@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isRestrictedUrl } from '../../src/lib/capture-common';
+import { isBrowserUiUrl, isRestrictedUrl, isWebStoreUrl } from '../../src/lib/capture-common';
 
 describe('isRestrictedUrl', () => {
   test('browser UI schemes are restricted', () => {
@@ -30,6 +30,17 @@ describe('isRestrictedUrl', () => {
     ).toBe(true);
     expect(isRestrictedUrl('https://chrome.google.com/u/0/webstore/')).toBe(true);
     expect(isRestrictedUrl('https://chrome.google.com/u/12/webstore/devconsole')).toBe(true);
+  });
+
+  test('the Web Store is probe-worthy, not a browser UI scheme', () => {
+    // Browser UI schemes are hopeless everywhere; the Web Store differs per
+    // Chromium fork, which is why the engine probes it instead of assuming.
+    expect(isBrowserUiUrl('chrome://extensions/')).toBe(true);
+    expect(isBrowserUiUrl('https://chrome.google.com/u/2/webstore/devconsole')).toBe(false);
+    expect(isWebStoreUrl('https://chrome.google.com/u/2/webstore/devconsole')).toBe(true);
+    expect(isWebStoreUrl('https://chromewebstore.google.com/detail/x/abc')).toBe(true);
+    expect(isWebStoreUrl('chrome://extensions/')).toBe(false);
+    expect(isWebStoreUrl('https://example.com/webstore')).toBe(false);
   });
 
   test('ordinary pages are not restricted', () => {

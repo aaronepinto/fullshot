@@ -13,9 +13,11 @@ import {
   HIJACK_NOTICE,
   countdownSteps,
   dataUrlToBlob,
+  RESTRICTED_NOTICE,
   gridPositions,
   isRestrictedUrl,
   isUniform,
+  isWebStoreUrl,
   makeRecord,
   mobileMetrics,
   newCaptureId,
@@ -179,7 +181,13 @@ async function startCapture(
     }
 
     const capId = newCaptureId();
-    const injectable = !isRestrictedUrl(tab.url ?? '');
+    // Browser UI schemes are never injectable. The Web Store is blocked in
+    // Chrome but not in every Chromium fork, so it gets a real probe rather
+    // than an assumption: capability decides, not the URL.
+    let injectable = !isRestrictedUrl(tab.url ?? '');
+    if (!injectable && isWebStoreUrl(tab.url ?? '')) {
+      injectable = await canInject(tabId);
+    }
 
     // Region/element selection happens first, in-page, regardless of engine.
     let selection: Rect | null = null;
@@ -241,7 +249,10 @@ async function startCapture(
       );
       ({ clip, tileCount, truncated } = result);
     } else if (mode === 'visible' || !injectable) {
-      // Single shot; also the graceful fallback on chrome:// pages and the Web Store.
+      // Single shot; also the graceful fallback on pages the browser refuses
+      // to let us script. When the user asked for more than the visible area,
+      // the record says why they did not get it.
+      if (!injectable && mode !== 'visible') notice = RESTRICTED_NOTICE;
       ({ clip, tileCount } = await captureVisibleSingle(tab, capId));
       engine = 'stitch';
       mode = mode === 'selection' ? mode : 'visible';
@@ -820,6 +831,19 @@ async function sendToTab<T = void>(tabId: number, msg: CaptureContentMsg): Promi
     throw new Error((res as { __err: string }).__err);
   }
   return res as T;
+}
+
+/**
+ * Whether the browser will let us run a script in this tab. Answered by trying,
+ * because the answer differs between Chrome and its forks on the same URL.
+ */
+async function canInject(tabId: number): Promise<boolean> {
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, func: () => true });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function intersect(a: Rect, b: Rect): Rect {

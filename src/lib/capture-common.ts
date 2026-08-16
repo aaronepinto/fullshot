@@ -521,17 +521,33 @@ export function segmentRects(clip: Rect, segH: number): Rect[] {
 }
 
 /**
- * Pages the browser walls off from every extension: its own UI schemes and the
- * Web Store, which chrome.google.com serves with an optional /u/<n>/ account
- * prefix. Nothing can be injected there and captureVisibleTab is refused too.
+ * Pages served on the browser's own UI schemes. No extension can inject there
+ * in any Chromium browser, so these never even get a scripting attempt.
  */
-export function isRestrictedUrl(url: string): boolean {
+export function isBrowserUiUrl(url: string): boolean {
   if (!url) return true;
-  if (/^(chrome|chrome-extension|devtools|edge|about|view-source|chrome-untrusted):/.test(url)) {
-    return true;
-  }
+  return /^(chrome|chrome-extension|devtools|edge|about|view-source|chrome-untrusted):/.test(url);
+}
+
+/**
+ * The Web Store, which chrome.google.com serves with an optional /u/<n>/
+ * account prefix. Chrome walls it off from extensions entirely, but Chromium
+ * forks (Arc, for one) do not, so these pages get a scripting PROBE rather
+ * than an assumption: full capture where the browser allows it, the visible
+ * area with a note where it does not.
+ */
+export function isWebStoreUrl(url: string): boolean {
   return /^https:\/\/(chrome\.google\.com\/(u\/\d+\/)?webstore|chromewebstore\.google\.com)/.test(url);
 }
+
+/** Everything the browser might refuse to let an extension touch. */
+export function isRestrictedUrl(url: string): boolean {
+  return isBrowserUiUrl(url) || isWebStoreUrl(url);
+}
+
+/** What the editor says when the browser only allowed a visible-area shot. */
+export const RESTRICTED_NOTICE =
+  'Your browser limits extensions on this page, so only the visible area was captured';
 
 export function base64ToBlob(base64: string, type: string): Blob {
   const bin = atob(base64);
