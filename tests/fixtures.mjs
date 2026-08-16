@@ -148,6 +148,9 @@ const GAUNTLET_PAGES = {
   '/smooth': 'fixture-smooth.html',
   '/shadow': 'fixture-shadow.html',
   '/endless': 'fixture-endless.html',
+  // Registered as a page rather than a scenario: the DPR axis in tests/e2e.mjs runs it
+  // once per device pixel ratio, which is where its assertions live.
+  '/seam': 'fixture-seam.html',
 };
 
 /**

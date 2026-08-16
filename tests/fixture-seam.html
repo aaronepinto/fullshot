@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e seam detector fixture</title>
+  <style>
+    /* 250 rows of 16px, each painting the colour that encodes its own index, with a dark
+       rule along the top of every row. Read down a column the indices must be 0 to 249
+       with nothing repeated or skipped, so a seam - a duplicated frame, a skipped strip, a
+       row of black or white where two tiles were joined - is a decoded number that does
+       not match, wherever in the image it happens.
+       This page exists to be run at several device pixel ratios: 1.25 and 1.5 are where
+       naive round(width * dpr) arithmetic loses a strip off an edge, and where a row
+       boundary lands on a fractional device pixel. */
+    html { background: #fff; }
+    body { margin: 0; }
+    .row { height: 16px; border-top: 2px solid #0f172a; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <script>
+    for (let i = 0; i < 250; i++) {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.background = 'rgb(' + (6 + i) + ', 90, 160)';
+      document.body.appendChild(row);
+    }
+  </script>
+</body>
+</html>
