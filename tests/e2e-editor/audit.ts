@@ -132,9 +132,25 @@ export async function enumerateControls(page: Page, root = 'body'): Promise<Cont
   }, root);
 }
 
-/** Walks the tab ring from the top of the document and reports where focus lands. */
-export async function tabOrder(page: Page, steps: number): Promise<string[]> {
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+/**
+ * Walks the tab ring from the top of the document and reports which of the given
+ * controls focus lands on, in order.
+ *
+ * The controls are tagged in the DOM first rather than described again on the way
+ * past. Describing twice means two pieces of code have to agree on what to call an
+ * element with no id, and when they disagree the answer is a control that looks
+ * unreachable when it is merely unrecognised.
+ */
+export async function tabOrder(page: Page, controls: Control[], steps: number): Promise<string[]> {
+  await page.evaluate((sels) => {
+    for (const el of document.querySelectorAll<HTMLElement>('[data-sweep]')) delete el.dataset.sweep;
+    for (const sel of sels) {
+      const el = document.querySelector<HTMLElement>(sel);
+      if (el) el.dataset.sweep = sel;
+    }
+    (document.activeElement as HTMLElement | null)?.blur();
+  }, controls.map((c) => c.sel));
+
   const seen: string[] = [];
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press('Tab');
@@ -142,11 +158,7 @@ export async function tabOrder(page: Page, steps: number): Promise<string[]> {
       await page.evaluate(() => {
         const el = document.activeElement as HTMLElement | null;
         if (!el || el === document.body) return 'body';
-        if (el.id) return `#${el.id}`;
-        if (el.dataset.testid) return `[data-testid="${el.dataset.testid}"]`;
-        if (el.dataset.tool) return `[data-tool="${el.dataset.tool}"]`;
-        if (el.dataset.color) return `[data-color="${el.dataset.color}"]`;
-        return el.tagName.toLowerCase();
+        return el.dataset.sweep ?? `untagged:${el.tagName.toLowerCase()}`;
       })
     );
   }

@@ -84,7 +84,13 @@ async function stubChrome(page: Page, settings: Record<string, unknown> = {}): P
         id: 'test-extension-id',
       },
       downloads: {
+        // The push index doubles as the download id, which is what the editor
+        // hands back to search() to find out where the file actually landed.
         download: async (opts: unknown) => (w.__downloads as unknown[]).push(opts),
+        search: async ({ id }: { id: number }) => {
+          const opts = (w.__downloads as { filename: string }[])[id - 1];
+          return opts ? [{ id, state: 'complete', filename: `/Users/test/Downloads/${opts.filename}` }] : [];
+        },
       },
     };
   }, settings);

@@ -46,7 +46,11 @@ export async function stubOptionsChrome(page: Page, opts: OptionsStubs = {}): Pr
           window.__tabs.push(info.url);
         },
       },
-      runtime: { getURL: (p: string) => new URL(p, location.origin).href, id: 'test-extension-id' },
+      runtime: {
+        getURL: (p: string) => new URL(p, location.origin).href,
+        getManifest: () => ({ version: '0.2.0' }),
+        id: 'test-extension-id',
+      },
     };
     // Presence is the whole test: Turbo is offered only where the API exists.
     if (o.debugger !== false) api.debugger = { attach: async () => {}, detach: async () => {} };
