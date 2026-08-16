@@ -67,6 +67,11 @@ export interface Control {
   disabled: boolean;
   visible: boolean;
   focusable: boolean;
+  /**
+   * A member of a roving-tabindex group: not a tab stop of its own, reached with
+   * the arrow keys instead. Its group contributes exactly one stop between them.
+   */
+  rovingItem: boolean;
 }
 
 /**
@@ -126,6 +131,7 @@ export async function enumerateControls(page: Page, root = 'body'): Promise<Cont
         disabled: 'disabled' in el && Boolean((el as HTMLButtonElement).disabled),
         visible,
         focusable: el.tabIndex >= 0 && !('disabled' in el && (el as HTMLButtonElement).disabled),
+        rovingItem: el.tabIndex === -1 && el.parentElement?.getAttribute('role') === 'toolbar',
       });
     }
     return out;

@@ -66,6 +66,10 @@ test.describe('editor gallery', () => {
     await page.screenshot({ path: shotPath('editor-06-emoji-picker') });
     await page.keyboard.press('Escape');
 
+    await page.click('#colorCurrent');
+    await page.screenshot({ path: shotPath('editor-06b-colour-popover') });
+    await page.keyboard.press('Escape');
+
     const p = await editor.at(300, 300);
     await page.mouse.click(p.x, p.y, { button: 'right' });
     await page.screenshot({ path: shotPath('editor-07-context-menu') });
@@ -325,7 +329,14 @@ test('the ground behind the artwork is the shell colour, in every frame', async 
   await page.screenshot({ path: shotPath('editor-15-ground') });
 });
 
-test('icons are one family at one size', async ({ editor, page }) => {
+test('icons are one family at two deliberate sizes', async ({ editor, page }) => {
+  // With a drawer open, so the in-row icons are laid out and counted too.
+  await editor.tool('rect');
+  await editor.drag([80, 90], [320, 240]);
+  await editor.tool('select');
+  await page.click('#btnAnnos');
+  await settle(page);
+
   const icons = await page.evaluate(() =>
     [...document.querySelectorAll('svg')].map((s) => {
       const box = s.getBoundingClientRect();
@@ -341,7 +352,11 @@ test('icons are one family at one size', async ({ editor, page }) => {
   );
   const laidOut = icons.filter((i) => i.w > 0);
   expect(laidOut.length).toBeGreaterThan(15);
-  expect([...new Set(laidOut.map((i) => `${i.w}x${i.h}`))], 'icons at more than one size').toEqual(['18x18']);
+  // 18px in the chrome, 14px inside a list row. Any third size is a mistake.
+  expect(
+    [...new Set(laidOut.map((i) => `${i.w}x${i.h}`))].sort(),
+    'icons at a size the shell does not define'
+  ).toEqual(['14x14', '18x18']);
   expect([...new Set(laidOut.map((i) => i.viewBox))], 'icons drawn on more than one grid').toEqual(['0 0 24 24']);
   expect([...new Set(laidOut.map((i) => i.stroke))], 'icons at more than one stroke weight').toEqual(['2']);
 });
