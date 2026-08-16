@@ -274,11 +274,17 @@ async function startCapture(
 
     const params = new URLSearchParams({ id: capId });
     if (settings.afterCapture !== 'editor') params.set('autodownload', '1');
-    await chrome.tabs.create({
+    // "Download immediately" wants a file, not a tab. The editor still does the
+    // export, but it opens behind the page the user is reading and closes itself
+    // once the file has landed.
+    const quiet = settings.afterCapture === 'download';
+    const editorTab = await chrome.tabs.create({
       url: chrome.runtime.getURL(`editor.html?${params}`),
       index: tab.index + 1,
       openerTabId: tabId,
+      active: !quiet,
     });
+    if (quiet && editorTab.id !== undefined) closeAfterDownload(editorTab.id);
     await badge.clear();
   } catch (err) {
     console.error('[screencappy] capture failed', err);
@@ -287,6 +293,67 @@ async function startCapture(
   } finally {
     busyTabs.delete(tabId);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Download-only mode: dispose of the editor tab once the file has landed
+// ---------------------------------------------------------------------------
+
+/** Give up waiting for the editor to report back after this long, ms. */
+const AUTODOWNLOAD_REPORT_TIMEOUT_MS = 120_000;
+/** Give up waiting for a download to finish after this long, ms. */
+const DOWNLOAD_SETTLE_TIMEOUT_MS = 120_000;
+
+/**
+ * Closes the editor tab that was opened purely to run an automatic download,
+ * but only once every file it started has actually finished writing: the editor
+ * downloads through object URLs owned by its own document, so closing the tab
+ * early would cut the write off halfway.
+ *
+ * Anything short of a clean finish leaves the tab open, which is the whole point
+ * of the delay: a failed export, a download the browser interrupted, or a Save As
+ * dialog the user dismissed all leave the capture sitting there to retry from.
+ */
+function closeAfterDownload(editorTabId: number): void {
+  const cleanup = () => {
+    clearTimeout(timer);
+    chrome.runtime.onMessage.removeListener(onMessage);
+  };
+  const onMessage = (msg: RuntimeMsg, sender: chrome.runtime.MessageSender) => {
+    if (sender.tab?.id !== editorTabId || msg.type !== 'fs:autodownload') return;
+    cleanup();
+    if (msg.ids.length === 0) return;
+    void Promise.all(msg.ids.map(downloadSettled)).then((results) => {
+      if (results.every(Boolean)) void chrome.tabs.remove(editorTabId).catch(() => undefined);
+    });
+  };
+  const timer = setTimeout(cleanup, AUTODOWNLOAD_REPORT_TIMEOUT_MS);
+  chrome.runtime.onMessage.addListener(onMessage);
+}
+
+/** Resolves true when the download completed, false if it failed or stalled. */
+function downloadSettled(id: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      chrome.downloads.onChanged.removeListener(onChanged);
+      resolve(ok);
+    };
+    const settle = (state: string | undefined) => {
+      if (state === 'complete') finish(true);
+      else if (state === 'interrupted') finish(false);
+    };
+    const onChanged = (delta: chrome.downloads.DownloadDelta) => {
+      if (delta.id === id) settle(delta.state?.current);
+    };
+    const timer = setTimeout(() => finish(false), DOWNLOAD_SETTLE_TIMEOUT_MS);
+    chrome.downloads.onChanged.addListener(onChanged);
+    // Short downloads can be finished before the listener is even attached.
+    void chrome.downloads.search({ id }).then((items) => settle(items[0]?.state));
+  });
 }
 
 // ---------------------------------------------------------------------------
