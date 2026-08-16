@@ -252,6 +252,22 @@ function describeGapRows(rows) {
 }
 
 /**
+ * Which way a composed axis is wrong, in the words of its cause: short means a
+ * strip never made it into the canvas, long means a tile box overran the page
+ * instead of being clamped to its last device pixel.
+ * @param {'wide' | 'tall'} axis
+ */
+function describeAxis(axis, got, want) {
+  if (got === want) return '';
+  const by = Math.abs(got - want);
+  const px = `${by} device px`;
+  return got < want
+    ? `${px} short of ${axis === 'wide' ? 'the page width' : 'the page height'},` +
+        ' so a strip is missing off an edge'
+    : `${px} too ${axis}, so a tile box overruns the page instead of stopping at its edge`;
+}
+
+/**
  * The stored capture record. Tile count and engine are what explain a slow or
  * wrong-shaped run, and neither is visible in the editor's own UI.
  * @param {import('puppeteer-core').Page} editor
@@ -803,9 +819,13 @@ async function runDprAxis(base) {
       const img = await inspectImage(editor, { points, colors: [], gaps: true });
 
       if (img.width !== wantW || img.height !== wantH) {
+        const off = [
+          describeAxis('wide', img.width, wantW),
+          describeAxis('tall', img.height, wantH),
+        ].filter(Boolean);
         throw new Error(
           `[${label}] composed ${img.width}×${img.height}, expected ${wantW}×${wantH}` +
-            ` for ${css.w}×${css.h} CSS px at ${dsf}× - a strip is missing off an edge`
+            ` for ${css.w}×${css.h} CSS px at ${dsf}× - ${off.join(', ')}`
         );
       }
       if (img.gaps.count > 0) {
