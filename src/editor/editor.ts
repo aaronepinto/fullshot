@@ -45,11 +45,24 @@ type Tool =
   | 'blur'
   | 'emoji';
 
-const COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#0f172a', '#ffffff'];
+/** The annotation palette, named: a hex code is not a tooltip anyone can read. */
+const COLORS: { hex: string; name: string }[] = [
+  { hex: '#ef4444', name: 'Red' },
+  { hex: '#f97316', name: 'Orange' },
+  { hex: '#eab308', name: 'Yellow' },
+  { hex: '#22c55e', name: 'Green' },
+  { hex: '#3b82f6', name: 'Blue' },
+  { hex: '#a855f7', name: 'Purple' },
+  { hex: '#ec4899', name: 'Pink' },
+  { hex: '#0f172a', name: 'Ink' },
+  { hex: '#ffffff', name: 'White' },
+];
 
 // Selection chrome is painted on the canvas rather than in CSS, so the shell's
-// tokens have to exist here as literals. These four mirror editor.css: --accent,
-// a wash of it, --cream for the handle bodies, and --ink-950 for the crop dim.
+// tokens have to exist here as literals. These five mirror editor.css: the ground
+// behind the artwork, --accent, a wash of it, --cream for the handle bodies, and
+// --ink-950 for the crop dim.
+const GROUND = 'oklch(0.12 0.004 285)';
 const ACCENT = '#38bdf8';
 const ACCENT_WASH = 'rgba(56, 189, 248, 0.12)';
 const HANDLE_FILL = '#faf6ec';
@@ -210,7 +223,7 @@ function render() {
   syncFlash();
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-canvas');
+  ctx.fillStyle = GROUND;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const img = state.image;
   if (!img) return;
@@ -1182,7 +1195,9 @@ function syncStyleBar() {
 
   const color = sel && 'color' in sel ? sel.color : (state.editing?.color ?? state.style.color);
   swatches.querySelectorAll<HTMLElement>('.swatch').forEach((b) => {
-    b.classList.toggle('active', b.title === color);
+    const active = b.dataset.color === color;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', String(active));
   });
   setSelectValue('#strokeWidth', sel && 'width' in sel ? sel.width : state.style.strokeWidth);
   const size =
@@ -1218,11 +1233,13 @@ document.querySelectorAll<HTMLButtonElement>('.tool').forEach((b) => {
 });
 
 const swatches = $('#swatches');
-for (const color of COLORS) {
+for (const { hex: color, name } of COLORS) {
   const b = document.createElement('button');
   b.className = 'swatch';
   b.style.background = color;
-  b.title = color;
+  b.title = name;
+  b.dataset.color = color;
+  b.setAttribute('aria-label', `${name} annotations`);
   b.addEventListener('click', () => {
     state.style.color = color;
     // While text is being typed the change belongs to that draft, not to whatever
@@ -1283,11 +1300,13 @@ for (const em of EMOJI_SET) {
     state.style.emoji = em;
     $('#emojiCurrent').textContent = em;
     emojiPicker.hidden = true;
+    syncPopoverButtons();
   });
   emojiPicker.appendChild(b);
 }
 $('#emojiCurrent').addEventListener('click', () => {
   emojiPicker.hidden = !emojiPicker.hidden;
+  syncPopoverButtons();
 });
 
 // ---------------------------------------------------------------------------
@@ -1339,12 +1358,21 @@ $('#btnCopy').addEventListener('click', async () => {
 });
 
 const formatMenu = $('#formatMenu');
+
+/** Keeps each popover's opener honest about whether the popover is showing. */
+function syncPopoverButtons() {
+  $('#btnFormat').setAttribute('aria-expanded', String(!formatMenu.hidden));
+  $('#emojiCurrent').setAttribute('aria-expanded', String(!emojiPicker.hidden));
+}
+
 $('#btnFormat').addEventListener('click', () => {
   formatMenu.hidden = !formatMenu.hidden;
+  syncPopoverButtons();
 });
 formatMenu.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
   b.addEventListener('click', () => {
     formatMenu.hidden = true;
+    syncPopoverButtons();
     void doDownload(b.dataset.format as ImageFormat | `pdf-${PdfPageMode}`);
   });
 });
@@ -1352,6 +1380,7 @@ document.addEventListener('click', (e) => {
   if (!(e.target as HTMLElement).closest('.split')) formatMenu.hidden = true;
   if (!(e.target as HTMLElement).closest('#emojiCurrent, #emojiPicker')) emojiPicker.hidden = true;
   if (!(e.target as HTMLElement).closest('#ctxMenu')) $('#ctxMenu').hidden = true;
+  syncPopoverButtons();
 });
 
 $('#btnSettings').addEventListener('click', () => void chrome.runtime.openOptionsPage());
@@ -1395,13 +1424,13 @@ let annoListKey = '';
 
 $('#btnAnnos').addEventListener('click', () => {
   annoPanel.hidden = !annoPanel.hidden;
-  $('#btnAnnos').setAttribute('aria-expanded', String(!annoPanel.hidden));
   if (!annoPanel.hidden) historyPanel.hidden = true;
+  syncDrawerButtons();
   requestRender();
 });
 $('#annoClose').addEventListener('click', () => {
   annoPanel.hidden = true;
-  $('#btnAnnos').setAttribute('aria-expanded', 'false');
+  syncDrawerButtons();
 });
 
 /** One line describing an annotation, for the list. */
@@ -1454,6 +1483,7 @@ function cropRow(): HTMLLIElement {
   reset.className = 'del';
   reset.dataset.testid = 'crop-reset';
   reset.title = 'Reset crop';
+  reset.setAttribute('aria-label', 'Reset crop');
   reset.textContent = '✕';
   reset.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1461,8 +1491,27 @@ function cropRow(): HTMLLIElement {
   });
 
   li.append(chip, kind, summary, reset);
-  li.addEventListener('click', () => fitWidth());
+  activateOn(li, () => fitWidth());
   return li;
+}
+
+/**
+ * Makes a list row behave like the button it already looked like. The rows are
+ * <li>, so without this they answered the mouse and nothing else: a keyboard user
+ * could tab to a row's delete button but never to the row itself.
+ */
+function activateOn(li: HTMLLIElement, run: () => void) {
+  li.tabIndex = 0;
+  li.setAttribute('role', 'button');
+  li.addEventListener('click', run);
+  li.addEventListener('keydown', (e) => {
+    // Only the row's own keys. Swallowing a bubbled one would cancel the native
+    // activation of the delete button sitting inside it.
+    if (e.target !== li) return;
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    run();
+  });
 }
 
 function resetCrop() {
@@ -1516,7 +1565,8 @@ function syncAnnoPanel() {
     const del = document.createElement('button');
     del.className = 'del';
     del.dataset.testid = 'anno-delete';
-    del.title = 'Delete';
+    del.title = 'Delete this annotation';
+    del.setAttribute('aria-label', 'Delete this annotation');
     del.textContent = '✕';
     del.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1528,7 +1578,7 @@ function syncAnnoPanel() {
     });
 
     li.append(chip, kind, summary, del);
-    li.addEventListener('click', () => jumpToAnno(i));
+    activateOn(li, () => jumpToAnno(i));
     annoList.appendChild(li);
   }
 }
@@ -1577,17 +1627,25 @@ const historyPanel = $('#history');
 $('#btnHistory').addEventListener('click', () => void toggleHistory());
 $('#historyClose').addEventListener('click', () => {
   historyPanel.hidden = true;
+  syncDrawerButtons();
 });
 
 async function toggleHistory(forceOpen = false) {
   if (!historyPanel.hidden && !forceOpen) {
     historyPanel.hidden = true;
+    syncDrawerButtons();
     return;
   }
   await renderHistory();
   historyPanel.hidden = false;
   annoPanel.hidden = true;
-  $('#btnAnnos').setAttribute('aria-expanded', 'false');
+  syncDrawerButtons();
+}
+
+/** Both drawer buttons report their drawer's state, so neither can drift. */
+function syncDrawerButtons() {
+  $('#btnAnnos').setAttribute('aria-expanded', String(!annoPanel.hidden));
+  $('#btnHistory').setAttribute('aria-expanded', String(!historyPanel.hidden));
 }
 
 async function renderHistory() {
@@ -1604,6 +1662,8 @@ async function renderHistory() {
     const li = document.createElement('li');
     if (c.id === state.record?.id) li.classList.add('current');
     const img = document.createElement('img');
+    // The row's own title says what this is, so the thumbnail is decoration.
+    img.alt = '';
     if (c.thumb) img.src = URL.createObjectURL(c.thumb);
     const meta = document.createElement('div');
     meta.className = 'meta';
@@ -1616,7 +1676,8 @@ async function renderHistory() {
     meta.append(t, d);
     const del = document.createElement('button');
     del.className = 'del';
-    del.title = 'Delete';
+    del.title = 'Delete this capture';
+    del.setAttribute('aria-label', 'Delete this capture');
     del.textContent = '✕';
     del.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -1625,7 +1686,7 @@ async function renderHistory() {
       if (c.id === state.record?.id) location.search = '?history=1';
     });
     li.append(img, meta, del);
-    li.addEventListener('click', () => {
+    activateOn(li, () => {
       location.search = `?id=${encodeURIComponent(c.id)}`;
     });
     list.appendChild(li);
@@ -1649,6 +1710,8 @@ function updateStatus() {
   const url = $<HTMLAnchorElement>('#statUrl');
   url.textContent = state.record?.url ?? '';
   url.href = state.record?.url ?? '#';
+  // An empty link is still a tab stop, and one with no name at that.
+  url.hidden = !state.record?.url;
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1840,7 +1903,10 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     const forward = e.code === 'BracketRight';
     reorderSelection(e.shiftKey ? (forward ? 'front' : 'back') : forward ? 'forward' : 'backward');
-  } else if (e.key === 'Tab' && state.annos.length) {
+  } else if (e.key === 'Tab' && state.annos.length && document.activeElement === canvas) {
+    // Only the artwork claims Tab. Claiming it document-wide meant that as soon as
+    // anything was drawn, a keyboard user could never tab out to Copy or Download:
+    // every press cycled the selection instead. Escape hands focus back out.
     e.preventDefault();
     cycleSelection(e.shiftKey ? -1 : 1);
   } else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selection.length) {
@@ -1871,6 +1937,7 @@ function dismiss() {
   for (const el of [ctxMenu, emojiPicker, formatMenu]) {
     if (!el.hidden) {
       el.hidden = true;
+      syncPopoverButtons();
       return;
     }
   }
@@ -1883,7 +1950,11 @@ function dismiss() {
   if (state.selection.length) {
     clearSelection();
     requestRender();
+    return;
   }
+  // Nothing left to dismiss, so the last thing Escape gives up is the canvas's
+  // claim on Tab: focus returns to the document and the toolbar is tabbable again.
+  if (document.activeElement === canvas) canvas.blur();
 }
 
 document.addEventListener('keyup', (e) => {
@@ -1895,6 +1966,18 @@ new ResizeObserver(() => requestRender()).observe(viewport);
 // ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
+
+/**
+ * The export cluster is only live when there is something to export. Left enabled
+ * on the empty state, Copy and Download looked like ordinary buttons and answered
+ * a press with nothing at all.
+ */
+function setExportEnabled(on: boolean) {
+  for (const sel of ['#btnCopy', '#btnDownload', '#btnFormat']) {
+    $<HTMLButtonElement>(sel).disabled = !on;
+  }
+}
+setExportEnabled(false);
 
 async function boot() {
   state.settings = await getSettings();
@@ -1920,6 +2003,7 @@ async function boot() {
     state.crop = stored.cropRect ?? null;
 
     state.image = await loadBigImage(record);
+    setExportEnabled(true);
     $('#loading').hidden = true;
     fitWidth();
     updateStatus();
@@ -1936,7 +2020,9 @@ async function boot() {
   } catch (err) {
     $('#loading').hidden = true;
     $('#emptyState').hidden = false;
-    toast(String(err), true);
+    // The message, not the Error's toString: "Error: Capture not found" reads like
+    // a stack trace escaped into the interface.
+    toast(err instanceof Error ? err.message : String(err), true);
   }
 }
 

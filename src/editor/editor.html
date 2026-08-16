@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Declared before the stylesheet so the first paint is already the dark shell. -->
+  <meta name="color-scheme" content="dark" />
   <title>screencappy</title>
   <link rel="icon" href="icons/icon32.png" />
   <link rel="stylesheet" href="editor.css" />
@@ -16,48 +18,48 @@
 
     <!-- Icons throughout this page are Lucide (lucide.dev), ISC licensed. -->
     <div class="toolgroup" id="tools" role="toolbar" aria-label="Annotation tools">
-      <button data-tool="select" class="tool active" title="Select / move (V)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
+      <button data-tool="select" class="tool active" title="Select / move (V)" aria-label="Select / move" aria-pressed="true">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></svg>
       </button>
-      <button data-tool="crop" class="tool" title="Crop (C)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
+      <button data-tool="crop" class="tool" title="Crop (C)" aria-label="Crop" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>
       </button>
       <span class="sep"></span>
-      <button data-tool="arrow" class="tool" title="Arrow (A)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5H19V11"/><path d="M19 5L5 19"/></svg>
+      <button data-tool="arrow" class="tool" title="Arrow (A)" aria-label="Arrow" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 5H19V11"/><path d="M19 5L5 19"/></svg>
       </button>
-      <button data-tool="line" class="tool" title="Line (L)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 2 22"/></svg>
+      <button data-tool="line" class="tool" title="Line (L)" aria-label="Line" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 2 22"/></svg>
       </button>
-      <button data-tool="rect" class="tool" title="Rectangle (R)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+      <button data-tool="rect" class="tool" title="Rectangle (R)" aria-label="Rectangle" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
       </button>
-      <button data-tool="ellipse" class="tool" title="Ellipse (O)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+      <button data-tool="ellipse" class="tool" title="Ellipse (O)" aria-label="Ellipse" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
       </button>
-      <button data-tool="pen" class="tool" title="Pen (P)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+      <button data-tool="pen" class="tool" title="Pen (P)" aria-label="Pen" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
       </button>
-      <button data-tool="highlight" class="tool" title="Highlighter (H)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+      <button data-tool="highlight" class="tool" title="Highlighter (H)" aria-label="Highlighter" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
       </button>
-      <button data-tool="text" class="tool" title="Text (T)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg>
+      <button data-tool="text" class="tool" title="Text (T)" aria-label="Text" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></svg>
       </button>
       <!-- lucide/eye-off: the clearest "hide this" of the family. droplets reads as
            water and scan-face as face detection, but the tool redacts any region. -->
-      <button data-tool="blur" class="tool" title="Blur / redact (B)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+      <button data-tool="blur" class="tool" title="Blur / redact (B)" aria-label="Blur / redact" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
       </button>
-      <button data-tool="emoji" class="tool" title="Emoji stamp (E)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10V9"/><path d="M16.472 15a6 6 0 01-8.943 0"/><path d="M9 10V9"/><circle cx="12" cy="12" r="10"/></svg>
+      <button data-tool="emoji" class="tool" title="Emoji stamp (E)" aria-label="Emoji stamp" aria-pressed="false">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10V9"/><path d="M16.472 15a6 6 0 01-8.943 0"/><path d="M9 10V9"/><circle cx="12" cy="12" r="10"/></svg>
       </button>
     </div>
 
     <div class="stylebar" id="stylebar">
-      <div class="swatches" id="swatches"></div>
+      <div class="swatches" id="swatches" role="group" aria-label="Annotation colour"></div>
       <label class="ctl" id="ctlWidth" title="Stroke width">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3.5c5-2 7 2.5 3 4C1.5 10 2 15 5 16c5 2 9-10 14-7s.5 13.5-4 12c-5-2.5.5-11 6-2"/></svg>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3.5c5-2 7 2.5 3 4C1.5 10 2 15 5 16c5 2 9-10 14-7s.5 13.5-4 12c-5-2.5.5-11 6-2"/></svg>
         <select id="strokeWidth">
           <option value="3">S</option>
           <option value="6" selected>M</option>
@@ -77,25 +79,25 @@
       <label class="ctl checkbox" id="ctlFill" title="Fill shape">
         <input type="checkbox" id="fillShape" /><span>Fill</span>
       </label>
-      <button class="ctl" id="emojiCurrent" title="Pick emoji" hidden>😀</button>
-      <div id="emojiPicker" class="popover" hidden></div>
+      <button class="ctl" id="emojiCurrent" title="Pick emoji" aria-label="Pick emoji" aria-expanded="false" hidden>😀</button>
+      <div id="emojiPicker" class="popover" role="group" aria-label="Emoji stamps" hidden></div>
     </div>
 
     <div class="spacer"></div>
 
     <div class="actions">
-      <button id="btnUndo" class="icon" title="Undo (⌘Z)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+      <button id="btnUndo" class="icon" title="Undo (⌘Z)" aria-label="Undo" disabled>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
       </button>
-      <button id="btnRedo" class="icon" title="Redo (⇧⌘Z)" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg>
+      <button id="btnRedo" class="icon" title="Redo (⇧⌘Z)" aria-label="Redo" disabled>
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/></svg>
       </button>
       <span class="sep"></span>
       <button id="btnCopy" title="Copy to clipboard (⌘C)">Copy</button>
       <div class="split">
         <button id="btnDownload" class="primary" title="Download (⌘S)">Download PNG</button>
-        <button id="btnFormat" class="primary caret" title="Choose format">▾</button>
-        <div id="formatMenu" class="popover menu" hidden>
+        <button id="btnFormat" class="primary caret" title="Choose format" aria-label="Choose format" aria-expanded="false" aria-haspopup="true">▾</button>
+        <div id="formatMenu" class="popover menu" role="group" aria-label="Export format" hidden>
           <button data-format="png">PNG</button>
           <button data-format="jpeg">JPEG</button>
           <button data-format="webp">WebP</button>
@@ -106,21 +108,21 @@
         </div>
       </div>
       <span class="sep"></span>
-      <button id="btnAnnos" class="icon" title="Annotations" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>
+      <button id="btnAnnos" class="icon" title="Annotations" aria-label="Annotations" aria-expanded="false" aria-controls="annoPanel">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></svg>
       </button>
-      <button id="btnHistory" class="icon" title="Capture history">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      <button id="btnHistory" class="icon" title="Capture history" aria-label="Capture history" aria-expanded="false" aria-controls="history">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
       </button>
-      <button id="btnSettings" class="icon" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+      <button id="btnSettings" class="icon" title="Settings" aria-label="Settings">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
   </header>
 
   <main id="viewport">
-    <canvas id="canvas" tabindex="0"></canvas>
-    <div id="loading" class="loading">
+    <canvas id="canvas" tabindex="0" aria-label="Capture, with its annotations"></canvas>
+    <div id="loading" class="loading" role="status" aria-live="polite">
       <div class="spinner"></div>
       <p id="loadingMsg">Stitching your capture…</p>
     </div>
@@ -138,22 +140,22 @@
       <button id="cropApply" class="primary">Apply crop</button>
       <button id="cropCancel">Cancel</button>
     </div>
-    <div id="ctxMenu" class="popover menu" hidden>
+    <div id="ctxMenu" class="popover menu" role="group" aria-label="Capture actions" hidden>
       <button id="ctxCopy">Copy image</button>
       <button id="ctxDownload">Download</button>
     </div>
-    <aside id="annoPanel" data-testid="anno-panel" hidden>
+    <aside id="annoPanel" data-testid="anno-panel" aria-label="Annotations" hidden>
       <header>
         <h2>Annotations</h2>
-        <button id="annoClose" class="icon" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        <button id="annoClose" class="icon" title="Close" aria-label="Close the annotations drawer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       </header>
       <p class="drawer-hint">Newest first. Click one to jump to it.</p>
       <ul id="annoList"></ul>
     </aside>
-    <aside id="history" data-testid="history-panel" hidden>
+    <aside id="history" data-testid="history-panel" aria-label="Capture history" hidden>
       <header>
         <h2>History</h2>
-        <button id="historyClose" class="icon" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        <button id="historyClose" class="icon" title="Close" aria-label="Close the history drawer"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       </header>
       <p class="drawer-hint">Captures are stored locally on this device only.</p>
       <ul id="historyList"></ul>
@@ -167,13 +169,13 @@
 
   <footer class="statusbar">
     <span id="statDims"></span>
-    <button id="btnCropReset" class="chip" hidden>Reset crop</button>
+    <button id="btnCropReset" class="chip" title="Reset crop" hidden>Reset crop</button>
     <span id="statNote" class="note"></span>
     <span class="hint">Drag to select · Space to pan · ⌘ or Ctrl scroll to zoom · [ ] to reorder</span>
     <span class="spacer"></span>
-    <a id="statUrl" target="_blank" rel="noreferrer"></a>
+    <a id="statUrl" target="_blank" rel="noreferrer" hidden></a>
     <span class="sep"></span>
-    <div class="zoomctl">
+    <div class="zoomctl" role="group" aria-label="Zoom">
       <button id="zoomOut" title="Zoom out (⌘−)">−</button>
       <button id="zoomFit" title="Fit width (⌘9)">Fit</button>
       <button id="zoom100" title="Actual size (⌘0)">100%</button>
@@ -182,7 +184,7 @@
     </div>
   </footer>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="editor.js"></script>
 </body>
