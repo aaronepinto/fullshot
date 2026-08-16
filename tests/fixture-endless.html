@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Screencappy e2e infinite scroll fixture</title>
+  <style>
+    /* Infinite scroll, where the document grows as fast as the engine consumes it. Every
+       time the viewport comes within 500px of the bottom, three more sections arrive, and
+       without a limit that never stops: the reported outcome is a huge image, a very long
+       wait, or an unresponsive tab.
+       ?limit=N stops after N rounds, which is the ordinary auto-loading page: the capture
+       has to terminate there on its own and say nothing, so the cap is proven not to fire
+       on pages that end by themselves. Each section encodes its own index, so a capture
+       that lost its place while the page grew under it is a decoded number out of order. */
+    body { margin: 0; font: 700 40px/400px system-ui, sans-serif; color: rgba(255,255,255,.75); }
+    section { height: 400px; padding-left: 40px; }
+  </style>
+</head>
+<body>
+  <script>
+    const limit = Number(new URLSearchParams(location.search).get('limit') ?? Infinity);
+    let next = 0;
+    let rounds = 0;
+
+    function append(n) {
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement('section');
+        s.style.background = 'rgb(' + (6 + next) + ', 90, 160)';
+        s.textContent = 'Section ' + next;
+        document.body.appendChild(s);
+        next++;
+      }
+    }
+    append(6);
+
+    addEventListener('scroll', () => {
+      const de = document.documentElement;
+      if (de.scrollHeight - de.scrollTop - innerHeight >= 500) return;
+      if (rounds >= limit) return;
+      rounds++;
+      append(3);
+    });
+  </script>
+</body>
+</html>
