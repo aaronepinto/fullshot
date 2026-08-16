@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { fixedEdge, showsOnTile } from '../../src/lib/capture-common';
+import { fixedEdge, pixelScale, showsOnTile } from '../../src/lib/capture-common';
 
 const box = (top: number, height: number, left = 0, width = 1200) => ({
   top,
@@ -47,5 +47,24 @@ describe('showsOnTile', () => {
     for (const edge of ['top', 'bottom', 'rail'] as const) {
       expect(showsOnTile(edge, true, true)).toBe(true);
     }
+  });
+});
+
+describe('pixelScale', () => {
+  test('the ratio the page reports wins when the bitmap agrees with it', () => {
+    // 1199 CSS px at 1.25x is 1498.75 device px, and the bitmap comes back 1499 wide.
+    expect(pixelScale(1499 / 1199, 1.25)).toBe(1.25);
+    expect(pixelScale(1.5, 1.5)).toBe(1.5);
+  });
+
+  test('two hundredths of a percent is two pixels down a tall page', () => {
+    const measured = 1499 / 1199;
+    expect(Math.round(4000 * measured)).toBe(5001);
+    expect(Math.round(4000 * pixelScale(measured, 1.25))).toBe(5000);
+  });
+
+  test('a screenshot at some other scale entirely is believed over the page', () => {
+    expect(pixelScale(1, 2)).toBe(1);
+    expect(pixelScale(1.25, 0)).toBe(1.25);
   });
 });

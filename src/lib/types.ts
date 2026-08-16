@@ -51,6 +51,13 @@ export interface Tile {
   cssW: number;
   cssH: number;
   /**
+   * The page's own devicePixelRatio at capture time. The scale can also be measured from
+   * the bitmap, but only to the nearest whole device pixel, and on a viewport whose width
+   * does not land on one that error compounds down a tall page. This is the exact answer
+   * when it is available; see composeFromTiles.
+   */
+  dpr?: number;
+  /**
    * When set, crop the captured viewport image to this CSS-px rect before placing it
    * (scroll-container captures: the screenshot is the whole window, the tile is just
    * the container's visible client area).

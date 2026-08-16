@@ -193,6 +193,20 @@ export function imageWaitBudgetMs(waitedMs: number, fruitlessMs: number): number
   return Math.max(0, Math.min(IMAGE_WAIT.perTileMs, IMAGE_WAIT.totalMs - waitedMs));
 }
 
+/**
+ * Which device-pixel scale to compose at. The scale can be measured from a tile's bitmap,
+ * but only to the nearest whole device pixel: a 1199 CSS px viewport at 1.25x is 1498.75
+ * device px wide, the bitmap arrives 1499 wide, and the ratio that implies is 1.2502.
+ * Two hundredths of a percent is nothing across one tile and two whole pixels down a
+ * 4000px page. The page's own devicePixelRatio is exact, so it wins whenever the two
+ * agree they are describing the same picture; a browser that hands back a screenshot at
+ * some other scale entirely is still believed over its own arithmetic.
+ */
+export function pixelScale(measuredScale: number, reportedDpr: number): number {
+  const agrees = Math.abs(reportedDpr - measuredScale) <= measuredScale * 0.01;
+  return reportedDpr > 0 && agrees ? reportedDpr : measuredScale;
+}
+
 /** Viewport-relative box, matching the fields of a DOMRect that we care about. */
 export interface Box {
   top: number;
