@@ -16,6 +16,7 @@ import {
   fixedEdge,
   formatPx,
   hasFixedBackground,
+  imageWaitBudgetMs,
   intersectsViewport,
   movedEnough,
   pickDominantScroller,
@@ -71,8 +72,9 @@ interface PinnedEl {
   let lastScrollAt = 0;
   /** Slowest reaction to a scroll seen in this run, ms: how long the next tile waits. */
   let renderLatency = 0;
-  /** What is left of the run's budget for waiting on images still on the wire, ms. */
-  let imageBudgetMs = IMAGE_WAIT.totalMs;
+  /** How long this run has spent waiting for images, and how much of it bought nothing. */
+  let imageWaitedMs = 0;
+  let imageFruitlessMs = 0;
 
   const scroller = () =>
     frameDoc
@@ -80,6 +82,15 @@ interface PinnedEl {
       : (containerEl ?? document.scrollingElement ?? document.documentElement);
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
   const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+  /**
+   * Resolves once a frame has actually been painted, which a requestAnimationFrame
+   * callback alone does not tell you: it runs before the frame it belongs to is rendered.
+   * A task scheduled from inside one runs after that frame has been committed, so this is
+   * what "the page now looks like this on screen" means, and it is the thing a screenshot
+   * needs to be true before it is taken.
+   */
+  const afterPaint = () =>
+    new Promise<void>((r) => requestAnimationFrame(() => setTimeout(() => r(), 0)));
 
   /**
    * A reported height this far past anything real is a broken measurement (a docs
@@ -703,6 +714,16 @@ interface PinnedEl {
     return out;
   }
 
+  /**
+   * Chrome decodes images off the main thread and will happily paint a frame without one
+   * that has finished downloading, filling it in a frame or two later. Waiting for the
+   * decode is what makes "the bytes arrived" mean "the picture can be drawn"; a broken
+   * image rejects, which is as good as decoded for this purpose.
+   */
+  function imageDecoded(img: HTMLImageElement): Promise<void> {
+    return img.decode().catch(() => undefined);
+  }
+
   function imageSettled(img: HTMLImageElement): Promise<void> {
     return new Promise((resolve) => {
       const done = () => {
@@ -721,20 +742,33 @@ interface PinnedEl {
    * page of lazy images on a slow connection stitches together out of placeholders.
    */
   async function awaitImages() {
-    if (imageBudgetMs <= 0) return;
+    const budget = imageWaitBudgetMs(imageWaitedMs, imageFruitlessMs);
+    if (budget <= 0) return;
     const startedAt = Date.now();
-    const deadline = startedAt + Math.min(imageBudgetMs, IMAGE_WAIT.perTileMs);
+    const deadline = startedAt + budget;
     for (;;) {
       const pending = pendingImages();
       const left = deadline - Date.now();
       if (!pending.length || left <= 0) break;
       // Racing the sleep bounds the wait; looping again picks up images that only
-      // started loading once the ones ahead of them finished.
+      // started loading once the ones ahead of them finished, which is what a browser's
+      // six-connections-per-host limit makes every long page do.
       await Promise.race([Promise.all(pending.map(imageSettled)), sleep(left)]);
     }
-    imageBudgetMs -= Date.now() - startedAt;
-    // One frame for the decoded image to actually paint.
-    await nextFrame();
+    const elapsed = Date.now() - startedAt;
+    imageWaitedMs += elapsed;
+    // Ending with images still on the wire means the wait bought nothing. Only that kind
+    // counts against the page: a wait that got its images is the wait working, and
+    // charging it would leave the last tiles of a slow page with nothing left to spend.
+    if (pendingImages().length > 0) imageFruitlessMs += elapsed;
+    // Arrived is not the same as drawable, and drawable is not the same as drawn.
+    const onScreen = [...document.images].filter((img) =>
+      intersectsViewport(img.getBoundingClientRect(), window.innerWidth, window.innerHeight)
+    );
+    await Promise.race([
+      Promise.all(onScreen.slice(0, IMAGE_WAIT.maxScanned).map(imageDecoded)),
+      sleep(IMAGE_WAIT.decodeMs),
+    ]);
   }
 
   /**
@@ -782,6 +816,9 @@ interface PinnedEl {
       seen = count;
     }
     await awaitImages();
+    // Every tile ends on a frame the browser has actually painted, so what the screenshot
+    // that follows finds on screen is what the settle just waited for.
+    await afterPaint();
     return { x: s.scrollLeft, y: s.scrollTop };
   }
 
@@ -790,7 +827,8 @@ interface PinnedEl {
     watcher = null;
     lastScrollAt = 0;
     renderLatency = 0;
-    imageBudgetMs = IMAGE_WAIT.totalMs;
+    imageWaitedMs = 0;
+    imageFruitlessMs = 0;
     for (const styleEl of styleEls) styleEl.remove();
     styleEls = [];
     for (let i = savedInline.length - 1; i >= 0; i--) applySaved(savedInline[i]!);

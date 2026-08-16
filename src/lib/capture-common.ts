@@ -161,16 +161,37 @@ export function shouldKeepSettling(
  * Waiting for images that are still arriving. A settle that only watches DOM mutations
  * cannot see this: an <img> that has been asked for and not yet answered mutates nothing
  * while it waits, so a lazy image on a slow connection lands in the tile as its
- * placeholder. Both bounds exist so one dead image cannot stall a whole capture.
+ * placeholder.
+ *
+ * The two budgets say different things. Waiting that ends because the images arrived is
+ * the wait doing its job, and a page whose images keep arriving is only held to the
+ * overall ceiling. Waiting that ends with the images still on the wire achieved nothing,
+ * and repeating it on every tile of a long page is how a single dead image costs minutes,
+ * so that kind is cut off quickly. Charging both kinds to one budget is what let a page
+ * of slow images spend its whole allowance on its early tiles and shoot its last one
+ * unwaited.
  */
 export const IMAGE_WAIT = {
   /** Ceiling for any one tile, ms. */
   perTileMs: 3000,
-  /** Ceiling for the whole capture, ms, spent across however many tiles need it. */
-  totalMs: 8000,
+  /** Waiting that achieved nothing, ms, before the capture stops paying for it. */
+  fruitlessMs: 8000,
+  /** All waiting, ms, so even a page whose images all arrive still terminates. */
+  totalMs: 60_000,
+  /** Ceiling on waiting for arrived images to decode, ms. */
+  decodeMs: 1000,
   /** Images inspected per tile; beyond this the page is too big to pay for the check. */
   maxScanned: 1500,
 } as const;
+
+/**
+ * How long this tile may wait for images to arrive, given what the run has already spent
+ * waiting and how much of that bought nothing.
+ */
+export function imageWaitBudgetMs(waitedMs: number, fruitlessMs: number): number {
+  if (fruitlessMs >= IMAGE_WAIT.fruitlessMs) return 0;
+  return Math.max(0, Math.min(IMAGE_WAIT.perTileMs, IMAGE_WAIT.totalMs - waitedMs));
+}
 
 /** Viewport-relative box, matching the fields of a DOMRect that we care about. */
 export interface Box {
